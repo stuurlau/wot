@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Active Workout | Kinetic Manuscript</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@300;400;500&amp;family=JetBrains+Mono:wght@100;200;300;400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .console-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Blueprint/Notebook Grid Effect */
+        body {
+            background-image: 
+                linear-gradient(to right, rgba(103, 63, 138, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(103, 63, 138, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .technical-border {
+            border: 0.5px solid rgba(0, 0, 0, 0.08);
+        }
+        .notched-corner {
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#673f8a",
+                        "primary-alpha": "rgba(103, 63, 138, 0.88)",
+                        "surface": "#faf9f8",
+                        "on-surface": "#1a1c1c",
+                        "outline-variant": "#d1d5db"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "2px",
+                        "xl": "4px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["JetBrains Mono"],
+                        "body": ["Inter"],
+                        "label": ["JetBrains Mono"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/20 antialiased">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface/90 backdrop-blur-md z-50 border-b-[0.5px] border-black/5">
+<div class="flex justify-between items-center px-6 py-4 w-full max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-primary cursor-pointer">drag_handle</span>
+<h1 class="font-headline font-light text-sm text-on-surface lowercase tracking-[0.2em]">kinetic manuscript <span class="opacity-30 tracking-normal">// v2.0.4</span></h1>
+</div>
+<button class="bg-primary-alpha text-white px-5 py-1.5 rounded-sm font-headline text-[10px] uppercase tracking-widest hover:bg-primary transition-colors">
+            Finish Session
+        </button>
+</div>
+</header>
+<main class="max-w-screen-xl mx-auto px-6 pt-8 pb-32">
+<!-- Timer Header: Laboratory Precision -->
+<section class="mb-16 relative">
+<div class="absolute -left-6 top-0 bottom-0 w-[1px] bg-primary/20"></div>
+<span class="text-on-surface/40 font-headline tracking-widest text-[9px] uppercase font-medium">Session Elapsed Time [T-0]</span>
+<div class="tabular-nums text-6xl font-extralight text-on-surface tracking-tighter mt-2 font-headline">
+            00:42:<span class="text-primary-alpha">15</span>
+</div>
+<div class="mt-4 flex items-center gap-3 text-on-surface/60 font-medium text-[10px] font-headline uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm">analytics</span>
+<span>Block ID: hypertrophy_alpha_01</span>
+</div>
+</section>
+<!-- Manuscript Entry Container -->
+<div class="flex flex-col gap-20">
+<!-- Exercise Block 1 -->
+<article class="relative">
+<div class="mb-8 flex justify-between items-start border-b-[0.5px] border-black/10 pb-4">
+<div class="flex gap-6">
+<span class="text-[10px] font-headline font-light text-primary tracking-widest uppercase py-1">01</span>
+<h2 class="text-2xl font-extralight font-headline tracking-tight text-on-surface">Back Squat <span class="text-on-surface/40 text-lg">(High Bar)</span></h2>
+</div>
+<span class="material-symbols-outlined text-on-surface/30 cursor-pointer hover:text-on-surface transition-colors">tune</span>
+</div>
+<!-- Input Grid (Notebook Style) -->
+<div class="relative overflow-hidden bg-white/40 technical-border">
+<div class="grid grid-cols-12 px-4 py-2 border-b-[0.5px] border-black/5 bg-black/[0.02] text-[9px] font-headline font-medium tracking-[0.15em] uppercase text-on-surface/50">
+<div class="col-span-1">Set</div>
+<div class="col-span-4 pl-2">Load (kg)</div>
+<div class="col-span-4 pl-2">Reps</div>
+<div class="col-span-3 text-right">Verification</div>
+</div>
+<!-- Row: Previous -->
+<div class="grid grid-cols-12 px-4 py-4 items-center border-b-[0.5px] border-black/5 opacity-50">
+<div class="col-span-1 tabular-nums font-headline text-xs">01</div>
+<div class="col-span-4 pl-2 tabular-nums text-base font-light font-headline">100.00</div>
+<div class="col-span-4 pl-2 tabular-nums text-base font-light font-headline">08</div>
+<div class="col-span-3 flex justify-end">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<!-- Row: Active Input -->
+<div class="grid grid-cols-12 px-4 py-4 items-center bg-primary/[0.02] relative">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="col-span-1 tabular-nums font-headline text-xs text-primary font-bold">02</div>
+<div class="col-span-4 px-2">
+<input class="w-full bg-transparent border-b-[0.5px] border-black/10 focus:border-primary outline-none tabular-nums text-xl font-light font-headline py-1 transition-colors" type="text" value="102.50"/>
+</div>
+<div class="col-span-4 px-2">
+<input class="w-full bg-transparent border-b-[0.5px] border-black/10 focus:border-primary outline-none tabular-nums text-xl font-light font-headline py-1 transition-colors" placeholder="00" type="text"/>
+</div>
+<div class="col-span-3 flex justify-end">
+<button class="bg-primary-alpha text-white text-[9px] font-headline uppercase tracking-widest px-5 py-2 rounded-sm hover:bg-primary transition-all">Record</button>
+</div>
+</div>
+</div>
+<button class="mt-6 flex items-center gap-2 text-primary/60 text-[9px] font-headline uppercase tracking-widest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xs">add</span>
+                Append Data Set
+            </button>
+</article>
+<!-- Exercise Block 2 -->
+<article class="relative">
+<div class="mb-8 flex justify-between items-start border-b-[0.5px] border-black/10 pb-4">
+<div class="flex gap-6">
+<span class="text-[10px] font-headline font-light text-primary tracking-widest uppercase py-1">02</span>
+<h2 class="text-2xl font-extralight font-headline tracking-tight text-on-surface">Bulgarian Split Squat</h2>
+</div>
+<span class="material-symbols-outlined text-on-surface/30 cursor-pointer">tune</span>
+</div>
+<div class="relative bg-white/40 technical-border">
+<div class="grid grid-cols-12 px-4 py-2 border-b-[0.5px] border-black/5 bg-black/[0.02] text-[9px] font-headline font-medium tracking-[0.15em] uppercase text-on-surface/50">
+<div class="col-span-1">Set</div>
+<div class="col-span-4 pl-2">Load (kg)</div>
+<div class="col-span-4 pl-2">Reps</div>
+<div class="col-span-3 text-right">Diagnostics</div>
+</div>
+<!-- Warning Row -->
+<div class="grid grid-cols-12 px-4 py-4 items-center relative bg-orange-50/30">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-400"></div>
+<div class="col-span-1 tabular-nums font-headline text-xs">01</div>
+<div class="col-span-4 px-2">
+<input class="w-full bg-transparent border-b-[0.5px] border-black/10 tabular-nums text-xl font-light font-headline py-1" type="text" value="32.00"/>
+</div>
+<div class="col-span-4 px-2">
+<input class="w-full bg-transparent border-b-[0.5px] border-black/10 tabular-nums text-xl font-light font-headline py-1" placeholder="10" type="text"/>
+</div>
+<div class="col-span-3 flex flex-col items-end gap-1">
+<span class="text-[8px] font-medium text-orange-600 font-headline uppercase tracking-tighter">RPE 9.5</span>
+<span class="material-symbols-outlined text-orange-400 text-sm" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+</div>
+</div>
+<button class="mt-6 flex items-center gap-2 text-primary/60 text-[9px] font-headline uppercase tracking-widest hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xs">add</span>
+                Append Data Set
+            </button>
+</article>
+<!-- Add Exercise CTA (Blueprint Style) -->
+<button class="w-full py-16 border-[0.5px] border-dashed border-primary/30 flex flex-col items-center justify-center gap-4 text-on-surface/40 hover:border-primary/60 hover:text-primary transition-all group bg-primary/[0.01]">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">add_circle</span>
+<span class="font-headline text-[10px] uppercase tracking-[0.2em]">Initialize new entry sequence</span>
+</button>
+<!-- Technical Analysis Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-black/5 border-[0.5px] border-black/5">
+<div class="p-8 bg-surface">
+<p class="text-[9px] font-headline font-medium text-on-surface/40 uppercase tracking-[0.2em] mb-4">Volume Δ</p>
+<div class="flex items-baseline gap-4">
+<span class="tabular-nums text-3xl font-extralight font-headline tracking-tighter">14,250</span>
+<span class="text-[10px] text-primary font-headline font-bold uppercase">+12.4%</span>
+</div>
+</div>
+<div class="p-8 bg-surface">
+<p class="text-[9px] font-headline font-medium text-on-surface/40 uppercase tracking-[0.2em] mb-4">EST_RECOVERY</p>
+<div class="flex items-baseline gap-4">
+<span class="tabular-nums text-3xl font-extralight font-headline tracking-tighter">24<span class="text-sm">h</span></span>
+<span class="text-[10px] text-on-surface/50 font-headline font-bold uppercase">Nominal</span>
+</div>
+</div>
+<div class="p-8 bg-surface">
+<p class="text-[9px] font-headline font-medium text-on-surface/40 uppercase tracking-[0.2em] mb-4">INTENSITY_V</p>
+<div class="flex items-baseline gap-4">
+<span class="text-3xl font-extralight font-headline tracking-tighter">HIGH</span>
+<span class="text-[10px] text-primary font-headline font-bold uppercase">Focus</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Scientific Dock) -->
+<nav class="fixed bottom-0 w-full z-50 border-t-[0.5px] border-black/10 bg-surface/95 backdrop-blur-xl">
+<div class="flex justify-around items-center w-full px-6 max-w-screen-xl mx-auto">
+<a class="flex flex-col items-center justify-center text-primary pt-4 pb-6 border-t-[3px] border-primary transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Log</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface/30 pt-4 pb-6 hover:text-primary transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">database</span>
+<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Archive</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface/30 pt-4 pb-6 hover:text-primary transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">insights</span>
+<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Charts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface/30 pt-4 pb-6 hover:text-primary transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl">settings_input_component</span>
+<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Kernel</span>
+</a>
+</div>
+</nav>
+</body></html>
