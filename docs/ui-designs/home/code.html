@@ -1,230 +1,357 @@
 <!DOCTYPE html>
 
-<html lang="en"><head>
+<html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Active Workout | Kinetic Manuscript</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@300;400;500;700&amp;family=JetBrains+Mono:wght@300;400;500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@300;400;500&amp;family=JetBrains+Mono:wght@100;200;300;400;500&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#ffdad6",
+                      "error": "#ba1a1a",
+                      "surface": "#faf9f8",
+                      "surface-bright": "#faf9f8",
+                      "on-secondary-fixed": "#001c3b",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-low": "#f4f3f2",
+                      "tertiary-container": "#8d3123",
+                      "on-primary-fixed": "#1e1a2e",
+                      "on-surface": "#1a1c1c",
+                      "on-tertiary-fixed": "#400200",
+                      "secondary": "#5a5a7d",
+                      "secondary-fixed": "#e0e0ff",
+                      "inverse-on-surface": "#f1f0f0",
+                      "tertiary-fixed": "#ffdad4",
+                      "surface-container": "#eeeeed",
+                      "inverse-surface": "#2f3130",
+                      "on-error-container": "#93000a",
+                      "primary-container": "#4a4458",
+                      "surface-variant": "#e3e2e1",
+                      "on-primary-fixed-variant": "#312a3d",
+                      "outline-variant": "#c2c9bb",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#42493e",
+                      "primary-fixed": "#eaddff",
+                      "background": "#faf9f8",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary": "#6e1a0f",
+                      "primary-fixed-dim": "#d0bcff",
+                      "secondary-container": "#d0d0f0",
+                      "primary": "#673f8a",
+                      "on-tertiary-container": "#ffaea0",
+                      "surface-tint": "#673f8a",
+                      "on-background": "#1a1c1c",
+                      "outline": "#72796e",
+                      "surface-container-high": "#e9e8e7",
+                      "on-primary-container": "#eaddff",
+                      "on-secondary-container": "#1d192b",
+                      "surface-container-highest": "#e3e2e1",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#d0bcff",
+                      "secondary-fixed-dim": "#cbcbe5",
+                      "on-secondary-fixed-variant": "#43435e",
+                      "on-tertiary-fixed-variant": "#80281b",
+                      "surface-dim": "#dadad9",
+                      "tertiary-fixed-dim": "#ffb4a7",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0px",
+                      "lg": "0px",
+                      "xl": "0px",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": ["Space Grotesk"],
+                      "body": ["Space Grotesk"],
+                      "label": ["Space Grotesk"],
+                      "mono": ["JetBrains Mono", "monospace"]
+              }
+            },
+          },
+        }</script>
 <style>
         .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
         }
         .tabular-nums {
             font-variant-numeric: tabular-nums;
-            font-family: 'JetBrains Mono', monospace;
         }
-        .console-font {
-            font-family: 'JetBrains Mono', monospace;
+        .kinetic-gradient {
+            background: rgba(103, 63, 138, 0.88);
         }
-        /* Blueprint/Notebook Grid Effect */
         body {
+            font-family: 'Inter', sans-serif;
+            color: #1a1c1c;
             background-image: 
-                linear-gradient(to right, rgba(103, 63, 138, 0.03) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(103, 63, 138, 0.03) 1px, transparent 1px);
+                linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
             background-size: 40px 40px;
         }
-        .technical-border {
-            border: 0.5px solid rgba(0, 0, 0, 0.08);
+        h1, h2, h3, .technical {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 300;
         }
-        .notched-corner {
-            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+        .mono-technical {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 300;
+            letter-spacing: -0.02em;
+        }
+        .marginalia {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            writing-mode: vertical-rl;
+            position: absolute;
+        }
+        .chart-grid {
+            background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 100% 24px;
         }
     </style>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "primary": "#673f8a",
-                        "primary-alpha": "rgba(103, 63, 138, 0.88)",
-                        "surface": "#faf9f8",
-                        "on-surface": "#1a1c1c",
-                        "outline-variant": "#d1d5db"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0px",
-                        "lg": "2px",
-                        "xl": "4px",
-                        "full": "9999px"
-                    },
-                    "fontFamily": {
-                        "headline": ["JetBrains Mono"],
-                        "body": ["Inter"],
-                        "label": ["JetBrains Mono"]
-                    }
-                }
-            }
-        }
-    </script>
 <style>
         body {
-            min-height: max(884px, 100dvh);
+          min-height: max(884px, 100dvh);
         }
     </style>
 </head>
-<body class="bg-surface text-on-surface font-body selection:bg-primary/20 antialiased">
+<body class="bg-surface min-h-screen pb-32">
 <!-- TopAppBar -->
-<header class="w-full top-0 sticky bg-surface/90 backdrop-blur-md z-50 border-b-[0.5px] border-black/5">
-<div class="flex justify-between items-center px-6 py-4 w-full max-w-screen-2xl mx-auto">
+<nav class="w-full top-0 sticky bg-[#faf9f8]/90 backdrop-blur-md border-b border-black/5 z-50">
+<div class="flex justify-between items-center px-8 py-5 w-full max-w-screen-2xl mx-auto">
 <div class="flex items-center gap-6">
-<span class="material-symbols-outlined text-primary cursor-pointer">drag_handle</span>
-<h1 class="font-headline font-light text-sm text-on-surface lowercase tracking-[0.2em]">kinetic manuscript <span class="opacity-30 tracking-normal">// v2.0.4</span></h1>
+<span class="material-symbols-outlined text-primary cursor-pointer hover:opacity-70 transition-opacity">menu_open</span>
+<div class="h-4 w-px bg-black/10"></div>
+<h1 class="text-sm font-light tracking-[0.2em] uppercase text-[#1a1a1a] font-['Space_Grotesk']">Kinetic Manuscript <span class="text-[10px] opacity-40 ml-2 mono-technical">v.4.0.1</span></h1>
 </div>
-<button class="bg-primary-alpha text-white px-5 py-1.5 rounded-sm font-headline text-[10px] uppercase tracking-widest hover:bg-primary transition-colors">
-            Finish Session
-        </button>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary cursor-pointer hover:opacity-70 transition-opacity">settings</span>
 </div>
-</header>
-<main class="max-w-screen-xl mx-auto px-6 pt-8 pb-32">
-<!-- Timer Header: Laboratory Precision -->
-<section class="mb-16 relative">
-<div class="absolute -left-6 top-0 bottom-0 w-[1px] bg-primary/20"></div>
-<span class="text-on-surface/40 font-headline tracking-widest text-[9px] uppercase font-medium">Session Elapsed Time [T-0]</span>
-<div class="tabular-nums text-6xl font-extralight text-on-surface tracking-tighter mt-2 font-headline">
-            00:42:<span class="text-primary-alpha">15</span>
 </div>
-<div class="mt-4 flex items-center gap-3 text-on-surface/60 font-medium text-[10px] font-headline uppercase tracking-wider">
-<span class="material-symbols-outlined text-sm">analytics</span>
-<span>Block ID: hypertrophy_alpha_01</span>
+</nav>
+<main class="max-w-screen-xl mx-auto px-6 md:px-8 pt-16 relative">
+<!-- Marginalia side note -->
+<div class="hidden lg:block marginalia left-4 top-48">REF_IDX: 004_SESSION_LOG</div>
+<!-- Hero: Start Workout CTA -->
+<section class="mb-32 flex flex-col md:flex-row items-start justify-between gap-12 relative">
+<div class="max-w-2xl">
+<p class="text-primary font-light tracking-[0.3em] uppercase text-[10px] mb-6 mono-technical font-headline">Log Entry // 2024.08.26_T14:30</p>
+<h2 class="text-5xl md:text-8xl font-light tracking-tighter mb-10 leading-[0.95] text-balance">Ready to document progress?</h2>
+<button class="kinetic-gradient text-white px-12 py-4 border border-primary/20 font-light text-sm tracking-[0.1em] uppercase flex items-center gap-4 hover:bg-primary transition-all active:scale-[0.98]">
+                Initialize Session
+                <span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+<div class="hidden md:block w-px h-72 bg-black/10 self-start mt-4"></div>
+<div class="flex flex-col gap-10 pt-2 border-l border-black/5 pl-8 md:border-l-0 md:pl-0">
+<div class="group relative">
+<span class="text-[9px] uppercase tracking-[0.3em] text-on-surface-variant font-medium mono-technical">Streak_Metric</span>
+<p class="text-5xl font-extralight tabular-nums tracking-tighter font-headline">12<span class="text-[10px] font-light text-on-surface-variant ml-2 uppercase mono-technical">d</span></p>
+</div>
+<div class="group">
+<span class="text-[9px] uppercase tracking-[0.3em] text-on-surface-variant font-medium mono-technical">Recovery_State</span>
+<p class="text-5xl font-extralight text-primary tabular-nums tracking-tighter font-headline">84<span class="text-[10px] font-light text-on-surface-variant ml-2 uppercase mono-technical">%</span></p>
+</div>
 </div>
 </section>
-<!-- Manuscript Entry Container -->
-<div class="flex flex-col gap-20">
-<!-- Exercise Block 1 -->
-<article class="relative">
-<div class="mb-8 flex justify-between items-start border-b-[0.5px] border-black/10 pb-4">
-<div class="flex gap-6">
-<span class="text-[10px] font-headline font-light text-primary tracking-widest uppercase py-1">01</span>
-<h2 class="text-2xl font-extralight font-headline tracking-tight text-on-surface">Back Squat <span class="text-on-surface/40 text-lg">(High Bar)</span></h2>
+<!-- Weekly Summary: Data Viz -->
+<section class="mb-32">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-black/5 pb-8">
+<div class="flex flex-col">
+<h3 class="text-3xl font-light tracking-tighter mb-2">Training Load Distribution</h3>
+<p class="text-on-surface-variant text-[10px] font-light mono-technical uppercase tracking-widest">Dataset: accumulated_stress_v2 // window: 7_day_rolling</p>
 </div>
-<span class="material-symbols-outlined text-on-surface/30 cursor-pointer hover:text-on-surface transition-colors">tune</span>
+<div class="flex gap-8 mt-6 md:mt-0">
+<div class="flex items-center gap-3">
+<div class="w-1.5 h-1.5 bg-primary"></div>
+<span class="text-[9px] uppercase tracking-[0.2em] font-light mono-technical">Volume_idx</span>
 </div>
-<!-- Input Grid (Notebook Style) -->
-<div class="relative overflow-hidden bg-white/40 technical-border">
-<div class="grid grid-cols-12 px-4 py-2 border-b-[0.5px] border-black/5 bg-black/[0.02] text-[9px] font-headline font-medium tracking-[0.15em] uppercase text-on-surface/50">
-<div class="col-span-1">Set</div>
-<div class="col-span-4 pl-2">Load (kg)</div>
-<div class="col-span-4 pl-2">Reps</div>
-<div class="col-span-3 text-right">Verification</div>
-</div>
-<!-- Row: Previous -->
-<div class="grid grid-cols-12 px-4 py-4 items-center border-b-[0.5px] border-black/5 opacity-50">
-<div class="col-span-1 tabular-nums font-headline text-xs">01</div>
-<div class="col-span-4 pl-2 tabular-nums text-base font-light font-headline">100.00</div>
-<div class="col-span-4 pl-2 tabular-nums text-base font-light font-headline">08</div>
-<div class="col-span-3 flex justify-end">
-<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
-</div>
-</div>
-<!-- Row: Active Input -->
-<div class="grid grid-cols-12 px-4 py-4 items-center bg-primary/[0.02] relative">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
-<div class="col-span-1 tabular-nums font-headline text-xs text-primary font-bold">02</div>
-<div class="col-span-4 px-2">
-<input class="w-full bg-transparent border-b-[0.5px] border-black/10 focus:border-primary outline-none tabular-nums text-xl font-light font-headline py-1 transition-colors" type="text" value="102.50"/>
-</div>
-<div class="col-span-4 px-2">
-<input class="w-full bg-transparent border-b-[0.5px] border-black/10 focus:border-primary outline-none tabular-nums text-xl font-light font-headline py-1 transition-colors" placeholder="00" type="text"/>
-</div>
-<div class="col-span-3 flex justify-end">
-<button class="bg-primary-alpha text-white text-[9px] font-headline uppercase tracking-widest px-5 py-2 rounded-sm hover:bg-primary transition-all">Record</button>
+<div class="flex items-center gap-3">
+<div class="w-1.5 h-1.5 bg-secondary/40"></div>
+<span class="text-[9px] uppercase tracking-[0.2em] font-light mono-technical">Intensity_rel</span>
 </div>
 </div>
 </div>
-<button class="mt-6 flex items-center gap-2 text-primary/60 text-[9px] font-headline uppercase tracking-widest hover:text-primary transition-colors">
-<span class="material-symbols-outlined text-xs">add</span>
-                Append Data Set
-            </button>
-</article>
-<!-- Exercise Block 2 -->
-<article class="relative">
-<div class="mb-8 flex justify-between items-start border-b-[0.5px] border-black/10 pb-4">
-<div class="flex gap-6">
-<span class="text-[10px] font-headline font-light text-primary tracking-widest uppercase py-1">02</span>
-<h2 class="text-2xl font-extralight font-headline tracking-tight text-on-surface">Bulgarian Split Squat</h2>
+<div class="relative bg-white/40 p-10 border border-black/5">
+<div class="absolute top-0 right-0 p-2 text-[8px] mono-technical opacity-20 select-none">GRID_SYS_8MM</div>
+<!-- Enhanced Bar Chart -->
+<div class="chart-grid flex items-end justify-between h-56 gap-4 md:gap-12 relative px-4">
+<!-- Day 1 -->
+<div class="flex-1 flex flex-col items-center gap-6 group">
+<div class="w-full flex flex-col items-center justify-end h-full gap-0.5">
+<div class="w-2 bg-primary/10 h-[40%] group-hover:bg-primary/20 transition-colors"></div>
+<div class="w-2 bg-primary h-[20%]"></div>
 </div>
-<span class="material-symbols-outlined text-on-surface/30 cursor-pointer">tune</span>
+<span class="text-[9px] mono-technical font-light text-on-surface-variant tracking-widest">M</span>
 </div>
-<div class="relative bg-white/40 technical-border">
-<div class="grid grid-cols-12 px-4 py-2 border-b-[0.5px] border-black/5 bg-black/[0.02] text-[9px] font-headline font-medium tracking-[0.15em] uppercase text-on-surface/50">
-<div class="col-span-1">Set</div>
-<div class="col-span-4 pl-2">Load (kg)</div>
-<div class="col-span-4 pl-2">Reps</div>
-<div class="col-span-3 text-right">Diagnostics</div>
+<!-- Day 2 -->
+<div class="flex-1 flex flex-col items-center gap-6 group">
+<div class="w-full flex flex-col items-center justify-end h-full gap-0.5">
+<div class="w-2 bg-primary/10 h-[65%] group-hover:bg-primary/20 transition-colors"></div>
+<div class="w-2 bg-primary h-[35%]"></div>
 </div>
-<!-- Warning Row -->
-<div class="grid grid-cols-12 px-4 py-4 items-center relative bg-orange-50/30">
-<div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-400"></div>
-<div class="col-span-1 tabular-nums font-headline text-xs">01</div>
-<div class="col-span-4 px-2">
-<input class="w-full bg-transparent border-b-[0.5px] border-black/10 tabular-nums text-xl font-light font-headline py-1" type="text" value="32.00"/>
+<span class="text-[9px] mono-technical font-light text-on-surface-variant tracking-widest">T</span>
 </div>
-<div class="col-span-4 px-2">
-<input class="w-full bg-transparent border-b-[0.5px] border-black/10 tabular-nums text-xl font-light font-headline py-1" placeholder="10" type="text"/>
+<!-- Day 3 -->
+<div class="flex-1 flex flex-col items-center gap-6 group">
+<div class="w-full flex flex-col items-center justify-end h-full gap-0.5">
+<div class="w-2 bg-primary/10 h-[20%] group-hover:bg-primary/20 transition-colors"></div>
+<div class="w-2 bg-primary h-[85%]"></div>
 </div>
-<div class="col-span-3 flex flex-col items-end gap-1">
-<span class="text-[8px] font-medium text-orange-600 font-headline uppercase tracking-tighter">RPE 9.5</span>
-<span class="material-symbols-outlined text-orange-400 text-sm" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-[9px] mono-technical font-light text-on-surface-variant tracking-widest">W</span>
 </div>
+<!-- Day 4 -->
+<div class="flex-1 flex flex-col items-center gap-6">
+<div class="w-full flex flex-col items-center justify-end h-full">
+<div class="w-2 bg-surface-container-highest/30 h-1"></div>
 </div>
+<span class="text-[9px] mono-technical font-light text-on-surface-variant tracking-widest opacity-30">T</span>
 </div>
-<button class="mt-6 flex items-center gap-2 text-primary/60 text-[9px] font-headline uppercase tracking-widest hover:text-primary transition-colors">
-<span class="material-symbols-outlined text-xs">add</span>
-                Append Data Set
-            </button>
-</article>
-<!-- Add Exercise CTA (Blueprint Style) -->
-<button class="w-full py-16 border-[0.5px] border-dashed border-primary/30 flex flex-col items-center justify-center gap-4 text-on-surface/40 hover:border-primary/60 hover:text-primary transition-all group bg-primary/[0.01]">
-<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">add_circle</span>
-<span class="font-headline text-[10px] uppercase tracking-[0.2em]">Initialize new entry sequence</span>
-</button>
-<!-- Technical Analysis Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-[1px] bg-black/5 border-[0.5px] border-black/5">
-<div class="p-8 bg-surface">
-<p class="text-[9px] font-headline font-medium text-on-surface/40 uppercase tracking-[0.2em] mb-4">Volume Δ</p>
-<div class="flex items-baseline gap-4">
-<span class="tabular-nums text-3xl font-extralight font-headline tracking-tighter">14,250</span>
-<span class="text-[10px] text-primary font-headline font-bold uppercase">+12.4%</span>
+<!-- Day 5 -->
+<div class="flex-1 flex flex-col items-center gap-6 group">
+<div class="w-full flex flex-col items-center justify-end h-full gap-0.5">
+<div class="w-2 bg-primary/10 h-[45%] group-hover:bg-primary/20 transition-colors"></div>
+<div class="w-2 bg-primary h-[30%]"></div>
 </div>
+<span class="text-[9px] mono-technical font-light text-on-surface-variant tracking-widest">F</span>
 </div>
-<div class="p-8 bg-surface">
-<p class="text-[9px] font-headline font-medium text-on-surface/40 uppercase tracking-[0.2em] mb-4">EST_RECOVERY</p>
-<div class="flex items-baseline gap-4">
-<span class="tabular-nums text-3xl font-extralight font-headline tracking-tighter">24<span class="text-sm">h</span></span>
-<span class="text-[10px] text-on-surface/50 font-headline font-bold uppercase">Nominal</span>
+<!-- Day 6 -->
+<div class="flex-1 flex flex-col items-center gap-6 group">
+<div class="w-full flex flex-col items-center justify-end h-full gap-0.5">
+<div class="w-2 bg-primary/10 h-[70%] group-hover:bg-primary/20 transition-colors"></div>
+<div class="w-2 bg-primary/60 h-[15%]"></div>
 </div>
+<span class="text-[9px] mono-technical font-light text-on-surface-variant tracking-widest">S</span>
 </div>
-<div class="p-8 bg-surface">
-<p class="text-[9px] font-headline font-medium text-on-surface/40 uppercase tracking-[0.2em] mb-4">INTENSITY_V</p>
-<div class="flex items-baseline gap-4">
-<span class="text-3xl font-extralight font-headline tracking-tighter">HIGH</span>
-<span class="text-[10px] text-primary font-headline font-bold uppercase">Focus</span>
+<!-- Day 7 -->
+<div class="flex-1 flex flex-col items-center gap-6 group">
+<div class="w-full flex flex-col items-center justify-end h-full gap-0.5">
+<div class="w-2 bg-primary/10 h-[30%] group-hover:bg-primary/20 transition-colors"></div>
+<div class="w-2 bg-primary h-[40%]"></div>
+</div>
+<span class="text-[9px] mono-technical font-light text-on-surface-variant tracking-widest">S</span>
 </div>
 </div>
 </div>
+<div class="mt-8 flex justify-between items-center px-2">
+<span class="text-[8px] mono-technical opacity-40 uppercase tracking-widest">Auto_Sync: Enabled</span>
+<button class="text-primary text-[9px] font-light uppercase tracking-[0.3em] border-b border-primary/20 pb-1 hover:border-primary transition-all mono-technical">Access Full Dataset</button>
 </div>
+</section>
+<!-- Recent Sessions -->
+<section class="mb-32">
+<div class="flex items-center justify-between mb-16">
+<h3 class="text-3xl font-light tracking-tighter">Sequence History</h3>
+<span class="text-[9px] font-light text-on-surface-variant uppercase tracking-[0.4em] mono-technical">N=3 Recent</span>
+</div>
+<div class="space-y-16">
+<!-- Session 1 -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6 group relative">
+<div class="absolute -left-12 top-1/2 -translate-y-1/2 text-[8px] mono-technical opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-tighter hidden lg:block">ENTRY_0825</div>
+<div class="flex items-start gap-10">
+<div class="flex flex-col items-center border-r border-black/5 pr-8">
+<span class="text-[10px] font-light mono-technical tracking-widest">SUN</span>
+<span class="text-[9px] text-on-surface-variant tabular-nums mono-technical mt-1">08.25</span>
+</div>
+<div>
+<h4 class="text-2xl font-light tracking-tight group-hover:text-primary transition-colors">Lower body hypertrophy</h4>
+<p class="text-[10px] text-on-surface-variant mono-technical mt-2 uppercase tracking-wide">Focus: Squat / Vol: 8.2 km cumulative</p>
+</div>
+</div>
+<div class="flex items-center gap-16 pl-[72px] md:pl-0">
+<div class="flex flex-col">
+<span class="text-[8px] uppercase font-light text-on-surface-variant mono-technical tracking-widest mb-1">Duration</span>
+<span class="text-sm tabular-nums font-light mono-technical font-headline">01:12:45</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[8px] uppercase font-light text-on-surface-variant mono-technical tracking-widest mb-1">AVG_HR</span>
+<span class="text-sm tabular-nums font-light mono-technical font-headline">142 bpm</span>
+</div>
+<span class="material-symbols-outlined text-black/10 group-hover:text-primary transition-colors text-sm">arrow_forward</span>
+</div>
+</div>
+<!-- Session 2 -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6 group relative">
+<div class="flex items-start gap-10">
+<div class="flex flex-col items-center border-r border-black/5 pr-8">
+<span class="text-[10px] font-light mono-technical tracking-widest">SAT</span>
+<span class="text-[9px] text-on-surface-variant tabular-nums mono-technical mt-1">08.24</span>
+</div>
+<div>
+<h4 class="text-2xl font-light tracking-tight group-hover:text-primary transition-colors">Threshold run</h4>
+<p class="text-[10px] text-on-surface-variant mono-technical mt-2 uppercase tracking-wide">Zone 4 emphasis / Central Park</p>
+</div>
+</div>
+<div class="flex items-center gap-16 pl-[72px] md:pl-0">
+<div class="flex flex-col">
+<span class="text-[8px] uppercase font-light text-on-surface-variant mono-technical tracking-widest mb-1">Distance</span>
+<span class="text-sm tabular-nums font-light mono-technical font-headline">10.02 km</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[8px] uppercase font-light text-on-surface-variant mono-technical tracking-widest mb-1">Pace</span>
+<span class="text-sm tabular-nums font-light mono-technical font-headline">4:32 /km</span>
+</div>
+<span class="material-symbols-outlined text-black/10 group-hover:text-primary transition-colors text-sm">arrow_forward</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Style Insight Detail -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
+<div class="md:col-span-2 bg-white border border-black/5 p-10 flex flex-col justify-between relative overflow-hidden">
+<div class="absolute top-0 right-0 w-24 h-24 border-b border-l border-black/[0.03]"></div>
+<div>
+<h3 class="text-2xl font-light tracking-tighter mb-4">Physiological Insight</h3>
+<p class="text-on-surface-variant max-w-lg mb-10 font-light text-sm leading-relaxed">System analysis indicates a recovery rate improvement of <span class="text-primary font-medium">14%</span>. Recommended Δ-Load for subsequent session: <span class="text-primary font-medium">+5%</span> for optimized adaptation curve.</p>
+</div>
+<div class="flex gap-6 items-center border-t border-black/5 pt-8">
+<div class="w-10 h-10 border border-primary/20 p-1">
+<img alt="Analysis" class="w-full h-full object-cover grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAi-e2d70l7eHPjbVwJC0Yt5-w_jUCRWmoM7RUQFjYQ2Yyrdgv5MyNX_tRIys7DcbfHA-0-UWl0aE2LL9ARt-ZyRXlkJQNrqpgsFc5K4Tr542kX0hr3EVqolYtGK-BJ6GvGS7yk4ogVREGIzp6zSR63VogHpDFC2mon9yKepJya9gaPnEdzl3mjFDuKGXBt6OXzGLyPiLgecaKRjKnbGU84HUGQ1rRzZsywuQaUxPIdHR7XmeoTHSauoXYYC-TumPeMO2o4mUI41A"/>
+</div>
+<div class="flex flex-col justify-center">
+<span class="text-[9px] font-medium uppercase tracking-[0.3em] text-primary mono-technical">System_REC.042</span>
+<span class="text-[9px] font-light mono-technical opacity-50 uppercase mt-1">Adaptive progression: active</span>
+</div>
+</div>
+</div>
+<div class="bg-primary text-white p-10 flex flex-col justify-between items-start relative">
+<div class="absolute top-2 left-2 text-[8px] mono-technical opacity-30 uppercase tracking-widest">METRIC_SCORE</div>
+<span class="material-symbols-outlined text-3xl font-thin opacity-80">analytics</span>
+<div>
+<span class="text-[9px] font-light uppercase tracking-[0.3em] opacity-80 mono-technical">Training Effect</span>
+<h3 class="text-6xl font-extralight tabular-nums tracking-tighter mt-2 font-headline">4.8</h3>
+<p class="text-[10px] opacity-60 mono-technical uppercase tracking-widest mt-4">Highly productive</p>
+</div>
+</div>
+</section>
 </main>
-<!-- BottomNavBar (Scientific Dock) -->
-<nav class="fixed bottom-0 w-full z-50 border-t-[0.5px] border-black/10 bg-surface/95 backdrop-blur-xl">
-<div class="flex justify-around items-center w-full px-6 max-w-screen-xl mx-auto">
-<a class="flex flex-col items-center justify-center text-primary pt-4 pb-6 border-t-[3px] border-primary transition-all duration-300" href="#">
-<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">analytics</span>
-<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Log</span>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-black/5 bg-[#faf9f8]/90 backdrop-blur-xl shadow-sm">
+<div class="flex justify-around items-center w-full px-8">
+<!-- Log (Active) -->
+<a class="flex flex-col items-center justify-center text-primary border-t border-primary pt-4 pb-6 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mb-1.5" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<span class="text-[9px] font-medium tracking-[0.2em] uppercase mono-technical">Log</span>
 </a>
-<a class="flex flex-col items-center justify-center text-on-surface/30 pt-4 pb-6 hover:text-primary transition-all duration-300" href="#">
-<span class="material-symbols-outlined text-xl">database</span>
-<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Archive</span>
+<!-- History -->
+<a class="flex flex-col items-center justify-center text-[#a1a1a1] pt-4 pb-6 transition-all duration-300 hover:text-primary" href="#">
+<span class="material-symbols-outlined mb-1.5">history</span>
+<span class="text-[9px] font-medium tracking-[0.2em] uppercase mono-technical">History</span>
 </a>
-<a class="flex flex-col items-center justify-center text-on-surface/30 pt-4 pb-6 hover:text-primary transition-all duration-300" href="#">
-<span class="material-symbols-outlined text-xl">insights</span>
-<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Charts</span>
+<!-- Insights -->
+<a class="flex flex-col items-center justify-center text-[#a1a1a1] pt-4 pb-6 transition-all duration-300 hover:text-primary" href="#">
+<span class="material-symbols-outlined mb-1.5">analytics</span>
+<span class="text-[9px] font-medium tracking-[0.2em] uppercase mono-technical">Insights</span>
 </a>
-<a class="flex flex-col items-center justify-center text-on-surface/30 pt-4 pb-6 hover:text-primary transition-all duration-300" href="#">
-<span class="material-symbols-outlined text-xl">settings_input_component</span>
-<span class="font-headline text-[9px] uppercase font-bold tracking-widest mt-2">Kernel</span>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#a1a1a1] pt-4 pb-6 transition-all duration-300 hover:text-primary" href="#">
+<span class="material-symbols-outlined mb-1.5">person</span>
+<span class="text-[9px] font-medium tracking-[0.2em] uppercase mono-technical">Profile</span>
 </a>
 </div>
 </nav>
