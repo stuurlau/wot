@@ -1,33 +1,53 @@
-import { Tabs } from "expo-router";
-import React from "react";
-
-import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Tabs } from 'expo-router';
+import { HapticTab } from '@/components/haptic-tab';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors } from '@/constants/theme';
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#4a4458",
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.onSurfaceVariant,
+        tabBarStyle: {
+          backgroundColor: Colors.surface,
+          borderTopColor: Colors.border,
+          borderTopWidth: 1,
+        },
+        tabBarLabelStyle: {
+          fontFamily: 'Inter_500Medium',
+          fontSize: 10,
+          letterSpacing: 1.5,
+          textTransform: 'uppercase',
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: 'Log',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <IconSymbol size={22} name="square.and.pencil" color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="history"
         options={{
-          title: "Explore",
+          title: 'History',
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={22} name="clock.arrow.circlepath" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="insights"
+        options={{
+          title: 'Insights',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={22} name="chart.bar.fill" color={color} />
           ),
         }}
       />

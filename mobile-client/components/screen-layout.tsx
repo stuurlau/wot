@@ -2,7 +2,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView, Text, View } from 'react-native';
 import { Svg, Defs, Pattern, Rect, Line } from 'react-native-svg';
 
-const LINE_SPACING = 28;
+const LINE_SPACING = 40;
 
 function RuledBackground() {
   return (
@@ -22,16 +22,16 @@ function RuledBackground() {
               y1={LINE_SPACING}
               x2="10000"
               y2={LINE_SPACING}
-              stroke="#e4e2e0"
-              strokeWidth="0.5"
+              stroke="rgba(0,0,0,0.03)"
+              strokeWidth="1"
             />
             <Line
               x1={LINE_SPACING}
               y1="0"
               x2={LINE_SPACING}
               y2="10000"
-              stroke="#e4e2e0"
-              strokeWidth="0.5"
+              stroke="rgba(0,0,0,0.03)"
+              strokeWidth="1"
             />
           </Pattern>
         </Defs>
