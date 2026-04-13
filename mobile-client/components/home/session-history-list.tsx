@@ -1,7 +1,6 @@
 import { Text, View } from 'react-native';
 import type { Session } from '@/types';
 import { SessionHistoryCard } from './session-history-card';
-import { Fonts, Colors } from '@/constants/theme';
 
 type SessionHistoryListProps = {
   sessions: Session[];
@@ -16,32 +15,15 @@ export function SessionHistoryList({ sessions, count = 3 }: SessionHistoryListPr
 
   return (
     <View className="mb-12">
-      {/* Section header */}
       <View className="flex-row items-center justify-between mb-6">
-        <Text
-          style={{
-            fontFamily: Fonts.headingBold,
-            fontSize: 22,
-            letterSpacing: -0.8,
-            color: Colors.onSurface,
-          }}
-        >
+        <Text className="font-heading text-[28px] tracking-[-0.8px] text-foreground">
           Sequence History
         </Text>
-        <Text
-          style={{
-            fontFamily: Fonts.body,
-            fontSize: 9,
-            letterSpacing: 3,
-            textTransform: 'uppercase',
-            color: Colors.onSurfaceVariant,
-          }}
-        >
+        <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground">
           N={recent.length} Recent
         </Text>
       </View>
 
-      {/* Session list */}
       {recent.map((session) => (
         <SessionHistoryCard key={session.id} session={session} />
       ))}

@@ -1,8 +1,8 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView, Text, View } from 'react-native';
-import { Svg, Defs, Pattern, Rect, Line } from 'react-native-svg';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ScrollView, Text, View } from "react-native";
+import { Svg, Defs, Pattern, Rect, Line } from "react-native-svg";
 
-const LINE_SPACING = 40;
+const LINE_SPACING = 30;
 
 function RuledBackground() {
   return (
@@ -22,7 +22,7 @@ function RuledBackground() {
               y1={LINE_SPACING}
               x2="10000"
               y2={LINE_SPACING}
-              stroke="rgba(0,0,0,0.03)"
+              stroke="rgba(0,0,0,0.1)"
               strokeWidth="1"
             />
             <Line
@@ -30,7 +30,7 @@ function RuledBackground() {
               y1="0"
               x2={LINE_SPACING}
               y2="10000"
-              stroke="rgba(0,0,0,0.03)"
+              stroke="rgba(0,0,0,0.1)"
               strokeWidth="1"
             />
           </Pattern>
@@ -43,17 +43,12 @@ function RuledBackground() {
 
 function Header() {
   return (
-    <View className="items-center pt-2 pb-4">
-      <Text
-        style={{
-          fontFamily: 'SpaceGrotesk_700Bold',
-          fontSize: 22,
-          letterSpacing: -0.8,
-          color: '#1A1A1A',
-        }}
-      >
-        WOT
-      </Text>
+    <View className="border-b border-black/5 bg-background">
+      <View className="items-center px-6 pt-5 pb-4">
+        <Text className="font-heading-bold italic text-[50px] leading-none tracking-[-1.2px] text-foreground">
+          WOT
+        </Text>
+      </View>
     </View>
   );
 }
@@ -63,28 +58,27 @@ type ScreenLayoutProps = {
   scrollable?: boolean;
 };
 
-export function ScreenLayout({ children, scrollable = false }: ScreenLayoutProps) {
-  const content = (
-    <>
-      <Header />
-      {children}
-    </>
-  );
-
+export function ScreenLayout({
+  children,
+  scrollable = false,
+}: ScreenLayoutProps) {
   return (
-    <SafeAreaView className="flex-1 bg-[#faf9f8]">
-      <RuledBackground />
-      {scrollable ? (
-        <ScrollView
-          className="flex-1 px-6"
-          contentContainerStyle={{ paddingBottom: 32 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {content}
-        </ScrollView>
-      ) : (
-        <View className="flex-1 px-6">{content}</View>
-      )}
+    <SafeAreaView className="flex-1 bg-background">
+      <Header />
+      <View className="flex-1 relative">
+        <RuledBackground />
+        {scrollable ? (
+          <ScrollView
+            className="flex-1 px-6"
+            contentContainerStyle={{ paddingTop: 28, paddingBottom: 32 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          <View className="flex-1 px-6 pt-7">{children}</View>
+        )}
+      </View>
     </SafeAreaView>
   );
 }

@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { Fonts, Colors } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 
 type DailyLoadEntry = { date: string; load: number };
 
@@ -19,55 +19,25 @@ export function LoadDistributionChart({ dailyLoads }: LoadDistributionChartProps
 
   return (
     <View className="mb-12">
-      {/* Section header */}
-      <View className="mb-4 pb-4" style={{ borderBottomWidth: 1, borderBottomColor: Colors.border }}>
-        <Text
-          style={{
-            fontFamily: Fonts.headingBold,
-            fontSize: 22,
-            letterSpacing: -0.8,
-            color: Colors.onSurface,
-            marginBottom: 4,
-          }}
-        >
+      <View className="mb-4 pb-4 border-b border-border">
+        <Text className="mb-1 font-heading text-[28px] tracking-[-0.8px] text-foreground">
           Training Load Distribution
         </Text>
-        <Text
-          style={{
-            fontFamily: Fonts.body,
-            fontSize: 9,
-            letterSpacing: 3,
-            textTransform: 'uppercase',
-            color: Colors.onSurfaceVariant,
-          }}
-        >
+        <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground">
           Dataset: session_load // window: 7_day_rolling
         </Text>
       </View>
 
-      {/* Legend */}
       <View className="flex-row gap-6 mb-6">
         <View className="flex-row items-center gap-2">
-          <View className="w-2 h-2" style={{ backgroundColor: Colors.primary }} />
-          <Text
-            style={{
-              fontFamily: Fonts.body,
-              fontSize: 9,
-              letterSpacing: 2,
-              textTransform: 'uppercase',
-              color: Colors.onSurfaceVariant,
-            }}
-          >
+          <View className="w-2 h-2 bg-primary" />
+          <Text className="font-body text-[9px] tracking-[2px] uppercase text-muted-foreground">
             Load_idx
           </Text>
         </View>
       </View>
 
-      {/* Bar chart */}
-      <View
-        className="flex-row items-end justify-between px-2"
-        style={{ height: 160 }}
-      >
+      <View className="flex-row items-end justify-between px-2" style={{ height: 160 }}>
         {dailyLoads.map((entry) => {
           const heightPct = maxLoad > 0 ? (entry.load / maxLoad) * 100 : 0;
           const isEmpty = entry.load === 0;
@@ -87,13 +57,8 @@ export function LoadDistributionChart({ dailyLoads }: LoadDistributionChartProps
                 />
               </View>
               <Text
-                style={{
-                  fontFamily: Fonts.body,
-                  fontSize: 9,
-                  letterSpacing: 3,
-                  color: Colors.onSurfaceVariant,
-                  opacity: isEmpty ? 0.3 : 1,
-                }}
+                className="font-body text-[9px] tracking-[3px] text-muted-foreground"
+                style={{ opacity: isEmpty ? 0.3 : 1 }}
               >
                 {getDayLabel(entry.date)}
               </Text>

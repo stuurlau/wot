@@ -13,8 +13,8 @@ export const Colors = {
   onSurfaceVariant: '#6b6966',
 
   // Brand
-  primary: '#2D5A27',
-  primaryDark: '#154212',
+  primary: '#673F8A',
+  primaryDark: '#4A4458',
   onPrimary: '#ffffff',
 
   secondary: '#395F94',
@@ -33,8 +33,11 @@ export const Colors = {
 
 export const Fonts = {
   // Headlines, stats, display — tight tracking
-  headingBold: 'SpaceGrotesk_700Bold',
+  heading: 'SpaceGrotesk_300Light',
+  headingRegular: 'SpaceGrotesk_400Regular',
+  headingMedium: 'SpaceGrotesk_500Medium',
   headingSemiBold: 'SpaceGrotesk_600SemiBold',
+  headingBold: 'SpaceGrotesk_700Bold',
 
   // Body, labels
   body: 'Inter_400Regular',
@@ -45,4 +48,3 @@ export const Fonts = {
   // Tabular numbers (for weights, reps, timers)
   tabular: 'Inter_700Bold',
 };
-

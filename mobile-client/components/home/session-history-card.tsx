@@ -1,6 +1,5 @@
 import { Text, View } from 'react-native';
 import type { Session } from '@/types';
-import { Fonts, Colors } from '@/constants/theme';
 
 type SessionHistoryCardProps = {
   session: Session;
@@ -25,78 +24,37 @@ export function SessionHistoryCard({ session }: SessionHistoryCardProps) {
 
   return (
     <View className="flex-row items-center justify-between py-4">
-      {/* Left: date column */}
-      <View className="items-center mr-4 pr-4" style={{ borderRightWidth: 1, borderRightColor: Colors.border }}>
-        <Text
-          style={{
-            fontFamily: Fonts.body,
-            fontSize: 10,
-            letterSpacing: 3,
-            color: Colors.onSurface,
-          }}
-        >
+      <View className="items-center mr-4 pr-4 border-r border-border">
+        <Text className="font-body text-[10px] tracking-[3px] text-foreground">
           {dayName}
         </Text>
         <Text
+          className="mt-0.5 font-body text-[9px] text-muted-foreground"
           style={{
-            fontFamily: Fonts.body,
-            fontSize: 9,
-            color: Colors.onSurfaceVariant,
             fontVariant: ['tabular-nums'],
-            marginTop: 2,
           }}
         >
           {dateStr}
         </Text>
       </View>
 
-      {/* Middle: title + type */}
       <View className="flex-1 mr-4">
-        <Text
-          style={{
-            fontFamily: Fonts.headingBold,
-            fontSize: 16,
-            letterSpacing: -0.3,
-            color: Colors.onSurface,
-          }}
-          numberOfLines={1}
-        >
+        <Text className="font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground" numberOfLines={1}>
           {session.title || session.type}
         </Text>
-        <Text
-          className="mt-1"
-          style={{
-            fontFamily: Fonts.body,
-            fontSize: 9,
-            letterSpacing: 2,
-            textTransform: 'uppercase',
-            color: Colors.onSurfaceVariant,
-          }}
-        >
+        <Text className="mt-1 font-body text-[9px] tracking-[2px] uppercase text-muted-foreground">
           {session.type} / sRPE: {session.srpe}
         </Text>
       </View>
 
-      {/* Right: duration */}
       <View>
-        <Text
-          style={{
-            fontFamily: Fonts.body,
-            fontSize: 8,
-            letterSpacing: 3,
-            textTransform: 'uppercase',
-            color: Colors.onSurfaceVariant,
-            marginBottom: 2,
-          }}
-        >
+        <Text className="mb-0.5 font-body text-[8px] tracking-[3px] uppercase text-muted-foreground">
           Duration
         </Text>
         <Text
+          className="font-heading text-[14px] text-foreground"
           style={{
-            fontFamily: Fonts.headingSemiBold,
-            fontSize: 13,
             fontVariant: ['tabular-nums'],
-            color: Colors.onSurface,
           }}
         >
           {formatDuration(session.duration)}

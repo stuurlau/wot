@@ -10,7 +10,7 @@
     --card-foreground: 0 0% 10%;
     --popover: 40 9% 98%;
     --popover-foreground: 0 0% 10%;
-    --primary: 131 63% 17%;
+    --primary: 272 37% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary: 216 44% 40%;
     --secondary-foreground: 0 0% 100%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 30 4% 89%;
     --input: 30 4% 89%;
-    --ring: 131 63% 17%;
+    --ring: 272 37% 39%;
     --radius: 0.75rem;
   }
 }

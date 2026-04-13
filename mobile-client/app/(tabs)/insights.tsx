@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 export default function InsightsScreen() {
   return (
     <ScreenLayout>
-      <Text style={{ fontFamily: 'Inter_400Regular', color: '#6b6966' }}>
+      <Text className="font-body text-muted-foreground">
         Insights — coming soon
       </Text>
     </ScreenLayout>

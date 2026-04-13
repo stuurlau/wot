@@ -9,6 +9,17 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      fontFamily: {
+        heading: ['SpaceGrotesk_300Light'],
+        'heading-regular': ['SpaceGrotesk_400Regular'],
+        'heading-medium': ['SpaceGrotesk_500Medium'],
+        'heading-semi': ['SpaceGrotesk_600SemiBold'],
+        'heading-bold': ['SpaceGrotesk_700Bold'],
+        body: ['Inter_400Regular'],
+        'body-medium': ['Inter_500Medium'],
+        'body-semi': ['Inter_600SemiBold'],
+        'body-bold': ['Inter_700Bold'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -56,4 +67,3 @@ module.exports = {
   },
   plugins: [require('tailwindcss-animate')],
 };
-

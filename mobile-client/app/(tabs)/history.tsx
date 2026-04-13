@@ -4,7 +4,7 @@ import { Text } from 'react-native';
 export default function HistoryScreen() {
   return (
     <ScreenLayout>
-      <Text style={{ fontFamily: 'Inter_400Regular', color: '#6b6966' }}>
+      <Text className="font-body text-muted-foreground">
         History — coming soon
       </Text>
     </ScreenLayout>
