@@ -14,7 +14,7 @@ We achieve this through **intentional asymmetry** (heavy left-aligned headers wi
 
 ### The Palette
 The color logic is rooted in a warm, organic base to prevent the "scientific" nature from feeling clinical or cold.
-- **Primary (`#154212` / `#2D5A27`):** Use for "Action" and "Growth." This is the color of the work being done.
+- **Primary (`#4A4458` / `#673F8A`):** Use for "Action" and "Focus." This is the color of the work being done.
 - **Secondary (`#395F94`):** Use for "Analysis." This is the color of the data, the trends, and the history.
 - **Tertiary (`#6E1A0F` / `#C05746`):** Use for "Intensity." Reserved for PRs (Personal Records), high-heart-rate zones, or focus sets.
 - **Warning (`#E6AF2E`):** Specifically for injury risk or "approaching failure" alerts. Use sparingly to maintain its signal strength.
@@ -31,7 +31,7 @@ Treat the UI as a stack of fine paper.
 3. **Top Layer:** `surface-container-highest` (#e3e2e1) - Active interactive elements or high-priority cards.
 
 ### Signature Textures
-To add professional polish, main Action Buttons (CTAs) should utilize a subtle linear gradient from `primary` (#154212) to `primary_container` (#2d5a27) at a 135-degree angle. This provides a "milled" look that flat colors lack.
+To add professional polish, main Action Buttons (CTAs) should utilize a subtle linear gradient from `primary-container` (#4A4458) to `primary` (#673F8A) at a 135-degree angle. This provides a "milled" look that flat colors lack.
 
 ---
 
@@ -74,7 +74,7 @@ If accessibility requires a container boundary, use the `outline-variant` token 
 
 ### Input Fields (The "Log")
 - **Style:** Minimalist. No bounding box. A simple `outline-variant` bottom-border (2px).
-- **Focus State:** The bottom-border transitions to `primary` (#2D5A27) and the label shifts to a `label-sm` technical font above the input.
+- **Focus State:** The bottom-border transitions to `primary` (#673F8A) and the label shifts to a `label-sm` technical font above the input.
 
 ### Chips (Filters/Muscle Groups)
 - **Unselected:** `surface-container-high` background, `on-surface-variant` text.
@@ -87,7 +87,7 @@ If accessibility requires a container boundary, use the `outline-variant` token 
 ### Do:
 - **Embrace the Margin:** Use 24px or 32px side margins. The "white space" is a feature, not a bug.
 - **Align to the Grid:** Since we lack borders, typographic alignment is the only thing holding the UI together. Be surgical with your x-height alignments.
-- **Use Color as Data:** Only use Forest Green, Slate Blue, or Terracotta when it conveys specific meaning (e.g., Progress, Analysis, or Intensity).
+- **Use Color as Data:** Only use Soft Purple, Slate Blue, or Terracotta when it conveys specific meaning (e.g., Action, Analysis, or Intensity).
 
 ### Don't:
 - **Don't use Card Borders:** Never put a 1px solid line around a card.

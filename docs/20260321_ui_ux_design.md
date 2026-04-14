@@ -440,7 +440,7 @@ The UI should feel like you've opened a well-designed paper training log — str
 ### Color
 
 - Near-white background, off-black text
-- One accent color for primary actions (e.g. a warm charcoal or a muted forest green — not a fluorescent sports color)
+- One accent color for primary actions (e.g. a muted soft purple or warm charcoal — not a fluorescent sports color)
 - Warning signals use amber/orange + icon + label — never color alone
 - Dark mode support from day one (semantic tokens only)
 

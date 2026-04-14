@@ -13,7 +13,7 @@ The full visual spec lives in `docs/ui-designs/`. The north star is a **premium 
 
 | Token | Value | Semantic meaning |
 |---|---|---|
-| `primary` | `#154212` / `#2D5A27` | Action, growth — CTA buttons, active states |
+| `primary` | `#4A4458` / `#673F8A` | Action, emphasis — CTA buttons, active states |
 | `secondary` | `#395F94` | Analysis, data — charts, history, trends |
 | `tertiary` | `#6E1A0F` / `#C05746` | Intensity — PRs, high-effort indicators |
 | `warning` | `#E6AF2E` | Injury risk, load alerts — use sparingly |
