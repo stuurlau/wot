@@ -7,6 +7,8 @@ This guide covers:
 3. Integrating both into the WOT backend with Drizzle and Fastify
 4. Connecting the mobile client
 
+**Repo note:** the examples below use the earlier `apps/api` / `apps/mobile` layout. The current concrete bootstrap plan for this repo uses `api/` at the repo root and `mobile-client/`; see `docs/20260414_backend_bootstrap_plan.md`.
+
 ---
 
 ## 1. Local PostgreSQL on your home server
