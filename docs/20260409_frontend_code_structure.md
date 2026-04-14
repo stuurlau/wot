@@ -238,4 +238,4 @@ export function ActiveSessionProvider({ children }: { children: React.ReactNode 
 
 ## Types
 
-Until `shared/types/` exists, types mirror the data model defined in `docs/20260323_data_model.md` and live in `mobile-client/types/`. When the shared package is scaffolded, imports switch from `@/types` to `@wot/types` with no logic changes.
+Shared domain contracts now live in `shared/types/` and are imported as `@wot/types`. The package exports Zod schemas plus inferred TypeScript types for the MVP entities from `docs/20260323_data_model.md`. Mobile-only convenience re-exports may exist in `mobile-client/types/`, but `@wot/types` is the source of truth. See `docs/20260414_shared_types_module_plan.md`.
