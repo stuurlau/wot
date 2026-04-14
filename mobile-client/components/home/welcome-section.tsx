@@ -1,21 +1,21 @@
-import { Text, View, Pressable } from 'react-native';
+import { Text, View, Pressable } from "react-native";
 
 type WelcomeSectionProps = {
   streak: number;
-  recoveryScore: number;
+  strain: number;
 };
 
 function formatTimestamp(): string {
   const now = new Date();
   const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  const h = String(now.getHours()).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const h = String(now.getHours()).padStart(2, "0");
+  const min = String(now.getMinutes()).padStart(2, "0");
   return `LOG ENTRY // ${y}.${m}.${d}_T${h}:${min}`;
 }
 
-export function WelcomeSection({ streak, recoveryScore }: WelcomeSectionProps) {
+export function WelcomeSection({ streak, strain }: WelcomeSectionProps) {
   return (
     <View className="mb-12">
       <Text className="mb-4 font-body text-[9px] tracking-[3px] uppercase text-primary">
@@ -40,12 +40,12 @@ export function WelcomeSection({ streak, recoveryScore }: WelcomeSectionProps) {
       <View className="flex-row gap-10">
         <View>
           <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground">
-            Streak_Metric
+            Loggin_Streak
           </Text>
           <View className="flex-row items-baseline">
             <Text
               className="font-heading text-[46px] tracking-[-2px] text-foreground"
-              style={{ fontVariant: ['tabular-nums'] }}
+              style={{ fontVariant: ["tabular-nums"] }}
             >
               {streak}
             </Text>
@@ -57,14 +57,14 @@ export function WelcomeSection({ streak, recoveryScore }: WelcomeSectionProps) {
 
         <View>
           <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground">
-            Recovery_State
+            Strain_Index
           </Text>
           <View className="flex-row items-baseline">
             <Text
               className="font-heading text-[46px] tracking-[-2px] text-primary"
-              style={{ fontVariant: ['tabular-nums'] }}
+              style={{ fontVariant: ["tabular-nums"] }}
             >
-              {recoveryScore}
+              {strain}
             </Text>
             <Text className="font-body text-[10px] tracking-[2px] uppercase text-muted-foreground ml-1">
               %

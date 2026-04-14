@@ -1,10 +1,10 @@
-import type { Session, SessionComponent, DailyLog } from '@/types';
+import type { DailyLog, Session, SessionComponent } from '@wot/types';
 
-function daysAgo(n: number, hour = 9): Date {
+function daysAgo(n: number, hour = 9): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
   d.setHours(hour, 0, 0, 0);
-  return d;
+  return d.toISOString();
 }
 
 function dateStr(n: number): string {

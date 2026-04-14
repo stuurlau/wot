@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import type { Session } from '@/types';
+import type { Session } from '@wot/types';
 import { SessionHistoryCard } from './session-history-card';
 
 type SessionHistoryListProps = {
@@ -10,7 +10,7 @@ type SessionHistoryListProps = {
 export function SessionHistoryList({ sessions, count = 3 }: SessionHistoryListProps) {
   const recent = sessions
     .slice()
-    .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
+    .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))
     .slice(0, count);
 
   return (

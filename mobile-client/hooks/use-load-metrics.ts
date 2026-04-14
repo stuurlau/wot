@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Session, DailyLog } from '@/types';
+import type { DailyLog, Session } from '@wot/types';
 
 type DailyLoadEntry = { date: string; load: number };
 
@@ -18,8 +18,8 @@ function sessionLoad(s: Session): number {
   return s.duration * s.srpe;
 }
 
-function toDateKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
+function toDateKey(value: Date | string): string {
+  return typeof value === 'string' ? value.slice(0, 10) : value.toISOString().slice(0, 10);
 }
 
 function getDailyLoads(sessions: Session[]): Map<string, number> {

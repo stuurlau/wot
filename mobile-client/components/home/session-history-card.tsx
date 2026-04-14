@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import type { Session } from '@/types';
+import type { Session } from '@wot/types';
 
 type SessionHistoryCardProps = {
   session: Session;
@@ -12,7 +12,8 @@ function formatDuration(seconds: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-function formatDay(d: Date): { dayName: string; dateStr: string } {
+function formatDay(dateTime: string): { dayName: string; dateStr: string } {
+  const d = new Date(dateTime);
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
