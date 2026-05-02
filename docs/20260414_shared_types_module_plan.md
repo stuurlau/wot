@@ -1,18 +1,18 @@
 # Shared Types Module Plan
 
 **Date:** 2026-04-14  
-**Goal:** create one shared source of truth for app-level types used by the mobile client and the future API.
-**Status:** initial package scaffolded at `shared/types/` and imported by the mobile client as `@wot/types`.
+**Goal:** create one shared source of truth for app-level contracts used by the mobile client and the future API.
+**Status:** initial package scaffolded at `shared/types/` and imported by the mobile client as `@wot/types`, but the architecture has since pivoted toward Drizzle-first persistence models.
 
 ---
 
 ## Proposed shape
 
 - Create a workspace package exposed as `@wot/types`.
-- Keep it focused on **domain contracts**, not database or ORM internals.
-- Use **Zod schemas as the source of truth** and export inferred TypeScript types from them.
+- Keep it focused on **domain contracts**, not backend-only runtime wiring.
+- Prefer deriving Zod schemas and inferred types from the Drizzle schema rather than hand-maintaining a second parallel source of truth.
 
-This keeps validation consistent with the mobile client and avoids coupling the shared module to Drizzle or PostgreSQL-specific representations.
+This keeps validation consistent with the mobile client while reducing schema drift between shared contracts and the real database model.
 
 ---
 
@@ -59,5 +59,6 @@ Also add a small shared primitives layer for:
 
 ## Notes
 
+- The current hand-written shared Zod files are still usable as a temporary scaffold, but they should be treated as transitional rather than the long-term source of truth.
 - Keep the first version minimal. Do not model analytics result shapes until the API endpoints exist.
 - If shared constants are added for convenience, keep them optional and non-authoritative. For example, body-region suggestions can be exported for UI reuse, but the stored type should still accept any string.

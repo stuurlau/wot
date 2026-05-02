@@ -19,7 +19,7 @@ First milestone:
   - `daily_logs`
   - `pain_logs`
 
-The existing shared contracts in `shared/types/` stay the app-level source of truth. Drizzle schema stays backend-specific.
+The database schema should be the source of truth for persistence. Shared Zod/types should be derived from the Drizzle model where practical instead of being maintained as a parallel hand-written schema layer.
 
 ---
 
