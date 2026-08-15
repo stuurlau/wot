@@ -1,7 +1,7 @@
-import type { auth } from "../lib/auth.js";
+import type { AuthSession } from "../lib/authentication.js";
 
 declare module "fastify" {
   interface FastifyRequest {
-    authSession: Awaited<ReturnType<typeof auth.api.getSession>>;
+    authSession?: AuthSession;
   }
 }

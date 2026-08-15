@@ -1,8 +1,8 @@
 import { Text, View } from 'react-native';
-import type { Session } from '@wot/types';
+import type { TrainingSession } from '@wot/types';
 
 type SessionHistoryCardProps = {
-  session: Session;
+  session: TrainingSession;
 };
 
 function formatDuration(seconds: number): string {

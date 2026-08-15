@@ -1,4 +1,4 @@
-import type { DailyLog, Session, SessionComponent } from '@wot/types';
+import type { DailyLog, TrainingSession, TrainingSessionComponent } from '@wot/types';
 
 function daysAgo(n: number, hour = 9): string {
   const d = new Date();
@@ -13,7 +13,7 @@ function dateStr(n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export const MOCK_SESSIONS: Session[] = [
+export const MOCK_SESSIONS: TrainingSession[] = [
   {
     id: 's1',
     userId: 'u1',
@@ -117,29 +117,29 @@ export const MOCK_SESSIONS: Session[] = [
   },
 ];
 
-export const MOCK_COMPONENTS: SessionComponent[] = [
+export const MOCK_COMPONENTS: TrainingSessionComponent[] = [
   // s1 — Upper body push
-  { id: 'c1', sessionId: 's1', name: 'Bench Press', bodyRegions: ['push', 'chest'], weight: 80, reps: 8, rir: 2, sortOrder: 1, createdAt: daysAgo(0) },
-  { id: 'c2', sessionId: 's1', name: 'OHP', bodyRegions: ['push', 'shoulders'], weight: 50, reps: 10, rir: 3, sortOrder: 2, createdAt: daysAgo(0) },
-  { id: 'c3', sessionId: 's1', name: 'Incline DB Press', bodyRegions: ['push', 'chest'], weight: 30, reps: 12, rir: 2, sortOrder: 3, createdAt: daysAgo(0) },
+  { id: 'c1', trainingSessionId: 's1', name: 'Bench Press', bodyRegions: ['push', 'chest'], weight: 80, reps: 8, rir: 2, sortOrder: 1, createdAt: daysAgo(0) },
+  { id: 'c2', trainingSessionId: 's1', name: 'OHP', bodyRegions: ['push', 'shoulders'], weight: 50, reps: 10, rir: 3, sortOrder: 2, createdAt: daysAgo(0) },
+  { id: 'c3', trainingSessionId: 's1', name: 'Incline DB Press', bodyRegions: ['push', 'chest'], weight: 30, reps: 12, rir: 2, sortOrder: 3, createdAt: daysAgo(0) },
 
   // s2 — Threshold run
-  { id: 'c4', sessionId: 's2', name: 'Threshold Run', bodyRegions: ['legs', 'cardio'], distance: 10020, pace: 272, sortOrder: 1, createdAt: daysAgo(1) },
+  { id: 'c4', trainingSessionId: 's2', name: 'Threshold Run', bodyRegions: ['legs', 'cardio'], distance: 10020, pace: 272, sortOrder: 1, createdAt: daysAgo(1) },
 
   // s3 — Lower body
-  { id: 'c5', sessionId: 's3', name: 'Back Squat', bodyRegions: ['legs', 'quad'], weight: 110, reps: 6, rir: 1, sortOrder: 1, createdAt: daysAgo(2) },
-  { id: 'c6', sessionId: 's3', name: 'RDL', bodyRegions: ['legs', 'hinge'], weight: 90, reps: 10, rir: 2, sortOrder: 2, createdAt: daysAgo(2) },
-  { id: 'c7', sessionId: 's3', name: 'Leg Press', bodyRegions: ['legs', 'quad'], weight: 180, reps: 12, rir: 3, sortOrder: 3, createdAt: daysAgo(2) },
+  { id: 'c5', trainingSessionId: 's3', name: 'Back Squat', bodyRegions: ['legs', 'quad'], weight: 110, reps: 6, rir: 1, sortOrder: 1, createdAt: daysAgo(2) },
+  { id: 'c6', trainingSessionId: 's3', name: 'RDL', bodyRegions: ['legs', 'hinge'], weight: 90, reps: 10, rir: 2, sortOrder: 2, createdAt: daysAgo(2) },
+  { id: 'c7', trainingSessionId: 's3', name: 'Leg Press', bodyRegions: ['legs', 'quad'], weight: 180, reps: 12, rir: 3, sortOrder: 3, createdAt: daysAgo(2) },
 
   // s5 — Pull day
-  { id: 'c8', sessionId: 's5', name: 'Deadlift', bodyRegions: ['pull', 'hinge'], weight: 140, reps: 5, rir: 1, sortOrder: 1, createdAt: daysAgo(4) },
-  { id: 'c9', sessionId: 's5', name: 'Barbell Row', bodyRegions: ['pull', 'back'], weight: 70, reps: 10, rir: 2, sortOrder: 2, createdAt: daysAgo(4) },
-  { id: 'c10', sessionId: 's5', name: 'Pull-ups', bodyRegions: ['pull', 'back'], reps: 8, rir: 2, sortOrder: 3, createdAt: daysAgo(4) },
+  { id: 'c8', trainingSessionId: 's5', name: 'Deadlift', bodyRegions: ['pull', 'hinge'], weight: 140, reps: 5, rir: 1, sortOrder: 1, createdAt: daysAgo(4) },
+  { id: 'c9', trainingSessionId: 's5', name: 'Barbell Row', bodyRegions: ['pull', 'back'], weight: 70, reps: 10, rir: 2, sortOrder: 2, createdAt: daysAgo(4) },
+  { id: 'c10', trainingSessionId: 's5', name: 'Pull-ups', bodyRegions: ['pull', 'back'], reps: 8, rir: 2, sortOrder: 3, createdAt: daysAgo(4) },
 
   // s7 — Full body power
-  { id: 'c11', sessionId: 's7', name: 'Clean & Jerk', bodyRegions: ['legs', 'shoulders', 'pull'], weight: 70, reps: 3, rir: 0, sortOrder: 1, createdAt: daysAgo(6) },
-  { id: 'c12', sessionId: 's7', name: 'Front Squat', bodyRegions: ['legs', 'quad'], weight: 90, reps: 5, rir: 1, sortOrder: 2, createdAt: daysAgo(6) },
-  { id: 'c13', sessionId: 's7', name: 'Push Press', bodyRegions: ['push', 'shoulders'], weight: 60, reps: 6, rir: 1, sortOrder: 3, createdAt: daysAgo(6) },
+  { id: 'c11', trainingSessionId: 's7', name: 'Clean & Jerk', bodyRegions: ['legs', 'shoulders', 'pull'], weight: 70, reps: 3, rir: 0, sortOrder: 1, createdAt: daysAgo(6) },
+  { id: 'c12', trainingSessionId: 's7', name: 'Front Squat', bodyRegions: ['legs', 'quad'], weight: 90, reps: 5, rir: 1, sortOrder: 2, createdAt: daysAgo(6) },
+  { id: 'c13', trainingSessionId: 's7', name: 'Push Press', bodyRegions: ['push', 'shoulders'], weight: 60, reps: 6, rir: 1, sortOrder: 3, createdAt: daysAgo(6) },
 ];
 
 export const MOCK_DAILY_LOGS: DailyLog[] = [

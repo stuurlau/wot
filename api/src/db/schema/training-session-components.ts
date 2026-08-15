@@ -1,14 +1,14 @@
 import { index, integer, numeric, pgTable, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-import { sessions } from "./sessions.js";
+import { trainingSessions } from "./training-sessions.js";
 
-export const sessionComponents = pgTable(
-  "session_components",
+export const trainingSessionComponents = pgTable(
+  "training_session_components",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    sessionId: uuid("session_id")
+    trainingSessionId: uuid("training_session_id")
       .notNull()
-      .references(() => sessions.id, { onDelete: "cascade" }),
+      .references(() => trainingSessions.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     bodyRegions: text("body_regions").array(),
     weight: numeric("weight", { precision: 6, scale: 2 }),
@@ -23,7 +23,7 @@ export const sessionComponents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    index("session_components_session_id_sort_order_idx").on(table.sessionId, table.sortOrder),
-    index("session_components_name_idx").on(table.name),
+    index("training_session_components_training_session_id_sort_order_idx").on(table.trainingSessionId, table.sortOrder),
+    index("training_session_components_name_idx").on(table.name),
   ],
 );

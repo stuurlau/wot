@@ -1,9 +1,9 @@
 import { Text, View } from 'react-native';
-import type { Session } from '@wot/types';
+import type { TrainingSession } from '@wot/types';
 import { SessionHistoryCard } from './session-history-card';
 
 type SessionHistoryListProps = {
-  sessions: Session[];
+  sessions: TrainingSession[];
   count?: number;
 };
 

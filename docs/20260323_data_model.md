@@ -6,8 +6,8 @@ The MVP data model is intentionally minimal. Five tables are enough to support w
 
 ```
 users
-sessions          → FK users
-session_components → FK sessions
+training_sessions          → FK users
+training_session_components → FK training_sessions
 daily_logs        → FK users
 pain_logs         → FK users
 ```
@@ -26,7 +26,7 @@ See `20260321_auth_and_database_setup.md` for the full auth setup.
 
 ---
 
-### sessions
+### training_sessions
 
 The core entity. Each row is one training session.
 
@@ -52,14 +52,14 @@ The core entity. Each row is one training session.
 
 ---
 
-### session_components
+### training_session_components
 
-Child rows of a session. Each row is one component of a workout — a single set, interval, or exercise block.
+Child rows of a training session. Each row is one component of a workout — a single set, interval, or exercise block.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` | primary key |
-| `session_id` | `uuid` | FK → `sessions.id` |
+| `session_id` | `uuid` | FK → `training_sessions.id` |
 | `name` | `text` | free text: "Bench Press", "Sprint 1000m" |
 | `body_regions` | `text[]` | e.g. `["push", "shoulders"]`, nullable |
 | `weight` | `numeric(6,2)` | kg, nullable |
@@ -87,7 +87,7 @@ Child rows of a session. Each row is one component of a workout — a single set
 
 ### daily_logs
 
-One optional row per user per day. Captures wellness and recovery context. Intentionally decoupled from sessions — sleep and soreness belong to a day, not a workout.
+One optional row per user per day. Captures wellness and recovery context. Intentionally decoupled from training sessions — sleep and soreness belong to a day, not a workout.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -115,14 +115,14 @@ Correlating load metrics with wellness over time. For example: monotony is climb
 
 ### pain_logs
 
-One row per reported pain instance. Decoupled from sessions — pain can exist on rest days and may outlast the session that caused it.
+One row per reported pain instance. Decoupled from training sessions — pain can exist on rest days and may outlast the session that caused it.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | `uuid` | primary key |
 | `user_id` | `uuid` | FK → `users.id` |
 | `date` | `date` | when the pain was noticed |
-| `body_region` | `text` | matches region tags used in `session_components` |
+| `body_region` | `text` | matches region tags used in `training_session_components` |
 | `severity` | `numeric(3,1)` | 1–10, decimals allowed |
 | `notes` | `text` | optional free text |
 | `created_at` | `timestamptz` | defaults to now |
@@ -141,26 +141,26 @@ All of these are computed at query time or in the domain layer — no stored der
 
 | Metric | Formula | Inputs |
 |---|---|---|
-| Session load | `duration × srpe` | `sessions` |
-| Daily load | sum of session loads on a day | `sessions` |
-| Weekly load | sum of daily loads over 7 days | `sessions` |
-| Monotony | `mean(daily loads) / stddev(daily loads)` | `sessions` |
-| Strain | `weekly load × monotony` | `sessions` |
-| ACWR | `7-day load / 28-day rolling avg load` | `sessions` |
-| Consecutive high-load days | streak of days above personal avg load | `sessions` |
-| Component volume | `weight × reps` | `session_components` |
-| Effort-adjusted volume | `weight × reps × rir_factor` | `session_components` |
-| Component RPE trend | RPE over time for a given `name` | `session_components` |
-| Progressive overload | weight/reps trend over time per `name` | `session_components` |
-| Regional weekly load | sum of component loads per `body_region` | `session_components` |
-| Regional monotony | `mean / stddev` of daily regional load | `session_components` |
-| Regional strain | `regional weekly load × regional monotony` | `session_components` |
-| Exposure gap | days since last component tagged with a region | `session_components` |
-| Push:pull ratio | push load / pull load over a window | `session_components` |
+| Session load | `duration × srpe` | `training_sessions` |
+| Daily load | sum of session loads on a day | `training_sessions` |
+| Weekly load | sum of daily loads over 7 days | `training_sessions` |
+| Monotony | `mean(daily loads) / stddev(daily loads)` | `training_sessions` |
+| Strain | `weekly load × monotony` | `training_sessions` |
+| ACWR | `7-day load / 28-day rolling avg load` | `training_sessions` |
+| Consecutive high-load days | streak of days above personal avg load | `training_sessions` |
+| Component volume | `weight × reps` | `training_session_components` |
+| Effort-adjusted volume | `weight × reps × rir_factor` | `training_session_components` |
+| Component RPE trend | RPE over time for a given `name` | `training_session_components` |
+| Progressive overload | weight/reps trend over time per `name` | `training_session_components` |
+| Regional weekly load | sum of component loads per `body_region` | `training_session_components` |
+| Regional monotony | `mean / stddev` of daily regional load | `training_session_components` |
+| Regional strain | `regional weekly load × regional monotony` | `training_session_components` |
+| Exposure gap | days since last component tagged with a region | `training_session_components` |
+| Push:pull ratio | push load / pull load over a window | `training_session_components` |
 | Readiness composite | weighted avg of wellness fields | `daily_logs` |
-| Load:wellness correlation | load spike vs next-day fatigue/soreness | `sessions` + `daily_logs` |
+| Load:wellness correlation | load spike vs next-day fatigue/soreness | `training_sessions` + `daily_logs` |
 | Pain trend | severity over time per `body_region` | `pain_logs` |
-| Pain-load correlation | regional load vs pain in that region | `session_components` + `pain_logs` |
+| Pain-load correlation | regional load vs pain in that region | `training_session_components` + `pain_logs` |
 
 ---
 
@@ -168,11 +168,11 @@ All of these are computed at query time or in the domain layer — no stored der
 
 **No exercise library.** Component names are free text. Recents and reuse are handled at the application layer by querying the most recently used `name` values for a user. This keeps the model flexible and avoids the friction of maintaining a managed catalogue.
 
-**`body_regions` is a free-text array on `session_components`.** No region lookup table. The UI offers a fixed list of suggestions (push, pull, legs, core, shoulders, hinge, carry, etc.) but the DB stores plain text. This keeps the regional model flexible without a join table.
+**`body_regions` is a free-text array on `training_session_components`.** No region lookup table. The UI offers a fixed list of suggestions (push, pull, legs, core, shoulders, hinge, carry, etc.) but the DB stores plain text. This keeps the regional model flexible without a join table.
 
-**`pain_logs` is decoupled from sessions.** Pain can exist on rest days, can persist after the session that caused it, and should be tracked independently from workout data.
+**`pain_logs` is decoupled from training sessions.** Pain can exist on rest days, can persist after the session that caused it, and should be tracked independently from workout data.
 
-**`daily_logs` is decoupled from sessions.** A user can log a rest day with wellness data and no session. A user can log a session with no wellness data. These are independent concerns.
+**`daily_logs` is decoupled from training sessions.** A user can log a rest day with wellness data and no session. A user can log a session with no wellness data. These are independent concerns.
 
 **All wellness scales use `numeric(3,1)`** to allow decimal values (e.g. 7.5) while staying within the 1–10 range. Validation is enforced at the application layer via Zod schemas.
 

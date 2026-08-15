@@ -15,7 +15,7 @@ import {
 
 const bodyRegionSchema = z.string().min(1);
 
-export const sessionSchema = z.object({
+export const trainingSessionSchema = z.object({
   id: identifierSchema,
   userId: identifierSchema,
   startedAt: isoDateTimeSchema,
@@ -27,17 +27,17 @@ export const sessionSchema = z.object({
   createdAt: isoDateTimeSchema,
 });
 
-export const createSessionInputSchema = sessionSchema.omit({
+export const createTrainingSessionInputSchema = trainingSessionSchema.omit({
   id: true,
   userId: true,
   createdAt: true,
 });
 
-export const updateSessionInputSchema = createSessionInputSchema.partial();
+export const updateTrainingSessionInputSchema = createTrainingSessionInputSchema.partial();
 
-export const sessionComponentSchema = z.object({
+export const trainingSessionComponentSchema = z.object({
   id: identifierSchema,
-  sessionId: identifierSchema,
+  trainingSessionId: identifierSchema,
   name: z.string().min(1),
   bodyRegions: z.array(bodyRegionSchema).optional(),
   weight: kilogramsSchema.optional(),
@@ -52,18 +52,18 @@ export const sessionComponentSchema = z.object({
   createdAt: isoDateTimeSchema,
 });
 
-export const createSessionComponentInputSchema = sessionComponentSchema.omit({
+export const createTrainingSessionComponentInputSchema = trainingSessionComponentSchema.omit({
   id: true,
   createdAt: true,
 });
 
-export const updateSessionComponentInputSchema = createSessionComponentInputSchema
-  .omit({ sessionId: true })
+export const updateTrainingSessionComponentInputSchema = createTrainingSessionComponentInputSchema
+  .omit({ trainingSessionId: true })
   .partial();
 
-export type Session = z.infer<typeof sessionSchema>;
-export type CreateSessionInput = z.infer<typeof createSessionInputSchema>;
-export type UpdateSessionInput = z.infer<typeof updateSessionInputSchema>;
-export type SessionComponent = z.infer<typeof sessionComponentSchema>;
-export type CreateSessionComponentInput = z.infer<typeof createSessionComponentInputSchema>;
-export type UpdateSessionComponentInput = z.infer<typeof updateSessionComponentInputSchema>;
+export type TrainingSession = z.infer<typeof trainingSessionSchema>;
+export type CreateTrainingSessionInput = z.infer<typeof createTrainingSessionInputSchema>;
+export type UpdateTrainingSessionInput = z.infer<typeof updateTrainingSessionInputSchema>;
+export type TrainingSessionComponent = z.infer<typeof trainingSessionComponentSchema>;
+export type CreateTrainingSessionComponentInput = z.infer<typeof createTrainingSessionComponentInputSchema>;
+export type UpdateTrainingSessionComponentInput = z.infer<typeof updateTrainingSessionComponentInputSchema>;

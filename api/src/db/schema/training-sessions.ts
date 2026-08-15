@@ -2,8 +2,8 @@ import { index, integer, numeric, pgTable, text, timestamp, uuid } from "drizzle
 
 import { user } from "./auth.js";
 
-export const sessions = pgTable(
-  "sessions",
+export const trainingSessions = pgTable(
+  "training_sessions",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: text("user_id")
@@ -17,5 +17,5 @@ export const sessions = pgTable(
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => [index("sessions_user_id_started_at_idx").on(table.userId, table.startedAt)],
+  (table) => [index("training_sessions_user_id_started_at_idx").on(table.userId, table.startedAt)],
 );

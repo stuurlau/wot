@@ -3,21 +3,21 @@ import { relations } from "drizzle-orm";
 import { user } from "./auth.js";
 import { dailyLogs } from "./daily-logs.js";
 import { painLogs } from "./pain-logs.js";
-import { sessionComponents } from "./session-components.js";
-import { sessions } from "./sessions.js";
+import { trainingSessionComponents } from "./training-session-components.js";
+import { trainingSessions } from "./training-sessions.js";
 
-export const sessionsRelations = relations(sessions, ({ many, one }) => ({
+export const trainingSessionsRelations = relations(trainingSessions, ({ many, one }) => ({
   user: one(user, {
-    fields: [sessions.userId],
+    fields: [trainingSessions.userId],
     references: [user.id],
   }),
-  components: many(sessionComponents),
+  components: many(trainingSessionComponents),
 }));
 
-export const sessionComponentsRelations = relations(sessionComponents, ({ one }) => ({
-  session: one(sessions, {
-    fields: [sessionComponents.sessionId],
-    references: [sessions.id],
+export const trainingSessionComponentsRelations = relations(trainingSessionComponents, ({ one }) => ({
+  trainingSession: one(trainingSessions, {
+    fields: [trainingSessionComponents.trainingSessionId],
+    references: [trainingSessions.id],
   }),
 }));
 

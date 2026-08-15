@@ -388,13 +388,13 @@
 <text text-anchor="middle" x="1880.02" y="-2449.44" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c">1</text>
 <text text-anchor="middle" x="1645.47" y="-441.84" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c">*</text>
 </g>
-<!-- session_components -->
-<g id="session_components" class="node">
-<title>session_components</title>
+<!-- training_session_components -->
+<g id="training_session_components" class="node">
+<title>training_session_components</title>
 <ellipse fill="none" stroke="black" stroke-width="0" cx="432.75" cy="-4189.24" rx="433" ry="639.45"/>
 <polygon fill="#1d71b8" stroke="transparent" points="128.75,-4579.24 128.75,-4639.24 736.75,-4639.24 736.75,-4579.24 128.75,-4579.24"/>
 <polygon fill="none" stroke="#29235c" points="128.75,-4579.24 128.75,-4639.24 736.75,-4639.24 736.75,-4579.24 128.75,-4579.24"/>
-<text text-anchor="start" x="220.23" y="-4600.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#ffffff"> &#160;&#160;&#160;&#160;&#160;&#160;session_components &#160;&#160;&#160;&#160;&#160;&#160;</text>
+<text text-anchor="start" x="158.89" y="-4600.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#ffffff"> &#160;&#160;&#160;&#160;&#160;&#160;training_session_components &#160;&#160;&#160;&#160;&#160;&#160;</text>
 <polygon fill="#e7e2dd" stroke="transparent" points="128.75,-4519.24 128.75,-4579.24 736.75,-4579.24 736.75,-4519.24 128.75,-4519.24"/>
 <polygon fill="none" stroke="#29235c" points="128.75,-4519.24 128.75,-4579.24 736.75,-4579.24 736.75,-4519.24 128.75,-4519.24"/>
 <text text-anchor="start" x="139.75" y="-4540.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#29235c">id</text>
@@ -404,7 +404,7 @@
 <text text-anchor="start" x="695.55" y="-4540.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#29235c">(!)</text>
 <polygon fill="#e7e2dd" stroke="transparent" points="128.75,-4459.24 128.75,-4519.24 736.75,-4519.24 736.75,-4459.24 128.75,-4459.24"/>
 <polygon fill="none" stroke="#29235c" points="128.75,-4459.24 128.75,-4519.24 736.75,-4519.24 736.75,-4459.24 128.75,-4459.24"/>
-<text text-anchor="start" x="139.75" y="-4479.44" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c">session_id &#160;&#160;&#160;</text>
+<text text-anchor="start" x="139.75" y="-4479.44" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c">training_session_id &#160;&#160;&#160;</text>
 <text text-anchor="start" x="626.19" y="-4480.44" font-family="Helvetica,sans-Serif" font-style="italic" font-size="32.00" fill="#29235c">uuid</text>
 <text text-anchor="start" x="686.66" y="-4480.44" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c"> </text>
 <text text-anchor="start" x="695.55" y="-4480.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#29235c">(!)</text>
@@ -464,13 +464,13 @@
 <text text-anchor="start" x="695.56" y="-3760.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#29235c">(!)</text>
 <polygon fill="none" stroke="#29235c" stroke-width="2" points="127.75,-3738.24 127.75,-4640.24 737.75,-4640.24 737.75,-3738.24 127.75,-3738.24"/>
 </g>
-<!-- sessions -->
-<g id="sessions" class="node">
-<title>sessions</title>
+<!-- training_sessions -->
+<g id="training_sessions" class="node">
+<title>training_sessions</title>
 <ellipse fill="none" stroke="black" stroke-width="0" cx="1334.25" cy="-4339.24" rx="433" ry="427.19"/>
 <polygon fill="#1d71b8" stroke="transparent" points="1030.25,-4579.24 1030.25,-4639.24 1638.25,-4639.24 1638.25,-4579.24 1030.25,-4579.24"/>
 <polygon fill="none" stroke="#29235c" points="1030.25,-4579.24 1030.25,-4639.24 1638.25,-4639.24 1638.25,-4579.24 1030.25,-4579.24"/>
-<text text-anchor="start" x="1209.76" y="-4600.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#ffffff"> &#160;&#160;&#160;&#160;&#160;&#160;sessions &#160;&#160;&#160;&#160;&#160;&#160;</text>
+<text text-anchor="start" x="1148.42" y="-4600.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#ffffff"> &#160;&#160;&#160;&#160;&#160;&#160;training_sessions &#160;&#160;&#160;&#160;&#160;&#160;</text>
 <polygon fill="#e7e2dd" stroke="transparent" points="1030.25,-4519.24 1030.25,-4579.24 1638.25,-4579.24 1638.25,-4519.24 1030.25,-4519.24"/>
 <polygon fill="none" stroke="#29235c" points="1030.25,-4519.24 1030.25,-4579.24 1638.25,-4579.24 1638.25,-4519.24 1030.25,-4519.24"/>
 <text text-anchor="start" x="1041.25" y="-4540.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#29235c">id</text>
@@ -524,19 +524,19 @@
 <text text-anchor="start" x="1597.06" y="-4060.44" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="32.00" fill="#29235c">(!)</text>
 <polygon fill="none" stroke="#29235c" stroke-width="2" points="1029.25,-4038.24 1029.25,-4640.24 1639.25,-4640.24 1639.25,-4038.24 1029.25,-4038.24"/>
 </g>
-<!-- session_components&#45;&gt;sessions -->
-<!-- session_components&#45;&gt;sessions -->
+<!-- training_session_components&#45;&gt;training_sessions -->
+<!-- training_session_components&#45;&gt;training_sessions -->
 <g id="edge10" class="edge">
-<title>session_components:e&#45;&gt;sessions:w</title>
+<title>training_session_components:e&#45;&gt;training_sessions:w</title>
 <path fill="none" stroke="#29235c" stroke-width="3" d="M737.75,-4489.24C866.53,-4489.24 895.48,-4546.12 1019,-4549.12"/>
 <polygon fill="#29235c" stroke="#29235c" stroke-width="3" points="1019.21,-4552.62 1029.25,-4549.24 1019.29,-4545.62 1019.21,-4552.62"/>
 <text text-anchor="middle" x="1020.35" y="-4558.84" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c">1</text>
 <text text-anchor="middle" x="731.53" y="-4498.84" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c">*</text>
 </g>
-<!-- sessions&#45;&gt;user -->
-<!-- sessions&#45;&gt;user -->
+<!-- training_sessions&#45;&gt;user -->
+<!-- training_sessions&#45;&gt;user -->
 <g id="edge12" class="edge">
-<title>sessions:e&#45;&gt;user:w</title>
+<title>training_sessions:e&#45;&gt;user:w</title>
 <path fill="none" stroke="#29235c" stroke-width="3" d="M1639.25,-4489.24C1905.81,-4489.24 1727.16,-4166.81 1767,-3903.24 1790.23,-3749.49 1732.57,-2532.21 1878.97,-2479.97"/>
 <polygon fill="#29235c" stroke="#29235c" stroke-width="3" points="1879.66,-2483.4 1888.91,-2478.24 1878.46,-2476.51 1879.66,-2483.4"/>
 <text text-anchor="middle" x="1897.81" y="-2487.84" font-family="Helvetica,sans-Serif" font-size="32.00" fill="#29235c">1</text>

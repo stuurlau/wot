@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { DailyLog, Session } from '@wot/types';
+import type { DailyLog, TrainingSession } from '@wot/types';
 
 type DailyLoadEntry = { date: string; load: number };
 
@@ -14,7 +14,7 @@ type LoadMetrics = {
   dailyLoads: DailyLoadEntry[];
 };
 
-function sessionLoad(s: Session): number {
+function sessionLoad(s: TrainingSession): number {
   return s.duration * s.srpe;
 }
 
@@ -22,7 +22,7 @@ function toDateKey(value: Date | string): string {
   return typeof value === 'string' ? value.slice(0, 10) : value.toISOString().slice(0, 10);
 }
 
-function getDailyLoads(sessions: Session[]): Map<string, number> {
+function getDailyLoads(sessions: TrainingSession[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const s of sessions) {
     const key = toDateKey(s.startedAt);
@@ -86,7 +86,7 @@ function computeRecovery(log?: DailyLog): number {
   return fields.length > 0 ? Math.round(mean(fields)) : 75;
 }
 
-export function useLoadMetrics(sessions: Session[], dailyLogs: DailyLog[]): LoadMetrics {
+export function useLoadMetrics(sessions: TrainingSession[], dailyLogs: DailyLog[]): LoadMetrics {
   return useMemo(() => {
     const dailyMap = getDailyLoads(sessions);
 

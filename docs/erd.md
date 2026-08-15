@@ -8,10 +8,10 @@ erDiagram
     user ||--o{ session : "owns (better-auth)"
     user ||--o{ account : "has (better-auth)"
     user ||--o{ verification : "has (better-auth)"
-    user ||--o{ sessions : "logs"
+    user ||--o{ training_sessions : "logs"
     user ||--o{ daily_logs : "logs"
     user ||--o{ pain_logs : "logs"
-    sessions ||--o{ session_components : "contains"
+    training_sessions ||--o{ training_session_components : "contains"
 
     user {
         text id PK
@@ -52,7 +52,7 @@ erDiagram
         timestamp expiresAt
     }
 
-    sessions {
+    training_sessions {
         uuid id PK
         text user_id FK
         timestamptz started_at
@@ -64,9 +64,9 @@ erDiagram
         timestamptz created_at
     }
 
-    session_components {
+    training_session_components {
         uuid id PK
-        uuid session_id FK
+        uuid training_session_id FK
         text name "free text: Bench Press…"
         text_array body_regions "push, legs…"
         numeric weight "kg (6,2)"
@@ -115,7 +115,7 @@ erDiagram
 - Core load formula: `session load = duration × srpe`. All higher-order
   metrics (weekly load, monotony, strain, ACWR) are derived at query time.
 - `daily_logs` has a unique `(user_id, date)` index.
-- `pain_logs` and `daily_logs` are intentionally decoupled from `sessions`.
+- `pain_logs` and `daily_logs` are intentionally decoupled from `training_sessions`.
 
 ## Generated SVG
 
