@@ -17,11 +17,13 @@ import {
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { router, Slot, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+
+import { useAuthStore } from '@/stores/auth-store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,6 +32,25 @@ const queryClient = new QueryClient();
 export const unstable_settings = {
   anchor: '(tabs)',
 };
+
+function AuthGuard() {
+  const { user, isLoading, initialize } = useAuthStore();
+  const segments = useSegments();
+
+  useEffect(() => { initialize(); }, [initialize]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const inAuthGroup = (segments[0] as string) === '(auth)';
+    if (!user && !inAuthGroup) {
+      router.replace('/(auth)/login' as never);
+    } else if (user && inAuthGroup) {
+      router.replace('/(tabs)' as never);
+    }
+  }, [user, isLoading, segments]);
+
+  return null;
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -43,19 +64,19 @@ export default function RootLayout() {
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
   });
+  const { isLoading } = useAuthStore();
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    if (fontsLoaded && !isLoading) SplashScreen.hideAsync();
+  }, [fontsLoaded, isLoading]);
 
   if (!fontsLoaded) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
+        <AuthGuard />
+        <Slot />
         <PortalHost />
         <StatusBar style="dark" />
       </ThemeProvider>
