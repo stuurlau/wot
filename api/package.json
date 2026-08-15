@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "db:erd": "drizzle-erd --in src/db/schema/index.ts --out ../docs/erd.svg",
     "test": "node --import tsx --test 'src/**/*.test.ts'",
     "test:watch": "node --import tsx --test --watch 'src/**/*.test.ts'"
   },
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",
     "@types/node": "^25.6.0",
+    "drizzle-erd": "^0.0.1-alpha.11",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
