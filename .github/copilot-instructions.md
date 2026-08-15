@@ -10,11 +10,11 @@ Core load formula: **session load = duration (seconds) × sRPE (1–10)**. All h
 
 ```
 /
-├── mobile-client/   # Expo React Native app (the only implemented layer so far)
+├── api/             # Fastify API backend (Fastify + Drizzle + PostgreSQL + better-auth)
+├── mobile-client/   # Expo React Native app
+├── shared/types/    # Shared Zod schemas / types (@wot/types, file dependency of api)
 └── docs/            # Architecture decision docs (data model, auth setup, UI/UX design)
 ```
-
-The Fastify API backend, Drizzle/PostgreSQL layer, and `better-auth` integration are **designed but not yet scaffolded**. The docs in `docs/` are the authoritative spec for those layers when the time comes.
 
 ## Commands (run from `mobile-client/`)
 
@@ -24,6 +24,17 @@ npm run ios          # iOS simulator
 npm run android      # Android emulator
 npm run web          # browser
 npm run lint         # ESLint via expo lint
+```
+
+## Commands (run from `api/`)
+
+```bash
+docker compose up -d   # start local Postgres
+npm run dev            # tsx watch src/server.ts
+npm run typecheck      # tsc --noEmit
+npm run db:generate    # drizzle-kit generate (new migration)
+npm run db:migrate     # drizzle-kit migrate (apply migrations)
+npm run db:studio      # drizzle-kit studio
 ```
 
 There is no test suite yet.
@@ -37,12 +48,13 @@ There is no test suite yet.
 - **Validation**: Zod for all schema validation (including wellness fields like RPE, which use `numeric(3,1)` — decimals allowed in 1–10 range).
 - **Theming**: semantic color tokens from `constants/theme.ts` (`Colors.light` / `Colors.dark`). Always use `useThemeColor` or the `ThemedText` / `ThemedView` wrappers — never hardcode colors.
 
-### Planned backend (not yet built)
+### Backend (`api/`)
 
-- **API**: Fastify, mounted at `apps/api/`
-- **ORM**: Drizzle on top of PostgreSQL
-- **Auth**: `better-auth` — it owns the `user`, `session`, `account`, `verification` tables. App tables reference `user.id` as a foreign key but do not define the `users` table.
-- **DB connection**: SSL required (`sslmode=verify-ca`). Credentials in `.env`, never committed.
+- **API**: Fastify 5 at `api/`, entry `src/server.ts`, app factory `src/app.ts`.
+- **ORM**: Drizzle on top of PostgreSQL. Schema in `src/db/schema/` (one file per table + `index.ts`). Migrations via `npm run db:generate` / `db:migrate`.
+- **Auth**: `better-auth` — it owns the `user`, `session`, `account`, `verification` tables. App tables reference `user.id` (type `text`) as a foreign key but do not define the `user` table.
+- **Local dev DB**: `docker compose up -d` in `api/` starts Postgres 17 on localhost:5432 (`wot`/`wot_dev_password`, db `wot_dev`). The home-server `DATABASE_URL` (SSL, `sslmode=verify-ca`) is kept commented in `api/.env` — swap back when on the home network.
+- **Env**: validated with Zod in `src/env.ts`; credentials in `.env`, never committed.
 
 ## Key conventions
 
