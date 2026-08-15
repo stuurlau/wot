@@ -10,4 +10,8 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
 });
 
-export const env = envSchema.parse(process.env);
+export function parseEnv(vars: NodeJS.ProcessEnv) {
+  return envSchema.parse(vars);
+}
+
+export const env = parseEnv(process.env);
