@@ -1,5 +1,6 @@
 import '../global.css';
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, DefaultTheme } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
 import {
@@ -23,6 +24,8 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -48,12 +51,14 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-      <PortalHost />
-      <StatusBar style="dark" />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+        <PortalHost />
+        <StatusBar style="dark" />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
