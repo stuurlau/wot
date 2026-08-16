@@ -77,7 +77,7 @@ export async function buildApp() {
     method: ["GET", "POST"],
     url: "/api/auth/*",
     handler: async (request, reply) => {
-      const url = new URL(request.url, `http://${request.headers.host}`);
+      const url = new URL(request.url, env.API_URL);
       const headers = new Headers();
       for (const [key, value] of Object.entries(request.headers)) {
         if (value) headers.append(key, value.toString());
