@@ -13,7 +13,8 @@
     "db:studio": "drizzle-kit studio",
     "db:erd": "drizzle-erd --in src/db/schema/index.ts --out ../docs/erd.svg",
     "test": "node --import tsx --test 'src/**/*.test.ts'",
-    "test:watch": "node --import tsx --test --watch 'src/**/*.test.ts'"
+    "test:watch": "node --import tsx --test --watch 'src/**/*.test.ts'",
+    "test:integration": "node --import tsx --test 'test/integration/**/*.test.ts'"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
