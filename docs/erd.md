@@ -11,7 +11,8 @@ erDiagram
     user ||--o{ training_sessions : "logs"
     user ||--o{ daily_logs : "logs"
     user ||--o{ pain_logs : "logs"
-    training_sessions ||--o{ training_session_components : "contains"
+    training_sessions ||--o{ training_session_exercises : "contains"
+    training_session_exercises ||--o{ training_session_exercise_sets : "contains"
 
     user {
         text id PK
@@ -64,11 +65,20 @@ erDiagram
         timestamptz created_at
     }
 
-    training_session_components {
+    training_session_exercises {
         uuid id PK
         uuid training_session_id FK
         text name "free text: Bench Press…"
         text_array body_regions "push, legs…"
+        smallint sort_order
+        text notes
+        timestamptz created_at
+    }
+
+    training_session_exercise_sets {
+        uuid id PK
+        uuid training_session_exercise_id FK
+        smallint sort_order
         numeric weight "kg (6,2)"
         smallint reps
         numeric rir "0–10 (3,1)"
@@ -76,7 +86,6 @@ erDiagram
         integer duration "seconds"
         numeric pace "sec/km (6,2)"
         numeric rpe "1–10 (3,1)"
-        smallint sort_order
         text notes
         timestamptz created_at
     }

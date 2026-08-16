@@ -3,7 +3,11 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { db } from "../../db/client.js";
-import { trainingSessionComponents, trainingSessions } from "../../db/schema/index.js";
+import {
+  trainingSessionExerciseSets,
+  trainingSessionExercises,
+  trainingSessions,
+} from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
 import { ApiError, notFoundError } from "../../lib/api-error.js";
 import {
@@ -12,23 +16,33 @@ import {
   requireNonEmptyPatch,
 } from "../../lib/api-validation.js";
 import { decodeCursor, encodeCursor } from "../../lib/cursor.js";
-import { serializeTrainingComponent, serializeTrainingSession } from "../../lib/serialization.js";
 import {
-  componentPathSchema,
-  createComponentBodySchema,
+  serializeTrainingSession,
+  serializeTrainingSessionExercise,
+  serializeTrainingSessionExerciseSet,
+} from "../../lib/serialization.js";
+import {
+  createExerciseBodySchema,
+  createExerciseSetBodySchema,
   createTrainingSessionBodySchema,
+  exercisePathSchema,
+  setPathSchema,
   trainingSessionListQuerySchema,
   trainingSessionPathSchema,
-  updateComponentBodySchema,
+  updateExerciseBodySchema,
+  updateExerciseSetBodySchema,
   updateTrainingSessionBodySchema,
 } from "./schemas.js";
 
 type TrainingSessionUpdate = z.infer<typeof updateTrainingSessionBodySchema>;
-type ComponentUpdate = z.infer<typeof updateComponentBodySchema>;
+type ExerciseUpdate = z.infer<typeof updateExerciseBodySchema>;
+type SetUpdate = z.infer<typeof updateExerciseSetBodySchema>;
 
 const utcMidnight = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
-function trainingSessionUpdateValues(input: TrainingSessionUpdate): Partial<typeof trainingSessions.$inferInsert> {
+function trainingSessionUpdateValues(
+  input: TrainingSessionUpdate,
+): Partial<typeof trainingSessions.$inferInsert> {
   const values: Partial<typeof trainingSessions.$inferInsert> = {};
   if (input.startedAt !== undefined) values.startedAt = new Date(input.startedAt);
   if (input.duration !== undefined) values.duration = input.duration;
@@ -39,12 +53,22 @@ function trainingSessionUpdateValues(input: TrainingSessionUpdate): Partial<type
   return values;
 }
 
-function componentUpdateValues(
-  input: ComponentUpdate,
-): Partial<typeof trainingSessionComponents.$inferInsert> {
-  const values: Partial<typeof trainingSessionComponents.$inferInsert> = {};
+function exerciseUpdateValues(
+  input: ExerciseUpdate,
+): Partial<typeof trainingSessionExercises.$inferInsert> {
+  const values: Partial<typeof trainingSessionExercises.$inferInsert> = {};
   if (input.name !== undefined) values.name = input.name;
   if (input.bodyRegions !== undefined) values.bodyRegions = input.bodyRegions;
+  if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
+  if (input.notes !== undefined) values.notes = input.notes;
+  return values;
+}
+
+function setUpdateValues(
+  input: SetUpdate,
+): Partial<typeof trainingSessionExerciseSets.$inferInsert> {
+  const values: Partial<typeof trainingSessionExerciseSets.$inferInsert> = {};
+  if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
   if (input.weight !== undefined) values.weight = input.weight?.toString() ?? null;
   if (input.reps !== undefined) values.reps = input.reps;
   if (input.rir !== undefined) values.rir = input.rir?.toString() ?? null;
@@ -52,7 +76,6 @@ function componentUpdateValues(
   if (input.duration !== undefined) values.duration = input.duration;
   if (input.pace !== undefined) values.pace = input.pace?.toString() ?? null;
   if (input.rpe !== undefined) values.rpe = input.rpe?.toString() ?? null;
-  if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
   if (input.notes !== undefined) values.notes = input.notes;
   return values;
 }
@@ -64,6 +87,54 @@ async function requireOwnedTrainingSession(userId: string, trainingSessionId: st
     .where(and(eq(trainingSessions.id, trainingSessionId), eq(trainingSessions.userId, userId)))
     .limit(1);
   if (!session) throw notFoundError();
+}
+
+async function requireOwnedExercise(userId: string, trainingSessionId: string, exerciseId: string) {
+  const [exercise] = await db
+    .select({ id: trainingSessionExercises.id })
+    .from(trainingSessionExercises)
+    .innerJoin(
+      trainingSessions,
+      eq(trainingSessionExercises.trainingSessionId, trainingSessions.id),
+    )
+    .where(
+      and(
+        eq(trainingSessionExercises.id, exerciseId),
+        eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
+        eq(trainingSessions.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (!exercise) throw notFoundError();
+}
+
+async function requireOwnedSet(
+  userId: string,
+  trainingSessionId: string,
+  exerciseId: string,
+  setId: string,
+) {
+  const [set] = await db
+    .select({ id: trainingSessionExerciseSets.id })
+    .from(trainingSessionExerciseSets)
+    .innerJoin(
+      trainingSessionExercises,
+      eq(trainingSessionExerciseSets.trainingSessionExerciseId, trainingSessionExercises.id),
+    )
+    .innerJoin(
+      trainingSessions,
+      eq(trainingSessionExercises.trainingSessionId, trainingSessions.id),
+    )
+    .where(
+      and(
+        eq(trainingSessionExerciseSets.id, setId),
+        eq(trainingSessionExerciseSets.trainingSessionExerciseId, exerciseId),
+        eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
+        eq(trainingSessions.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (!set) throw notFoundError();
 }
 
 function trainingSessionCursor(cursor: string) {
@@ -152,8 +223,13 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
           eq(trainingSessions.userId, authenticatedUserId(request)),
         ),
         with: {
-          components: {
-            orderBy: asc(trainingSessionComponents.sortOrder),
+          exercises: {
+            orderBy: asc(trainingSessionExercises.sortOrder),
+            with: {
+              sets: {
+                orderBy: asc(trainingSessionExerciseSets.sortOrder),
+              },
+            },
           },
         },
       });
@@ -161,7 +237,10 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
 
       return {
         ...serializeTrainingSession(session),
-        components: session.components.map(serializeTrainingComponent),
+        exercises: session.exercises.map((exercise) => ({
+          ...serializeTrainingSessionExercise(exercise),
+          sets: exercise.sets.map(serializeTrainingSessionExerciseSet),
+        })),
       };
     },
   );
@@ -206,19 +285,84 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
     },
   );
 
+  // Exercise routes
   app.post(
-    "/sessions/:trainingSessionId/components",
+    "/sessions/:trainingSessionId/exercises",
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request, reply) => {
       const { trainingSessionId } = parseRequest(trainingSessionPathSchema, request.params);
-      const input = parseRequest(createComponentBodySchema, request.body);
+      const input = parseRequest(createExerciseBodySchema, request.body);
       await requireOwnedTrainingSession(authenticatedUserId(request), trainingSessionId);
-      const [component] = await db
-        .insert(trainingSessionComponents)
+      const [exercise] = await db
+        .insert(trainingSessionExercises)
         .values({
           trainingSessionId,
           name: input.name,
           bodyRegions: input.bodyRegions ?? null,
+          sortOrder: input.sortOrder,
+          notes: input.notes ?? null,
+        })
+        .returning();
+      if (!exercise) throw new ApiError(500, "INTERNAL_ERROR", "Unable to create exercise.");
+      return reply.code(201).send(serializeTrainingSessionExercise(exercise));
+    },
+  );
+
+  app.patch(
+    "/sessions/:trainingSessionId/exercises/:exerciseId",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request) => {
+      const { trainingSessionId, exerciseId } = parseRequest(exercisePathSchema, request.params);
+      const input = requireNonEmptyPatch(parseRequest(updateExerciseBodySchema, request.body));
+      await requireOwnedExercise(authenticatedUserId(request), trainingSessionId, exerciseId);
+      const [exercise] = await db
+        .update(trainingSessionExercises)
+        .set(exerciseUpdateValues(input))
+        .where(
+          and(
+            eq(trainingSessionExercises.id, exerciseId),
+            eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
+          ),
+        )
+        .returning();
+      if (!exercise) throw notFoundError();
+      return serializeTrainingSessionExercise(exercise);
+    },
+  );
+
+  app.delete(
+    "/sessions/:trainingSessionId/exercises/:exerciseId",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request, reply) => {
+      const { trainingSessionId, exerciseId } = parseRequest(exercisePathSchema, request.params);
+      await requireOwnedExercise(authenticatedUserId(request), trainingSessionId, exerciseId);
+      const [exercise] = await db
+        .delete(trainingSessionExercises)
+        .where(
+          and(
+            eq(trainingSessionExercises.id, exerciseId),
+            eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
+          ),
+        )
+        .returning({ id: trainingSessionExercises.id });
+      if (!exercise) throw notFoundError();
+      return reply.code(204).send();
+    },
+  );
+
+  // Exercise Set routes
+  app.post(
+    "/sessions/:trainingSessionId/exercises/:exerciseId/sets",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request, reply) => {
+      const { trainingSessionId, exerciseId } = parseRequest(exercisePathSchema, request.params);
+      const input = parseRequest(createExerciseSetBodySchema, request.body);
+      await requireOwnedExercise(authenticatedUserId(request), trainingSessionId, exerciseId);
+      const [set] = await db
+        .insert(trainingSessionExerciseSets)
+        .values({
+          trainingSessionExerciseId: exerciseId,
+          sortOrder: input.sortOrder,
           weight: input.weight?.toString() ?? null,
           reps: input.reps ?? null,
           rir: input.rir?.toString() ?? null,
@@ -226,53 +370,52 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
           duration: input.duration ?? null,
           pace: input.pace?.toString() ?? null,
           rpe: input.rpe?.toString() ?? null,
-          sortOrder: input.sortOrder,
           notes: input.notes ?? null,
         })
         .returning();
-      if (!component) throw new ApiError(500, "INTERNAL_ERROR", "Unable to create component.");
-      return reply.code(201).send(serializeTrainingComponent(component));
+      if (!set) throw new ApiError(500, "INTERNAL_ERROR", "Unable to create set.");
+      return reply.code(201).send(serializeTrainingSessionExerciseSet(set));
     },
   );
 
   app.patch(
-    "/sessions/:trainingSessionId/components/:componentId",
+    "/sessions/:trainingSessionId/exercises/:exerciseId/sets/:setId",
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request) => {
-      const { trainingSessionId, componentId } = parseRequest(componentPathSchema, request.params);
-      const input = requireNonEmptyPatch(parseRequest(updateComponentBodySchema, request.body));
-      await requireOwnedTrainingSession(authenticatedUserId(request), trainingSessionId);
-      const [component] = await db
-        .update(trainingSessionComponents)
-        .set(componentUpdateValues(input))
+      const { trainingSessionId, exerciseId, setId } = parseRequest(setPathSchema, request.params);
+      const input = requireNonEmptyPatch(parseRequest(updateExerciseSetBodySchema, request.body));
+      await requireOwnedSet(authenticatedUserId(request), trainingSessionId, exerciseId, setId);
+      const [set] = await db
+        .update(trainingSessionExerciseSets)
+        .set(setUpdateValues(input))
         .where(
           and(
-            eq(trainingSessionComponents.id, componentId),
-            eq(trainingSessionComponents.trainingSessionId, trainingSessionId),
+            eq(trainingSessionExerciseSets.id, setId),
+            eq(trainingSessionExerciseSets.trainingSessionExerciseId, exerciseId),
           ),
         )
         .returning();
-      if (!component) throw notFoundError();
-      return serializeTrainingComponent(component);
+      if (!set) throw notFoundError();
+      return serializeTrainingSessionExerciseSet(set);
     },
   );
 
   app.delete(
-    "/sessions/:trainingSessionId/components/:componentId",
+    "/sessions/:trainingSessionId/exercises/:exerciseId/sets/:setId",
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request, reply) => {
-      const { trainingSessionId, componentId } = parseRequest(componentPathSchema, request.params);
-      await requireOwnedTrainingSession(authenticatedUserId(request), trainingSessionId);
-      const [component] = await db
-        .delete(trainingSessionComponents)
+      const { trainingSessionId, exerciseId, setId } = parseRequest(setPathSchema, request.params);
+      await requireOwnedSet(authenticatedUserId(request), trainingSessionId, exerciseId, setId);
+      const [set] = await db
+        .delete(trainingSessionExerciseSets)
         .where(
           and(
-            eq(trainingSessionComponents.id, componentId),
-            eq(trainingSessionComponents.trainingSessionId, trainingSessionId),
+            eq(trainingSessionExerciseSets.id, setId),
+            eq(trainingSessionExerciseSets.trainingSessionExerciseId, exerciseId),
           ),
         )
-        .returning({ id: trainingSessionComponents.id });
-      if (!component) throw notFoundError();
+        .returning({ id: trainingSessionExerciseSets.id });
+      if (!set) throw notFoundError();
       return reply.code(204).send();
     },
   );

@@ -1,7 +1,8 @@
 import type {
   CreateTrainingSessionInput,
   TrainingSession,
-  TrainingSessionComponent,
+  TrainingSessionExercise,
+  TrainingSessionExerciseSet,
   UpdateTrainingSessionInput,
 } from '@wot/types';
 
@@ -24,7 +25,7 @@ export interface TrainingSessionPage {
 export type TrainingSessionWithLoad = TrainingSession & { load: number };
 
 export interface TrainingSessionDetail extends TrainingSessionWithLoad {
-  components: (TrainingSessionComponent & { sessionId: string })[];
+  exercises: (TrainingSessionExercise & { sets: TrainingSessionExerciseSet[] })[];
 }
 
 export const trainingSessions = {

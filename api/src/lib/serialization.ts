@@ -1,7 +1,8 @@
-import type { dailyLogs, painLogs, trainingSessionComponents, trainingSessions } from "../db/schema/index.js";
+import type { dailyLogs, painLogs, trainingSessionExerciseSets, trainingSessionExercises, trainingSessions } from "../db/schema/index.js";
 
 type TrainingSessionRow = typeof trainingSessions.$inferSelect;
-type TrainingComponentRow = typeof trainingSessionComponents.$inferSelect;
+type TrainingSessionExerciseRow = typeof trainingSessionExercises.$inferSelect;
+type TrainingSessionExerciseSetRow = typeof trainingSessionExerciseSets.$inferSelect;
 type DailyLogRow = typeof dailyLogs.$inferSelect;
 type PainLogRow = typeof painLogs.$inferSelect;
 
@@ -28,12 +29,23 @@ export function serializeTrainingSession(row: TrainingSessionRow) {
   };
 }
 
-export function serializeTrainingComponent(row: TrainingComponentRow) {
+export function serializeTrainingSessionExercise(row: TrainingSessionExerciseRow) {
   return {
     id: row.id,
-    sessionId: row.trainingSessionId,
+    trainingSessionId: row.trainingSessionId,
     name: row.name,
     bodyRegions: row.bodyRegions,
+    sortOrder: row.sortOrder,
+    notes: row.notes,
+    createdAt: dateTime(row.createdAt),
+  };
+}
+
+export function serializeTrainingSessionExerciseSet(row: TrainingSessionExerciseSetRow) {
+  return {
+    id: row.id,
+    trainingSessionExerciseId: row.trainingSessionExerciseId,
+    sortOrder: row.sortOrder,
     weight: numberOrNull(row.weight),
     reps: row.reps,
     rir: numberOrNull(row.rir),
@@ -41,7 +53,6 @@ export function serializeTrainingComponent(row: TrainingComponentRow) {
     duration: row.duration,
     pace: numberOrNull(row.pace),
     rpe: numberOrNull(row.rpe),
-    sortOrder: row.sortOrder,
     notes: row.notes,
     createdAt: dateTime(row.createdAt),
   };

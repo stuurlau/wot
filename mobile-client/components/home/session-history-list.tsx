@@ -24,9 +24,13 @@ export function SessionHistoryList({ sessions, count = 3 }: SessionHistoryListPr
         </Text>
       </View>
 
-      {recent.map((session) => (
-        <SessionHistoryCard key={session.id} session={session} />
-      ))}
+      {recent.length > 0 ? (
+        recent.map((session) => <SessionHistoryCard key={session.id} session={session} />)
+      ) : (
+        <Text className="font-body text-[12px] leading-5 text-muted-foreground">
+          No training sessions logged in this period.
+        </Text>
+      )}
     </View>
   );
 }

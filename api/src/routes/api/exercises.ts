@@ -2,36 +2,46 @@ import { desc, eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 
 import { db } from "../../db/client.js";
-import { trainingSessionComponents, trainingSessions } from "../../db/schema/index.js";
+import {
+  trainingSessionExerciseSets,
+  trainingSessionExercises,
+  trainingSessions,
+} from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
 import { parseRequest } from "../../lib/api-validation.js";
 import { recentsQuerySchema } from "./schemas.js";
 
-export async function registerComponentRoutes(app: FastifyInstance) {
+export async function registerExerciseRoutes(app: FastifyInstance) {
   app.get(
-    "/components/recents",
+    "/exercises/recents",
     { preHandler: requireAuthentication },
     async (request) => {
       const query = parseRequest(recentsQuerySchema, request.query, true);
       const rows = await db
-        .selectDistinctOn([trainingSessionComponents.name], {
-          name: trainingSessionComponents.name,
+        .selectDistinctOn([trainingSessionExercises.name], {
+          name: trainingSessionExercises.name,
+          bodyRegions: trainingSessionExercises.bodyRegions,
           lastUsedAt: trainingSessions.startedAt,
-          weight: trainingSessionComponents.weight,
-          reps: trainingSessionComponents.reps,
-          rir: trainingSessionComponents.rir,
-          rpe: trainingSessionComponents.rpe,
+          weight: trainingSessionExerciseSets.weight,
+          reps: trainingSessionExerciseSets.reps,
+          rir: trainingSessionExerciseSets.rir,
+          rpe: trainingSessionExerciseSets.rpe,
         })
-        .from(trainingSessionComponents)
+        .from(trainingSessionExercises)
         .innerJoin(
           trainingSessions,
-          eq(trainingSessionComponents.trainingSessionId, trainingSessions.id),
+          eq(trainingSessionExercises.trainingSessionId, trainingSessions.id),
+        )
+        .leftJoin(
+          trainingSessionExerciseSets,
+          eq(trainingSessionExerciseSets.trainingSessionExerciseId, trainingSessionExercises.id),
         )
         .where(eq(trainingSessions.userId, authenticatedUserId(request)))
         .orderBy(
-          trainingSessionComponents.name,
+          trainingSessionExercises.name,
           desc(trainingSessions.startedAt),
-          desc(trainingSessionComponents.id),
+          desc(trainingSessionExercises.id),
+          desc(trainingSessionExerciseSets.sortOrder),
         );
 
       return {
@@ -44,8 +54,9 @@ export async function registerComponentRoutes(app: FastifyInstance) {
           .slice(0, query.limit)
           .map((row) => ({
             name: row.name,
+            bodyRegions: row.bodyRegions ?? [],
             lastUsedAt: row.lastUsedAt.toISOString(),
-            lastComponent: {
+            lastSet: {
               weight: row.weight === null ? null : Number(row.weight),
               reps: row.reps,
               rir: row.rir === null ? null : Number(row.rir),

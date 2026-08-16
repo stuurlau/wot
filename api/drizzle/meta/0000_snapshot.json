@@ -1,5 +1,5 @@
 {
-  "id": "d00810c6-086c-4ba3-a62b-fd7f892354dc",
+  "id": "23eb4569-91f4-43ac-ba2d-b2f561acfea9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -617,8 +617,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.training_session_components": {
-      "name": "training_session_components",
+    "public.training_session_exercise_sets": {
+      "name": "training_session_exercise_sets",
       "schema": "",
       "columns": {
         "id": {
@@ -628,23 +628,17 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "training_session_id": {
-          "name": "training_session_id",
+        "training_session_exercise_id": {
+          "name": "training_session_exercise_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "name": {
-          "name": "name",
-          "type": "text",
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
-        },
-        "body_regions": {
-          "name": "body_regions",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
         },
         "weight": {
           "name": "weight",
@@ -688,6 +682,93 @@
           "primaryKey": false,
           "notNull": false
         },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "training_session_exercise_sets_exercise_id_sort_order_idx": {
+          "name": "training_session_exercise_sets_exercise_id_sort_order_idx",
+          "columns": [
+            {
+              "expression": "training_session_exercise_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "training_session_exercise_sets_training_session_exercise_id_training_session_exercises_id_fk": {
+          "name": "training_session_exercise_sets_training_session_exercise_id_training_session_exercises_id_fk",
+          "tableFrom": "training_session_exercise_sets",
+          "tableTo": "training_session_exercises",
+          "columnsFrom": [
+            "training_session_exercise_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.training_session_exercises": {
+      "name": "training_session_exercises",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "training_session_id": {
+          "name": "training_session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body_regions": {
+          "name": "body_regions",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
         "sort_order": {
           "name": "sort_order",
           "type": "smallint",
@@ -709,8 +790,8 @@
         }
       },
       "indexes": {
-        "training_session_components_training_session_id_sort_order_idx": {
-          "name": "training_session_components_training_session_id_sort_order_idx",
+        "training_session_exercises_training_session_id_sort_order_idx": {
+          "name": "training_session_exercises_training_session_id_sort_order_idx",
           "columns": [
             {
               "expression": "training_session_id",
@@ -730,8 +811,8 @@
           "method": "btree",
           "with": {}
         },
-        "training_session_components_name_idx": {
-          "name": "training_session_components_name_idx",
+        "training_session_exercises_name_idx": {
+          "name": "training_session_exercises_name_idx",
           "columns": [
             {
               "expression": "name",
@@ -747,9 +828,9 @@
         }
       },
       "foreignKeys": {
-        "training_session_components_training_session_id_training_sessions_id_fk": {
-          "name": "training_session_components_training_session_id_training_sessions_id_fk",
-          "tableFrom": "training_session_components",
+        "training_session_exercises_training_session_id_training_sessions_id_fk": {
+          "name": "training_session_exercises_training_session_id_training_sessions_id_fk",
+          "tableFrom": "training_session_exercises",
           "tableTo": "training_sessions",
           "columnsFrom": [
             "training_session_id"

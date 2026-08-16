@@ -3,7 +3,8 @@ import { relations } from "drizzle-orm";
 import { user } from "./auth.js";
 import { dailyLogs } from "./daily-logs.js";
 import { painLogs } from "./pain-logs.js";
-import { trainingSessionComponents } from "./training-session-components.js";
+import { trainingSessionExerciseSets } from "./training-session-exercise-sets.js";
+import { trainingSessionExercises } from "./training-session-exercises.js";
 import { trainingSessions } from "./training-sessions.js";
 
 export const trainingSessionsRelations = relations(trainingSessions, ({ many, one }) => ({
@@ -11,13 +12,21 @@ export const trainingSessionsRelations = relations(trainingSessions, ({ many, on
     fields: [trainingSessions.userId],
     references: [user.id],
   }),
-  components: many(trainingSessionComponents),
+  exercises: many(trainingSessionExercises),
 }));
 
-export const trainingSessionComponentsRelations = relations(trainingSessionComponents, ({ one }) => ({
+export const trainingSessionExercisesRelations = relations(trainingSessionExercises, ({ many, one }) => ({
   trainingSession: one(trainingSessions, {
-    fields: [trainingSessionComponents.trainingSessionId],
+    fields: [trainingSessionExercises.trainingSessionId],
     references: [trainingSessions.id],
+  }),
+  sets: many(trainingSessionExerciseSets),
+}));
+
+export const trainingSessionExerciseSetsRelations = relations(trainingSessionExerciseSets, ({ one }) => ({
+  exercise: one(trainingSessionExercises, {
+    fields: [trainingSessionExerciseSets.trainingSessionExerciseId],
+    references: [trainingSessionExercises.id],
   }),
 }));
 

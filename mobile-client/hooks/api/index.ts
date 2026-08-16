@@ -8,12 +8,15 @@ export {
 } from './use-training-sessions';
 
 export {
-  componentKeys,
-  useRecentComponents,
-  useCreateComponent,
-  useUpdateComponent,
-  useDeleteComponent,
-} from './use-components';
+  exerciseKeys,
+  useRecentExercises,
+  useCreateExercise,
+  useUpdateExercise,
+  useDeleteExercise,
+  useCreateExerciseSet,
+  useUpdateExerciseSet,
+  useDeleteExerciseSet,
+} from './use-exercises';
 
 export { dailyLogKeys, useDailyLogs, useUpsertDailyLog, useDeleteDailyLog } from './use-daily-logs';
 
@@ -24,5 +27,3 @@ export {
   useUpdatePainLog,
   useDeletePainLog,
 } from './use-pain-logs';
-
-export { insightKeys, useLoadInsight } from './use-insights';

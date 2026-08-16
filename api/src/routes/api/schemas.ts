@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { queryLimit, validateDateRange } from "../../lib/api-validation.js";
-import { isValidTimeZone } from "../../lib/insights.js";
 
 const databaseInteger = z.number().int().min(0).max(2_147_483_647);
 const databaseSmallInteger = z.number().int().min(0).max(32_767);
@@ -20,7 +19,8 @@ const nullableText = nullableOptional(z.string());
 const nullableRating = nullableOptional(decimalRatingSchema);
 
 export const trainingSessionPathSchema = z.object({ trainingSessionId: z.uuid() }).strict();
-export const componentPathSchema = trainingSessionPathSchema.extend({ componentId: z.uuid() }).strict();
+export const exercisePathSchema = trainingSessionPathSchema.extend({ exerciseId: z.uuid() }).strict();
+export const setPathSchema = exercisePathSchema.extend({ setId: z.uuid() }).strict();
 export const painLogPathSchema = z.object({ painLogId: z.uuid() }).strict();
 export const dailyLogPathSchema = z.object({ date: isoDateSchema }).strict();
 
@@ -37,10 +37,20 @@ export const createTrainingSessionBodySchema = z
 
 export const updateTrainingSessionBodySchema = createTrainingSessionBodySchema.partial().strict();
 
-export const createComponentBodySchema = z
+export const createExerciseBodySchema = z
   .object({
     name: z.string().min(1),
     bodyRegions: nullableOptional(z.array(z.string().min(1))),
+    sortOrder: databaseSmallInteger,
+    notes: nullableText,
+  })
+  .strict();
+
+export const updateExerciseBodySchema = createExerciseBodySchema.partial().strict();
+
+export const createExerciseSetBodySchema = z
+  .object({
+    sortOrder: databaseSmallInteger,
     weight: nullableOptional(decimal(kilogramsSchema, 9_999.99)),
     reps: nullableOptional(databaseSmallInteger),
     rir: nullableOptional(rirSchema),
@@ -48,12 +58,11 @@ export const createComponentBodySchema = z
     duration: nullableOptional(databaseInteger),
     pace: nullableOptional(decimal(paceSecondsPerKmSchema, 9_999.99)),
     rpe: nullableRating,
-    sortOrder: databaseSmallInteger,
     notes: nullableText,
   })
   .strict();
 
-export const updateComponentBodySchema = createComponentBodySchema.partial().strict();
+export const updateExerciseSetBodySchema = createExerciseSetBodySchema.partial().strict();
 
 export const dailyLogBodySchema = z
   .object({
@@ -115,20 +124,3 @@ export const recentsQuerySchema = z
     limit: queryLimit(50, 20),
   })
   .strict();
-
-export const insightQuerySchema = z
-  .object({
-    from: isoDateSchema.optional(),
-    to: isoDateSchema.optional(),
-    timezone: z
-      .string()
-      .refine(isValidTimeZone, "Must be a valid IANA time zone.")
-      .optional(),
-  })
-  .strict()
-  .superRefine((value, ctx) => {
-    validateDateRange(value, ctx, true);
-    if (!value.timezone) {
-      ctx.addIssue({ code: "custom", path: ["timezone"], message: "Required." });
-    }
-  });

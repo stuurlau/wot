@@ -35,11 +35,29 @@ export const createTrainingSessionInputSchema = trainingSessionSchema.omit({
 
 export const updateTrainingSessionInputSchema = createTrainingSessionInputSchema.partial();
 
-export const trainingSessionComponentSchema = z.object({
+export const trainingSessionExerciseSchema = z.object({
   id: identifierSchema,
   trainingSessionId: identifierSchema,
   name: z.string().min(1),
   bodyRegions: z.array(bodyRegionSchema).optional(),
+  sortOrder: smallIntSchema,
+  notes: optionalTextSchema,
+  createdAt: isoDateTimeSchema,
+});
+
+export const createTrainingSessionExerciseInputSchema = trainingSessionExerciseSchema.omit({
+  id: true,
+  createdAt: true,
+});
+
+export const updateTrainingSessionExerciseInputSchema = createTrainingSessionExerciseInputSchema
+  .omit({ trainingSessionId: true })
+  .partial();
+
+export const trainingSessionExerciseSetSchema = z.object({
+  id: identifierSchema,
+  trainingSessionExerciseId: identifierSchema,
+  sortOrder: smallIntSchema,
   weight: kilogramsSchema.optional(),
   reps: smallIntSchema.optional(),
   rir: rirSchema.optional(),
@@ -47,23 +65,25 @@ export const trainingSessionComponentSchema = z.object({
   duration: secondsSchema.optional(),
   pace: paceSecondsPerKmSchema.optional(),
   rpe: decimalRatingSchema.optional(),
-  sortOrder: smallIntSchema,
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
 });
 
-export const createTrainingSessionComponentInputSchema = trainingSessionComponentSchema.omit({
+export const createTrainingSessionExerciseSetInputSchema = trainingSessionExerciseSetSchema.omit({
   id: true,
   createdAt: true,
 });
 
-export const updateTrainingSessionComponentInputSchema = createTrainingSessionComponentInputSchema
-  .omit({ trainingSessionId: true })
+export const updateTrainingSessionExerciseSetInputSchema = createTrainingSessionExerciseSetInputSchema
+  .omit({ trainingSessionExerciseId: true })
   .partial();
 
 export type TrainingSession = z.infer<typeof trainingSessionSchema>;
 export type CreateTrainingSessionInput = z.infer<typeof createTrainingSessionInputSchema>;
 export type UpdateTrainingSessionInput = z.infer<typeof updateTrainingSessionInputSchema>;
-export type TrainingSessionComponent = z.infer<typeof trainingSessionComponentSchema>;
-export type CreateTrainingSessionComponentInput = z.infer<typeof createTrainingSessionComponentInputSchema>;
-export type UpdateTrainingSessionComponentInput = z.infer<typeof updateTrainingSessionComponentInputSchema>;
+export type TrainingSessionExercise = z.infer<typeof trainingSessionExerciseSchema>;
+export type CreateTrainingSessionExerciseInput = z.infer<typeof createTrainingSessionExerciseInputSchema>;
+export type UpdateTrainingSessionExerciseInput = z.infer<typeof updateTrainingSessionExerciseInputSchema>;
+export type TrainingSessionExerciseSet = z.infer<typeof trainingSessionExerciseSetSchema>;
+export type CreateTrainingSessionExerciseSetInput = z.infer<typeof createTrainingSessionExerciseSetInputSchema>;
+export type UpdateTrainingSessionExerciseSetInput = z.infer<typeof updateTrainingSessionExerciseSetInputSchema>;

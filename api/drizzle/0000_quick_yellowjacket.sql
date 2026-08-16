@@ -72,11 +72,10 @@ CREATE TABLE "pain_logs" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "training_session_components" (
+CREATE TABLE "training_session_exercise_sets" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"training_session_id" uuid NOT NULL,
-	"name" text NOT NULL,
-	"body_regions" text[],
+	"training_session_exercise_id" uuid NOT NULL,
+	"sort_order" smallint NOT NULL,
 	"weight" numeric(6, 2),
 	"reps" smallint,
 	"rir" numeric(3, 1),
@@ -84,6 +83,15 @@ CREATE TABLE "training_session_components" (
 	"duration" integer,
 	"pace" numeric(6, 2),
 	"rpe" numeric(3, 1),
+	"notes" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "training_session_exercises" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"training_session_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"body_regions" text[],
 	"sort_order" smallint NOT NULL,
 	"notes" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -105,7 +113,8 @@ ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "daily_logs" ADD CONSTRAINT "daily_logs_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pain_logs" ADD CONSTRAINT "pain_logs_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "training_session_components" ADD CONSTRAINT "training_session_components_training_session_id_training_sessions_id_fk" FOREIGN KEY ("training_session_id") REFERENCES "public"."training_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "training_session_exercise_sets" ADD CONSTRAINT "training_session_exercise_sets_training_session_exercise_id_training_session_exercises_id_fk" FOREIGN KEY ("training_session_exercise_id") REFERENCES "public"."training_session_exercises"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "training_session_exercises" ADD CONSTRAINT "training_session_exercises_training_session_id_training_sessions_id_fk" FOREIGN KEY ("training_session_id") REFERENCES "public"."training_sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "training_sessions" ADD CONSTRAINT "training_sessions_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
@@ -114,6 +123,7 @@ CREATE UNIQUE INDEX "daily_logs_user_id_date_idx" ON "daily_logs" USING btree ("
 CREATE INDEX "daily_logs_user_id_idx" ON "daily_logs" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "pain_logs_user_id_date_idx" ON "pain_logs" USING btree ("user_id","date");--> statement-breakpoint
 CREATE INDEX "pain_logs_user_id_body_region_idx" ON "pain_logs" USING btree ("user_id","body_region");--> statement-breakpoint
-CREATE INDEX "training_session_components_training_session_id_sort_order_idx" ON "training_session_components" USING btree ("training_session_id","sort_order");--> statement-breakpoint
-CREATE INDEX "training_session_components_name_idx" ON "training_session_components" USING btree ("name");--> statement-breakpoint
+CREATE INDEX "training_session_exercise_sets_exercise_id_sort_order_idx" ON "training_session_exercise_sets" USING btree ("training_session_exercise_id","sort_order");--> statement-breakpoint
+CREATE INDEX "training_session_exercises_training_session_id_sort_order_idx" ON "training_session_exercises" USING btree ("training_session_id","sort_order");--> statement-breakpoint
+CREATE INDEX "training_session_exercises_name_idx" ON "training_session_exercises" USING btree ("name");--> statement-breakpoint
 CREATE INDEX "training_sessions_user_id_started_at_idx" ON "training_sessions" USING btree ("user_id","started_at");

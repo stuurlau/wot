@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { serializeTrainingSession, serializeTrainingComponent } from "./serialization.js";
+import { serializeTrainingSession, serializeTrainingSessionExercise, serializeTrainingSessionExerciseSet } from "./serialization.js";
 
 const BASE_DATE = new Date("2026-08-15T09:00:00.000Z");
 const BASE_ISO = "2026-08-15T09:00:00.000Z";
@@ -29,11 +29,20 @@ describe("serializeTrainingSession", () => {
   });
 });
 
-const trainingComponentRow = {
-  id: "c-1",
+const trainingExerciseRow = {
+  id: "e-1",
   trainingSessionId: "ts-1",
   name: "Bench Press",
   bodyRegions: ["push", "chest"],
+  sortOrder: 1,
+  notes: null,
+  createdAt: BASE_DATE,
+};
+
+const trainingExerciseSetRow = {
+  id: "s-1",
+  trainingSessionExerciseId: "e-1",
+  sortOrder: 1,
   weight: "80.00",
   reps: 8,
   rir: "2.0",
@@ -41,20 +50,26 @@ const trainingComponentRow = {
   duration: null,
   pace: null,
   rpe: "7.0",
-  sortOrder: 1,
   notes: null,
   createdAt: BASE_DATE,
 };
 
-describe("serializeTrainingComponent", () => {
-  it("converts numeric strings to numbers and exposes sessionId from trainingSessionId", () => {
-    const result = serializeTrainingComponent(trainingComponentRow);
-    assert.equal(result.sessionId, "ts-1");
+describe("serializeTrainingSessionExercise", () => {
+  it("serializes exercise fields", () => {
+    const result = serializeTrainingSessionExercise(trainingExerciseRow);
+    assert.equal(result.trainingSessionId, "ts-1");
+    assert.equal(result.name, "Bench Press");
+    assert.deepEqual(result.bodyRegions, ["push", "chest"]);
+  });
+});
+
+describe("serializeTrainingSessionExerciseSet", () => {
+  it("converts numeric strings to numbers", () => {
+    const result = serializeTrainingSessionExerciseSet(trainingExerciseSetRow);
+    assert.equal(result.trainingSessionExerciseId, "e-1");
     assert.equal(result.weight, 80);
     assert.equal(result.rir, 2);
     assert.equal(result.rpe, 7);
     assert.equal(result.distance, null);
-    assert.equal(result.name, "Bench Press");
-    assert.deepEqual(result.bodyRegions, ["push", "chest"]);
   });
 });

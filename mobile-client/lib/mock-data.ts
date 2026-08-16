@@ -1,4 +1,4 @@
-import type { DailyLog, TrainingSession, TrainingSessionComponent } from '@wot/types';
+import type { DailyLog, TrainingSession, TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
 
 function daysAgo(n: number, hour = 9): string {
   const d = new Date();
@@ -117,29 +117,23 @@ export const MOCK_SESSIONS: TrainingSession[] = [
   },
 ];
 
-export const MOCK_COMPONENTS: TrainingSessionComponent[] = [
-  // s1 — Upper body push
-  { id: 'c1', trainingSessionId: 's1', name: 'Bench Press', bodyRegions: ['push', 'chest'], weight: 80, reps: 8, rir: 2, sortOrder: 1, createdAt: daysAgo(0) },
-  { id: 'c2', trainingSessionId: 's1', name: 'OHP', bodyRegions: ['push', 'shoulders'], weight: 50, reps: 10, rir: 3, sortOrder: 2, createdAt: daysAgo(0) },
-  { id: 'c3', trainingSessionId: 's1', name: 'Incline DB Press', bodyRegions: ['push', 'chest'], weight: 30, reps: 12, rir: 2, sortOrder: 3, createdAt: daysAgo(0) },
+export const MOCK_EXERCISES: TrainingSessionExercise[] = [
+  { id: 'e1', trainingSessionId: 's1', name: 'Bench Press', bodyRegions: ['push', 'chest'], sortOrder: 1, createdAt: daysAgo(0) },
+  { id: 'e2', trainingSessionId: 's1', name: 'OHP', bodyRegions: ['push', 'shoulders'], sortOrder: 2, createdAt: daysAgo(0) },
+  { id: 'e3', trainingSessionId: 's1', name: 'Incline DB Press', bodyRegions: ['push', 'chest'], sortOrder: 3, createdAt: daysAgo(0) },
+  { id: 'e4', trainingSessionId: 's2', name: 'Threshold Run', bodyRegions: ['legs', 'cardio'], sortOrder: 1, createdAt: daysAgo(1) },
+  { id: 'e5', trainingSessionId: 's3', name: 'Back Squat', bodyRegions: ['legs', 'quad'], sortOrder: 1, createdAt: daysAgo(2) },
+  { id: 'e6', trainingSessionId: 's3', name: 'RDL', bodyRegions: ['legs', 'hinge'], sortOrder: 2, createdAt: daysAgo(2) },
+  { id: 'e7', trainingSessionId: 's5', name: 'Deadlift', bodyRegions: ['pull', 'hinge'], sortOrder: 1, createdAt: daysAgo(4) },
+];
 
-  // s2 — Threshold run
-  { id: 'c4', trainingSessionId: 's2', name: 'Threshold Run', bodyRegions: ['legs', 'cardio'], distance: 10020, pace: 272, sortOrder: 1, createdAt: daysAgo(1) },
-
-  // s3 — Lower body
-  { id: 'c5', trainingSessionId: 's3', name: 'Back Squat', bodyRegions: ['legs', 'quad'], weight: 110, reps: 6, rir: 1, sortOrder: 1, createdAt: daysAgo(2) },
-  { id: 'c6', trainingSessionId: 's3', name: 'RDL', bodyRegions: ['legs', 'hinge'], weight: 90, reps: 10, rir: 2, sortOrder: 2, createdAt: daysAgo(2) },
-  { id: 'c7', trainingSessionId: 's3', name: 'Leg Press', bodyRegions: ['legs', 'quad'], weight: 180, reps: 12, rir: 3, sortOrder: 3, createdAt: daysAgo(2) },
-
-  // s5 — Pull day
-  { id: 'c8', trainingSessionId: 's5', name: 'Deadlift', bodyRegions: ['pull', 'hinge'], weight: 140, reps: 5, rir: 1, sortOrder: 1, createdAt: daysAgo(4) },
-  { id: 'c9', trainingSessionId: 's5', name: 'Barbell Row', bodyRegions: ['pull', 'back'], weight: 70, reps: 10, rir: 2, sortOrder: 2, createdAt: daysAgo(4) },
-  { id: 'c10', trainingSessionId: 's5', name: 'Pull-ups', bodyRegions: ['pull', 'back'], reps: 8, rir: 2, sortOrder: 3, createdAt: daysAgo(4) },
-
-  // s7 — Full body power
-  { id: 'c11', trainingSessionId: 's7', name: 'Clean & Jerk', bodyRegions: ['legs', 'shoulders', 'pull'], weight: 70, reps: 3, rir: 0, sortOrder: 1, createdAt: daysAgo(6) },
-  { id: 'c12', trainingSessionId: 's7', name: 'Front Squat', bodyRegions: ['legs', 'quad'], weight: 90, reps: 5, rir: 1, sortOrder: 2, createdAt: daysAgo(6) },
-  { id: 'c13', trainingSessionId: 's7', name: 'Push Press', bodyRegions: ['push', 'shoulders'], weight: 60, reps: 6, rir: 1, sortOrder: 3, createdAt: daysAgo(6) },
+export const MOCK_SETS: TrainingSessionExerciseSet[] = [
+  { id: 'set1', trainingSessionExerciseId: 'e1', weight: 80, reps: 8, rir: 2, sortOrder: 1, createdAt: daysAgo(0) },
+  { id: 'set2', trainingSessionExerciseId: 'e1', weight: 80, reps: 8, rir: 2, sortOrder: 2, createdAt: daysAgo(0) },
+  { id: 'set3', trainingSessionExerciseId: 'e2', weight: 50, reps: 10, rir: 3, sortOrder: 1, createdAt: daysAgo(0) },
+  { id: 'set4', trainingSessionExerciseId: 'e4', distance: 10020, pace: 272, sortOrder: 1, createdAt: daysAgo(1) },
+  { id: 'set5', trainingSessionExerciseId: 'e5', weight: 110, reps: 6, rir: 1, sortOrder: 1, createdAt: daysAgo(2) },
+  { id: 'set6', trainingSessionExerciseId: 'e7', weight: 140, reps: 5, rir: 1, sortOrder: 1, createdAt: daysAgo(4) },
 ];
 
 export const MOCK_DAILY_LOGS: DailyLog[] = [

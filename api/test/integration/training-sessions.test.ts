@@ -49,6 +49,8 @@ describe("training sessions", () => {
 
   describe("GET + PATCH + DELETE lifecycle", () => {
     let sessionId: string;
+    let exerciseId: string;
+    let setId: string;
 
     before(async () => {
       const res = await app.inject({
@@ -72,7 +74,7 @@ describe("training sessions", () => {
       assert.ok(body.data.some((s) => s.id === sessionId));
     });
 
-    it("fetches a single session with empty components", async () => {
+    it("fetches a single session with empty exercises", async () => {
       const res = await app.inject({
         method: "GET",
         url: `/api/v1/sessions/${sessionId}`,
@@ -80,9 +82,9 @@ describe("training sessions", () => {
       });
 
       assert.equal(res.statusCode, 200);
-      const body = res.json<{ id: string; components: unknown[] }>();
+      const body = res.json<{ id: string; exercises: unknown[] }>();
       assert.equal(body.id, sessionId);
-      assert.deepEqual(body.components, []);
+      assert.deepEqual(body.exercises, []);
     });
 
     it("patches the session title and notes", async () => {
@@ -99,28 +101,48 @@ describe("training sessions", () => {
       assert.equal(body.notes, "Felt great");
     });
 
-    it("adds a component to the session", async () => {
+    it("adds an exercise to the session", async () => {
       const res = await app.inject({
         method: "POST",
-        url: `/api/v1/sessions/${sessionId}/components`,
+        url: `/api/v1/sessions/${sessionId}/exercises`,
         payload: {
           name: "Bench Press",
           bodyRegions: ["push", "chest"],
-          weight: 80,
-          reps: 8,
           sortOrder: 0,
         },
         headers: auth(testUser.token),
       });
 
       assert.equal(res.statusCode, 201, res.body);
-      const body = res.json<{ name: string; weight: number; sessionId: string }>();
+      const body = res.json<{ id: string; name: string; trainingSessionId: string }>();
       assert.equal(body.name, "Bench Press");
-      assert.equal(body.weight, 80);
-      assert.equal(body.sessionId, sessionId);
+      assert.equal(body.trainingSessionId, sessionId);
+      exerciseId = body.id;
     });
 
-    it("fetches the session detail with the added component", async () => {
+    it("adds a set to the exercise", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: `/api/v1/sessions/${sessionId}/exercises/${exerciseId}/sets`,
+        payload: {
+          sortOrder: 0,
+          weight: 80,
+          reps: 8,
+          rir: 2,
+          rpe: 8,
+        },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(res.statusCode, 201, res.body);
+      const body = res.json<{ id: string; weight: number; reps: number; trainingSessionExerciseId: string }>();
+      assert.equal(body.weight, 80);
+      assert.equal(body.reps, 8);
+      assert.equal(body.trainingSessionExerciseId, exerciseId);
+      setId = body.id;
+    });
+
+    it("fetches the session detail with the added exercise and set", async () => {
       const res = await app.inject({
         method: "GET",
         url: `/api/v1/sessions/${sessionId}`,
@@ -128,9 +150,50 @@ describe("training sessions", () => {
       });
 
       assert.equal(res.statusCode, 200);
-      const body = res.json<{ components: { name: string }[] }>();
-      assert.equal(body.components.length, 1);
-      assert.equal(body.components[0].name, "Bench Press");
+      const body = res.json<{
+        exercises: {
+          id: string;
+          name: string;
+          sets: { id: string; weight: number; reps: number }[];
+        }[];
+      }>();
+      assert.equal(body.exercises.length, 1);
+      assert.equal(body.exercises[0].name, "Bench Press");
+      assert.equal(body.exercises[0].sets.length, 1);
+      assert.equal(body.exercises[0].sets[0].weight, 80);
+      assert.equal(body.exercises[0].sets[0].reps, 8);
+    });
+
+    it("patches the set", async () => {
+      const res = await app.inject({
+        method: "PATCH",
+        url: `/api/v1/sessions/${sessionId}/exercises/${exerciseId}/sets/${setId}`,
+        payload: { weight: 85, reps: 6 },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(res.statusCode, 200);
+      const body = res.json<{ weight: number; reps: number }>();
+      assert.equal(body.weight, 85);
+      assert.equal(body.reps, 6);
+    });
+
+    it("deletes the set", async () => {
+      const res = await app.inject({
+        method: "DELETE",
+        url: `/api/v1/sessions/${sessionId}/exercises/${exerciseId}/sets/${setId}`,
+        headers: auth(testUser.token),
+      });
+      assert.equal(res.statusCode, 204);
+    });
+
+    it("deletes the exercise", async () => {
+      const res = await app.inject({
+        method: "DELETE",
+        url: `/api/v1/sessions/${sessionId}/exercises/${exerciseId}`,
+        headers: auth(testUser.token),
+      });
+      assert.equal(res.statusCode, 204);
     });
 
     it("deletes the session", async () => {

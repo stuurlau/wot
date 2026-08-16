@@ -77,16 +77,33 @@ All WOT-owned failures use this envelope:
 ```
 
 `load` is server-derived as `duration * srpe`; clients never submit it.
-`components` is included only by the session-detail endpoint.
+`exercises` (and each exercise's `sets`) is included only by the session-detail endpoint.
 
-### Session component
+### Session exercise
 
 ```json
 {
   "id": "5f82e40f-7ef9-4ca9-abf3-f4b211e353ab",
-  "sessionId": "8d944b03-9724-4c06-b2c1-61e3e0d5ba42",
+  "trainingSessionId": "8d944b03-9724-4c06-b2c1-61e3e0d5ba42",
   "name": "Bench Press",
   "bodyRegions": ["push", "shoulders"],
+  "sortOrder": 0,
+  "notes": null,
+  "createdAt": "2026-08-15T10:14:29.012Z",
+  "sets": []
+}
+```
+
+`bodyRegions` is a user-controlled free-text list; WOT does not expose an
+exercise or body-region catalogue.
+
+### Session exercise set
+
+```json
+{
+  "id": "6a91c20e-8ef9-4ca9-abf3-f4b211e353ac",
+  "trainingSessionExerciseId": "5f82e40f-7ef9-4ca9-abf3-f4b211e353ab",
+  "sortOrder": 0,
   "weight": 82.5,
   "reps": 5,
   "rir": 2,
@@ -94,14 +111,10 @@ All WOT-owned failures use this envelope:
   "duration": null,
   "pace": null,
   "rpe": 8,
-  "sortOrder": 0,
   "notes": null,
-  "createdAt": "2026-08-15T10:14:29.012Z"
+  "createdAt": "2026-08-15T10:14:29.100Z"
 }
 ```
-
-`bodyRegions` is a user-controlled free-text list; WOT does not expose an
-exercise or body-region catalogue.
 
 ### Daily log
 
@@ -135,18 +148,21 @@ exercise or body-region catalogue.
 }
 ```
 
-## Session endpoints
+## Session, exercise, and set endpoints
 
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` | `/sessions` | Create a session. |
 | `GET` | `/sessions` | List sessions in reverse chronological order. |
-| `GET` | `/sessions/{sessionId}` | Get a session and all its components. |
+| `GET` | `/sessions/{sessionId}` | Get a session and all its exercises and sets. |
 | `PATCH` | `/sessions/{sessionId}` | Update session fields. |
-| `DELETE` | `/sessions/{sessionId}` | Delete a session and cascade-delete its components. |
-| `POST` | `/sessions/{sessionId}/components` | Add one component. |
-| `PATCH` | `/sessions/{sessionId}/components/{componentId}` | Update one component. |
-| `DELETE` | `/sessions/{sessionId}/components/{componentId}` | Delete one component. |
+| `DELETE` | `/sessions/{sessionId}` | Delete a session and cascade-delete its exercises and sets. |
+| `POST` | `/sessions/{sessionId}/exercises` | Add one exercise to a session. |
+| `PATCH` | `/sessions/{sessionId}/exercises/{exerciseId}` | Update an exercise. |
+| `DELETE` | `/sessions/{sessionId}/exercises/{exerciseId}` | Delete an exercise and its sets. |
+| `POST` | `/sessions/{sessionId}/exercises/{exerciseId}/sets` | Add one set to an exercise. |
+| `PATCH` | `/sessions/{sessionId}/exercises/{exerciseId}/sets/{setId}` | Update a set. |
+| `DELETE` | `/sessions/{sessionId}/exercises/{exerciseId}/sets/{setId}` | Delete a set. |
 
 `POST /sessions` body:
 
@@ -166,26 +182,37 @@ exercise or body-region catalogue.
 `duration` is a non-negative integer; `srpe` is a number from 1 to 10;
 `type` is non-empty text.
 
-`POST /sessions/{sessionId}/components` body:
+`POST /sessions/{sessionId}/exercises` body:
 
 ```json
 {
   "name": "Bench Press",
   "bodyRegions": ["push", "shoulders"],
-  "weight": 82.5,
-  "reps": 5,
-  "rir": 2,
-  "rpe": 8,
   "sortOrder": 0,
   "notes": null
 }
 ```
 
-`name` and `sortOrder` are required. All measurement fields are optional:
+`POST /sessions/{sessionId}/exercises/{exerciseId}/sets` body:
+
+```json
+{
+  "sortOrder": 0,
+  "weight": 82.5,
+  "reps": 5,
+  "rir": 2,
+  "rpe": 8,
+  "distance": null,
+  "duration": null,
+  "pace": null,
+  "notes": null
+}
+```
+
+`sortOrder` is required. All measurement fields are optional:
 `weight`, `reps`, `rir`, `distance`, `duration`, `pace`, and `rpe`.
-Non-negative integer limits apply to `reps`, component `duration`, and
-`sortOrder`; `rir` is from 0 to 10 and component `rpe` is from 1 to 10.
-`PATCH` accepts any non-empty subset except `sessionId`, which is immutable.
+Non-negative integer limits apply to `reps`, set `duration`, and
+`sortOrder`; `rir` is from 0 to 10 and set `rpe` is from 1 to 10.
 
 `GET /sessions` query parameters:
 
@@ -250,20 +277,14 @@ Create requests require `date`, non-empty `bodyRegion`, and `severity` from
 envelope and cursor rules as the session list, ordered by `date` descending
 then `id` descending.
 
-## Convenience and insight endpoints
-
-These endpoints are read-only views over stored resources. They do not create
-derived database columns.
+## Exercises recents endpoint
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/components/recents` | Supply the component picker with recent names and values. |
-| `GET` | `/insights/load` | Return daily load and aggregate load metrics. |
-| `GET` | `/insights/regions` | Return body-region distribution and load. |
-| `GET` | `/insights/summary` | Return the dashboard's current warning inputs. |
+| `GET` | `/exercises/recents` | Supply the exercise picker with recent names and their last set values. |
 
-`GET /components/recents?limit=20` accepts `limit` from 1 to 50 (default
-20). It returns the latest component for each distinct, exact `name`, ordered
+`GET /exercises/recents?limit=20` accepts `limit` from 1 to 50 (default
+20). It returns the latest exercise for each distinct, exact `name`, ordered
 by last use:
 
 ```json
@@ -272,90 +293,14 @@ by last use:
     {
       "name": "Bench Press",
       "lastUsedAt": "2026-08-15T06:30:00Z",
-      "lastComponent": { "weight": 82.5, "reps": 5, "rir": 2, "rpe": 8 }
+      "bodyRegions": ["push", "shoulders"],
+      "lastSet": { "weight": 82.5, "reps": 5, "rir": 2, "rpe": 8 }
     }
   ]
 }
 ```
 
-The three insight endpoints require `from` and `to` dates, use `[from, to)`,
-and return days in ascending order. They also accept an optional `timezone`
-IANA identifier (for example `Europe/Amsterdam`), defaulting to the user's
-configured timezone once preferences exist. Until then, clients must supply
-their timezone to obtain local-day buckets.
-
-`GET /insights/load` response:
-
-```json
-{
-  "data": {
-    "daily": [
-      { "date": "2026-08-09", "load": 12000, "sessionCount": 1 }
-    ],
-    "totals": {
-      "load": 12000,
-      "sessionCount": 1,
-      "monotony": null,
-      "strain": null,
-      "acwr": null
-    }
-  }
-}
-```
-
-`monotony`, `strain`, and `acwr` are `null` when the requested history is
-insufficient or a denominator is zero. This avoids misleading sentinel
-numbers.
-
-`GET /insights/regions` response:
-
-```json
-{
-  "data": [
-    {
-      "bodyRegion": "push",
-      "componentCount": 12,
-      "load": 9800,
-      "lastExposedOn": "2026-08-15"
-    }
-  ]
-}
-```
-
-A component tagged with multiple regions contributes its full component load
-to every tagged region. Component load is `duration * rpe` when both values
-exist; otherwise it is `0`. This definition intentionally avoids inventing
-load from strength-set data that has no duration.
-
-`GET /insights/summary` returns the current values needed to render the
-Insights tab:
-
-```json
-{
-  "data": {
-    "load": {
-      "weeklyLoad": 45600,
-      "monotony": 1.4,
-      "strain": 63840,
-      "acwr": 1.1
-    },
-    "wellness": {
-      "latestDate": "2026-08-15",
-      "fatigue": 4,
-      "soreness": 3.5,
-      "stress": null,
-      "motivation": 8
-    },
-    "pain": [
-      { "bodyRegion": "shoulders", "latestSeverity": 4.5, "latestDate": "2026-08-15" }
-    ]
-  }
-}
-```
-
-No endpoint declares a user medically unfit or blocks workout logging. The
-client may use the returned data to present informational, stacked signals
-only.
+*Note:* Higher-order metrics (monotony, strain, ACWR, load summaries) are derived exclusively on the client/frontend side to eliminate server compute load and network round-trips.
 
 ## Health and authentication
 
@@ -367,4 +312,5 @@ only.
 
 Authentication is exposed at `/api/auth/*` by better-auth. The mobile client
 uses its better-auth client for sign-up, sign-in, sign-out, and session
-retrieval, then calls this contract with the resulting session cookie.
+retrieval, then calls this contract with the resulting session cookie or
+`Authorization: Bearer <token>` header.

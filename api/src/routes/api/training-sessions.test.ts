@@ -11,8 +11,7 @@ const AUTHENTICATED_ROUTES = [
   { method: "DELETE" as const, url: "/api/v1/sessions/00000000-0000-0000-0000-000000000000" },
   { method: "GET" as const, url: "/api/v1/daily-logs" },
   { method: "GET" as const, url: "/api/v1/pain-logs" },
-  { method: "GET" as const, url: "/api/v1/components/recents" },
-  { method: "GET" as const, url: "/api/v1/insights/load" },
+  { method: "GET" as const, url: "/api/v1/exercises/recents" },
 ];
 
 describe("training-session routes", () => {
