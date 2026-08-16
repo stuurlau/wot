@@ -4,6 +4,7 @@ import { after, before, describe, it } from "node:test";
 import "./setup.js";
 import type { FastifyInstance } from "fastify";
 import { auth, createTestApp, createTestUser, deleteTestUser, type TestUser } from "./helpers.js";
+import { pool } from "../../src/db/client.js";
 
 describe("daily logs", () => {
   let app: FastifyInstance;
@@ -18,6 +19,7 @@ describe("daily logs", () => {
   after(async () => {
     await deleteTestUser(testUser.userId);
     await app.close();
+    await pool.end();
   });
 
   it("creates a daily log via PUT (upsert)", async () => {

@@ -4,6 +4,7 @@ import { after, before, describe, it } from "node:test";
 import "./setup.js";
 import type { FastifyInstance } from "fastify";
 import { auth, createTestApp, createTestUser, deleteTestUser, type TestUser } from "./helpers.js";
+import { pool } from "../../src/db/client.js";
 
 describe("pain logs", () => {
   let app: FastifyInstance;
@@ -17,6 +18,7 @@ describe("pain logs", () => {
   after(async () => {
     await deleteTestUser(testUser.userId);
     await app.close();
+    await pool.end();
   });
 
   describe("POST + GET + PATCH + DELETE lifecycle", () => {

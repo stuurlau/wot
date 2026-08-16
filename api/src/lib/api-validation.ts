@@ -55,6 +55,6 @@ export function validateDateRange(
 
 const noQuerySchema = z.object({}).strict();
 
-export function rejectUnknownQuery(request: FastifyRequest) {
+export async function rejectUnknownQuery(request: FastifyRequest): Promise<void> {
   parseRequest(noQuerySchema, request.query, true);
 }

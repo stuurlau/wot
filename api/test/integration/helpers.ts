@@ -46,7 +46,6 @@ export async function createTestUser(app: FastifyInstance): Promise<TestUser> {
 export function auth(token: string): Record<string, string> {
   return {
     Authorization: `Bearer ${token}`,
-    "content-type": "application/json",
   };
 }
 
