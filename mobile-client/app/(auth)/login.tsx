@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -10,12 +9,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@/stores/auth-store';
 import Constants from 'expo-constants';
-import { RuledBackground } from '@/components/ruled-background';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -39,13 +38,11 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 relative">
-        <RuledBackground />
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+    <SafeAreaView className="flex-1">
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
@@ -57,9 +54,9 @@ export default function LoginScreen() {
             <View className="mb-10">
               <View className="items-center mb-8">
                 <Image
-                  source={require('@/assets/images/wot-logo.png')}
-                  style={{ width: 180, height: 70 }}
-                  resizeMode="contain"
+                  source={require('@/assets/images/wot-logo.svg')}
+                  style={{ width: 180, height: 55 }}
+                  contentFit="contain"
                 />
               </View>
 
@@ -171,8 +168,7 @@ export default function LoginScreen() {
             WOT v{Constants.expoConfig?.version ?? '0.0.0'}
           </Text>
         </View>
-        </KeyboardAvoidingView>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

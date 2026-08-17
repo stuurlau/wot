@@ -15,4 +15,5 @@ export const auth = betterAuth({
   plugins: [bearer()],
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.API_URL,
+  trustedOrigins: [env.CORS_ORIGIN],
 });
