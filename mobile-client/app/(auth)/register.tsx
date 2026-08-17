@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,6 +14,8 @@ import { Link, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@/stores/auth-store';
+import Constants from 'expo-constants';
+import { RuledBackground } from '@/components/ruled-background';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -38,10 +41,12 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View className="flex-1 relative">
+        <RuledBackground />
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
@@ -51,28 +56,27 @@ export default function RegisterScreen() {
 
             {/* Brand section */}
             <View className="mb-10">
-              <View
-                className="self-start mb-8 px-4 py-3 bg-muted"
-                style={{ borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)' }}
-              >
-                <Text className="font-body-bold text-[10px] tracking-[4px] text-muted-foreground uppercase">
-                  WOT  WOT  WOT
-                </Text>
+              <View className="items-center mb-8">
+                <Image
+                  source={require('@/assets/images/wot-logo.png')}
+                  style={{ width: 180, height: 70 }}
+                  resizeMode="contain"
+                />
               </View>
 
               <Text
                 className="font-heading-bold text-[52px] leading-[52px] uppercase text-foreground mb-4"
                 style={{ letterSpacing: -2 }}
               >
-                REGISTER{'\n'}CREDENTIALS
+                Start{'\n'}your log
               </Text>
 
               <View className="gap-1 mt-2">
-                <Text className="font-body text-[10px] tracking-[1px] text-muted-foreground">
-                  {'>'} ALLOCATING USER RECORD...
+                <Text className="font-body text-[14px] tracking-[1px] text-muted-foreground">
+                  {'>'} Set up your account
                 </Text>
-                <Text className="font-body text-[10px] tracking-[1px] text-muted-foreground">
-                  {'>'} AWAITING CREDENTIAL INPUT...
+                <Text className="font-body text-[14px] tracking-[1px] text-muted-foreground">
+                  {'>'} Start tracking today
                 </Text>
               </View>
             </View>
@@ -82,7 +86,7 @@ export default function RegisterScreen() {
               {/* Name */}
               <View>
                 <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground mb-2">
-                  DISPLAY_NAME // FULL NAME
+                  Name
                 </Text>
                 <TextInput
                   className="font-body text-[17px] text-foreground pb-2"
@@ -99,12 +103,12 @@ export default function RegisterScreen() {
               {/* Email */}
               <View>
                 <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground mb-2">
-                  IDENTIFIER // EMAIL
+                  Email
                 </Text>
                 <TextInput
                   className="font-body text-[17px] text-foreground pb-2"
                   style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.15)' }}
-                  placeholder="user@domain.xyz"
+                  placeholder="you@example.com"
                   placeholderTextColor="rgba(0,0,0,0.25)"
                   value={email}
                   onChangeText={setEmail}
@@ -118,7 +122,7 @@ export default function RegisterScreen() {
               {/* Password */}
               <View>
                 <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground mb-2">
-                  ACCESS_CODE // PASSWORD
+                  Password
                 </Text>
                 <TextInput
                   className="font-body text-[17px] text-foreground pb-2"
@@ -141,14 +145,14 @@ export default function RegisterScreen() {
               <Pressable
                 onPress={handleSubmit}
                 disabled={loading}
-                className="bg-primary mt-2 px-6 py-4 flex-row items-center justify-between active:opacity-80"
+                className="bg-primary mt-2 px-6 py-4 flex-row items-center justify-between rounded-2xl active:opacity-80"
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
                     <Text className="font-body-bold text-[11px] tracking-[3px] uppercase text-primary-foreground">
-                      CREATE &amp; INITIALIZE
+                      Create account
                     </Text>
                     <Text className="font-body-bold text-[16px] text-primary-foreground">
                       →
@@ -166,7 +170,7 @@ export default function RegisterScreen() {
               <Link href={'/(auth)/login' as never} asChild>
                 <Pressable>
                   <Text className="font-body text-[10px] tracking-[2px] uppercase text-muted-foreground">
-                    EXISTING SESSION
+                    Already logging? Sign in
                   </Text>
                 </Pressable>
               </Link>
@@ -174,17 +178,17 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
 
-        {/* Status bar */}
+        {/* Version bar */}
         <View
-          className="px-8 py-3 flex-row items-center gap-2"
+          className="px-8 py-3 flex-row items-center"
           style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' }}
         >
-          <View className="w-2 h-2 rounded-full bg-green-500" />
           <Text className="font-body text-[9px] tracking-[3px] text-muted-foreground uppercase">
-            SYSTEM_STATUS: READY
+            WOT v{Constants.expoConfig?.version ?? '0.0.0'}
           </Text>
         </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

@@ -27,7 +27,7 @@ export function WelcomeSection({ streak, strain }: WelcomeSectionProps) {
       </Text>
 
       <Pressable
-        className="self-start mb-10 px-8 py-4 bg-primary"
+        className="self-start mb-10 px-8 py-4 bg-primary rounded-2xl"
         onPress={() => {
           // TODO: navigate to session creation
         }}

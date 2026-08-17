@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,6 +14,8 @@ import { Link, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuthStore } from '@/stores/auth-store';
+import Constants from 'expo-constants';
+import { RuledBackground } from '@/components/ruled-background';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -37,10 +40,12 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <View className="flex-1 relative">
+        <RuledBackground />
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
@@ -50,30 +55,28 @@ export default function LoginScreen() {
 
             {/* Brand section */}
             <View className="mb-10">
-              {/* WOT logo mark */}
-              <View
-                className="self-start mb-8 px-4 py-3 bg-muted"
-                style={{ borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)' }}
-              >
-                <Text className="font-body-bold text-[10px] tracking-[4px] text-muted-foreground uppercase">
-                  WOT  WOT  WOT
-                </Text>
+              <View className="items-center mb-8">
+                <Image
+                  source={require('@/assets/images/wot-logo.png')}
+                  style={{ width: 180, height: 70 }}
+                  resizeMode="contain"
+                />
               </View>
 
               <Text
                 className="font-heading-bold text-[52px] leading-[52px] tracking-[-2px] uppercase text-foreground mb-4"
                 style={{ letterSpacing: -2 }}
               >
-                INITIALIZE{'\n'}SESSION
+                Welcome{'\n'}to WOT!
               </Text>
 
-              {/* Terminal status lines */}
+              {/* Status lines */}
               <View className="gap-1 mt-2">
-                <Text className="font-body text-[10px] tracking-[1px] text-muted-foreground">
-                  {'>'} VERIFYING ENVIRONMENT VARIABLES...
+                <Text className="font-body text-[14px] tracking-[1px] text-muted-foreground">
+                  {'>'} Train smart. Stay happy.
                 </Text>
-                <Text className="font-body text-[10px] tracking-[1px] text-muted-foreground">
-                  {'>'} ESTABLISHING SECURE HANDSHAKE...
+                <Text className="font-body text-[14px] tracking-[1px] text-muted-foreground">
+                  {'>'} Let&apos;s log today&apos;s work.
                 </Text>
               </View>
             </View>
@@ -83,12 +86,12 @@ export default function LoginScreen() {
               {/* Email */}
               <View>
                 <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground mb-2">
-                  IDENTIFIER // EMAIL
+                  Email
                 </Text>
                 <TextInput
                   className="font-body text-[17px] text-foreground pb-2"
                   style={{ borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.15)' }}
-                  placeholder="user@domain.xyz"
+                  placeholder="you@example.com"
                   placeholderTextColor="rgba(0,0,0,0.25)"
                   value={email}
                   onChangeText={setEmail}
@@ -102,7 +105,7 @@ export default function LoginScreen() {
               {/* Password */}
               <View>
                 <Text className="font-body text-[9px] tracking-[3px] uppercase text-muted-foreground mb-2">
-                  ACCESS_CODE // PASSWORD
+                  Password
                 </Text>
                 <TextInput
                   className="font-body text-[17px] text-foreground pb-2"
@@ -129,14 +132,14 @@ export default function LoginScreen() {
               <Pressable
                 onPress={handleSubmit}
                 disabled={loading}
-                className="bg-primary mt-2 px-6 py-4 flex-row items-center justify-between active:opacity-80"
+                className="bg-primary mt-2 px-6 py-4 flex-row items-center justify-between rounded-2xl active:opacity-80"
               >
                 {loading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
                     <Text className="font-body-bold text-[11px] tracking-[3px] uppercase text-primary-foreground">
-                      VALIDATE &amp; INITIALIZE
+                      Log in
                     </Text>
                     <Text className="font-body-bold text-[16px] text-primary-foreground">
                       →
@@ -146,35 +149,30 @@ export default function LoginScreen() {
               </Pressable>
             </View>
 
-            {/* Footer links */}
-            <View className="flex-row justify-between mt-8 pt-6" style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' }}>
+            {/* Footer link */}
+            <View className="flex-row justify-center mt-8 pt-6" style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' }}>
               <Link href={'/(auth)/register' as never} asChild>
                 <Pressable>
                   <Text className="font-body text-[10px] tracking-[2px] uppercase text-muted-foreground">
-                    REQUEST ACCESS
+                    New to WOT? Create account
                   </Text>
                 </Pressable>
               </Link>
-              <Pressable>
-                <Text className="font-body text-[10px] tracking-[2px] uppercase text-muted-foreground">
-                  RECOVER CREDENTIALS
-                </Text>
-              </Pressable>
             </View>
           </View>
         </ScrollView>
 
-        {/* Status bar */}
+        {/* Version bar */}
         <View
-          className="px-8 py-3 flex-row items-center gap-2"
+          className="px-8 py-3 flex-row items-center"
           style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' }}
         >
-          <View className="w-2 h-2 rounded-full bg-green-500" />
           <Text className="font-body text-[9px] tracking-[3px] text-muted-foreground uppercase">
-            SYSTEM_STATUS: READY
+            WOT v{Constants.expoConfig?.version ?? '0.0.0'}
           </Text>
         </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
