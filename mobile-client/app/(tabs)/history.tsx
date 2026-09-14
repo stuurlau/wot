@@ -1,39 +1,48 @@
-import { ScreenLayout } from '@/components/screen-layout';
-import { DataState } from '@/components/data-state';
-import { SessionHistoryList } from '@/components/home/session-history-list';
+import { useMemo } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { SessionHistoryCard } from '@/components/home/session-history-card';
+import { AppHeader } from '@/components/app-header';
 import { useTrainingSessions } from '@/hooks/api';
 import { recentDateRange } from '@/lib/date-range';
-import { useMemo } from 'react';
+import { finishedSessions } from '@/lib/sessions';
 
 export default function HistoryScreen() {
   const range = useMemo(() => recentDateRange(90), []);
   const sessionsQuery = useTrainingSessions({ ...range, limit: 100 });
-  const sessions = sessionsQuery.data?.data ?? [];
-
-  if (sessionsQuery.isLoading) {
-    return (
-      <ScreenLayout>
-        <DataState message="Loading session history..." />
-      </ScreenLayout>
-    );
-  }
-
-  if (sessionsQuery.isError) {
-    return (
-      <ScreenLayout>
-        <DataState
-          message="Unable to load session history."
-          actionLabel="Retry"
-          loading={false}
-          onAction={() => void sessionsQuery.refetch()}
-        />
-      </ScreenLayout>
-    );
-  }
+  const sessions = finishedSessions(sessionsQuery.data?.data ?? []);
 
   return (
-    <ScreenLayout scrollable>
-      <SessionHistoryList sessions={sessions} count={sessions.length || 3} />
-    </ScreenLayout>
+    <SafeAreaView className="flex-1">
+      <AppHeader />
+      <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 20, paddingBottom: 32 }}>
+          <Text className="mb-6 font-heading text-[40px] leading-[38px] tracking-[-1.6px] text-foreground">
+            History
+          </Text>
+
+          {sessionsQuery.isLoading && sessions.length === 0 ? (
+            <Text className="font-body text-[12px] text-muted-foreground">Loading…</Text>
+          ) : null}
+
+          {!sessionsQuery.isLoading && sessions.length === 0 ? (
+            <Text className="font-body text-[13px] leading-6 text-muted-foreground">
+              Nothing logged yet. Your first session will appear here.
+            </Text>
+          ) : null}
+
+          <View className="border-t border-border">
+            {sessions.map((session) => (
+              <Pressable
+                key={session.id}
+                onPress={() => router.push(`/session/${session.id}` as never)}
+              >
+                <SessionHistoryCard session={session} />
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+    </SafeAreaView>
   );
 }

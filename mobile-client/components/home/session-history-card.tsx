@@ -41,7 +41,7 @@ export function SessionHistoryCard({ session }: SessionHistoryCardProps) {
 
       <View className="flex-1 mr-4">
         <Text className="font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground" numberOfLines={1}>
-          {session.title || session.type}
+          {session.title || session.type.charAt(0).toUpperCase() + session.type.slice(1)}
         </Text>
         <Text className="mt-1 font-body text-[9px] tracking-[2px] uppercase text-muted-foreground">
           {session.type} / sRPE: {session.srpe}
