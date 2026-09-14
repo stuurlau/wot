@@ -10,6 +10,7 @@ export {
 export {
   exerciseKeys,
   useRecentExercises,
+  useExerciseHistory,
   useCreateExercise,
   useUpdateExercise,
   useDeleteExercise,

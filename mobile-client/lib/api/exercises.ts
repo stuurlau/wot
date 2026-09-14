@@ -21,17 +21,39 @@ export interface RecentExercise {
   };
 }
 
+export interface ExerciseHistoryRow {
+  name: string;
+  bodyRegions: string[];
+  date: string;
+  weight: number | null;
+  reps: number | null;
+}
+
+export interface ExerciseHistoryParams {
+  from: string;
+  to: string;
+}
+
+// The API routes reject the FK fields (they live in the URL path), so the
+// request-body types intentionally omit them.
+export type CreateExerciseBody = Omit<CreateTrainingSessionExerciseInput, 'trainingSessionId'>;
+export type UpdateExerciseBody = Omit<UpdateTrainingSessionExerciseInput, 'trainingSessionId'>;
+export type CreateExerciseSetBody = Omit<
+  CreateTrainingSessionExerciseSetInput,
+  'trainingSessionExerciseId'
+>;
+export type UpdateExerciseSetBody = Omit<
+  UpdateTrainingSessionExerciseSetInput,
+  'trainingSessionExerciseId'
+>;
+
 export const exercises = {
-  create: (trainingSessionId: string, body: CreateTrainingSessionExerciseInput) =>
+  create: (trainingSessionId: string, body: CreateExerciseBody) =>
     apiClient
       .post<TrainingSessionExercise>(`/sessions/${trainingSessionId}/exercises`, body)
       .then((r) => r.data),
 
-  update: (
-    trainingSessionId: string,
-    exerciseId: string,
-    body: UpdateTrainingSessionExerciseInput,
-  ) =>
+  update: (trainingSessionId: string, exerciseId: string, body: UpdateExerciseBody) =>
     apiClient
       .patch<TrainingSessionExercise>(
         `/sessions/${trainingSessionId}/exercises/${exerciseId}`,
@@ -42,11 +64,7 @@ export const exercises = {
   delete: (trainingSessionId: string, exerciseId: string) =>
     apiClient.delete(`/sessions/${trainingSessionId}/exercises/${exerciseId}`),
 
-  createSet: (
-    trainingSessionId: string,
-    exerciseId: string,
-    body: CreateTrainingSessionExerciseSetInput,
-  ) =>
+  createSet: (trainingSessionId: string, exerciseId: string, body: CreateExerciseSetBody) =>
     apiClient
       .post<TrainingSessionExerciseSet>(
         `/sessions/${trainingSessionId}/exercises/${exerciseId}/sets`,
@@ -58,7 +76,7 @@ export const exercises = {
     trainingSessionId: string,
     exerciseId: string,
     setId: string,
-    body: UpdateTrainingSessionExerciseSetInput,
+    body: UpdateExerciseSetBody,
   ) =>
     apiClient
       .patch<TrainingSessionExerciseSet>(
@@ -75,5 +93,10 @@ export const exercises = {
   recents: (limit?: number) =>
     apiClient
       .get<{ data: RecentExercise[] }>('/exercises/recents', { params: { limit } })
+      .then((r) => r.data.data),
+
+  history: (params: ExerciseHistoryParams) =>
+    apiClient
+      .get<{ data: ExerciseHistoryRow[] }>('/exercises/history', { params })
       .then((r) => r.data.data),
 };

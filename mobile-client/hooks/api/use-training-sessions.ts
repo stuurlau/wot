@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { trainingSessions } from '@/lib/api';
-import type { TrainingSessionListParams } from '@/lib/api';
+import type { TrainingSessionDetail, TrainingSessionListParams } from '@/lib/api';
 
 export const trainingSessionKeys = {
   all: ['training-sessions'] as const,
@@ -41,7 +41,11 @@ export function useUpdateTrainingSession(id: string) {
     mutationFn: (body: Parameters<typeof trainingSessions.update>[1]) =>
       trainingSessions.update(id, body),
     onSuccess: (updated) => {
-      queryClient.setQueryData(trainingSessionKeys.detail(id), updated);
+      // The PATCH response carries no exercises — merge, don't replace,
+      // or the cached detail loses its exercise list.
+      queryClient.setQueryData<TrainingSessionDetail>(trainingSessionKeys.detail(id), (old) =>
+        old ? { ...old, ...updated } : { ...updated, exercises: [] },
+      );
       queryClient.invalidateQueries({ queryKey: trainingSessionKeys.list() });
     },
   });

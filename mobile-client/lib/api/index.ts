@@ -10,7 +10,11 @@ export type {
 } from './training-sessions';
 
 export { exercises } from './exercises';
-export type { RecentExercise } from './exercises';
+export type {
+  ExerciseHistoryParams,
+  ExerciseHistoryRow,
+  RecentExercise,
+} from './exercises';
 
 export { dailyLogs } from './daily-logs';
 export type { DailyLogListParams } from './daily-logs';
