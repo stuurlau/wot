@@ -1,0 +1,41 @@
+# Production stack for the home server. Lives in ~/wot-deploy on the server
+# with a .env file (copy from .env.example). The database already runs on the
+# server and is reached via DATABASE_URL in .env — usually
+# postgresql://wot:...@host.docker.internal:5432/wot for a dockerized Postgres
+# with a published port, or the container network address if you attach this
+# stack to the db's compose network.
+services:
+  wot-api:
+    image: ghcr.io/stuurlau/wot-api:latest
+    container_name: wot-api
+    restart: unless-stopped
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      # Only containers with this label are updated by watchtower.
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # Polls GHCR for a new :latest and recreates wot-api automatically.
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: wot-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.docker/config.json:/config.json:ro
+    environment:
+      WATCHTOWER_LABEL_ENABLE: "true"
+      WATCHTOWER_POLL_INTERVAL: 300
+      WATCHTOWER_CLEANUP: "true"
+
+  # Cloudflare Tunnel: outbound-only HTTPS from wot-api.lau-soft.com to the
+  # container. Create the tunnel in the Zero Trust dashboard, map public
+  # hostname wot-api.lau-soft.com -> http://wot-api:3000, paste token into .env.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: wot-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}

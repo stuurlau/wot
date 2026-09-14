@@ -1,0 +1,19 @@
+# Build context is the repo root (api depends on ../shared/types).
+# Denylist: keep the context small by excluding the big/irrelevant dirs.
+**/node_modules
+**/dist
+**/.expo
+**/.git
+**/coverage
+*.log
+.gitignore
+
+mobile-client
+docs
+deploy
+.github
+.opencode
+plans
+Makefile
+README.md
+LICENSE
