@@ -124,3 +124,11 @@ export const recentsQuerySchema = z
     limit: queryLimit(50, 20),
   })
   .strict();
+
+export const exerciseHistoryQuerySchema = z
+  .object({
+    from: isoDateSchema,
+    to: isoDateSchema,
+  })
+  .strict()
+  .superRefine((value, ctx) => validateDateRange(value, ctx, true));
