@@ -69,6 +69,9 @@ export async function buildApp() {
   await app.register(cors, {
     origin: env.CORS_ORIGIN,
     credentials: true,
+    // Without an explicit list, the preflight advertises only GET,HEAD,POST,
+    // which silently blocks PATCH (finish/edit), PUT (check-in) and DELETE.
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 
   await registerHealthRoutes(app);
