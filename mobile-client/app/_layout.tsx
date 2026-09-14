@@ -17,13 +17,15 @@ import {
   SpaceGrotesk_700Bold,
 } from '@expo-google-fonts/space-grotesk';
 import { useFonts } from 'expo-font';
-import { router, Slot, useSegments } from 'expo-router';
+import { router, Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
+import { View } from 'react-native';
 
 import { useAuthStore } from '@/stores/auth-store';
+import { RuledBackground } from '@/components/ruled-background';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -75,10 +77,20 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={DefaultTheme}>
-        <AuthGuard />
-        <Slot />
-        <PortalHost />
-        <StatusBar style="dark" />
+        <View className="flex-1 bg-background">
+          <AuthGuard />
+          <RuledBackground />
+          <Stack
+            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}
+          >
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="workout" options={{ presentation: 'modal', gestureEnabled: false }} />
+            <Stack.Screen name="session/[id]" />
+          </Stack>
+          <PortalHost />
+          <StatusBar style="dark" />
+        </View>
       </ThemeProvider>
     </QueryClientProvider>
   );

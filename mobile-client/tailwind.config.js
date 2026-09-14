@@ -26,6 +26,10 @@ module.exports = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        // Kinetic Manuscript surface layers (must match constants/theme.ts)
+        'surface-container-lowest': '#ffffff',
+        'surface-container-low': '#f4f3f2',
+        'surface-container-highest': '#e3e2e1',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
