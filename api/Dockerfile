@@ -15,5 +15,7 @@ COPY api/drizzle.config.ts ./
 COPY api/drizzle ./drizzle
 COPY api/src ./src
 USER node
-# Apply pending drizzle migrations before booting the server.
-CMD ["sh", "-c", "./node_modules/.bin/drizzle-kit migrate && exec ./node_modules/.bin/tsx src/server.ts"]
+# Migrations deliberately do NOT run here. They are a deployment step:
+# deploy/deploy.sh runs `docker compose run --rm api npm run db:migrate` with
+# the new image and only recreates the api container if it succeeded.
+CMD ["./node_modules/.bin/tsx", "src/server.ts"]

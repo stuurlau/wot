@@ -1,18 +1,29 @@
-name: api deploy
+name: api
 
+# CI + image publishing for the Fastify backend. Runs the normal checks on
+# PRs and pushes; pushes to the deployment branch (master) additionally
+# publish the Docker image to GHCR. Nothing here deploys to the home server
+# directly — the server pulls the image itself via deploy/deploy.sh, so no
+# self-hosted runner or inbound access from GitHub is needed (works for a
+# public repo too).
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "api/**"
       - "shared/**"
-      - ".github/workflows/deploy-api.yml"
+      - ".github/workflows/api.yml"
+  pull_request:
+    paths:
+      - "api/**"
+      - "shared/**"
+      - ".github/workflows/api.yml"
 
 env:
   IMAGE: ghcr.io/${{ github.repository_owner }}/wot-api
 
 jobs:
-  test-and-push:
+  test-and-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,7 +37,7 @@ jobs:
           cache: npm
           cache-dependency-path: api/package-lock.json
 
-      - name: Lint & unit-test api
+      - name: Typecheck & unit-test api
         working-directory: api
         run: |
           npm ci
@@ -35,7 +46,10 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      # PRs build the image only to validate the Dockerfile; publishing to
+      # GHCR is reserved for pushes to the deployment branch.
       - uses: docker/login-action@v3
+        if: github.event_name == 'push'
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -53,7 +67,7 @@ jobs:
         with:
           context: .
           file: api/Dockerfile
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

@@ -1,0 +1,16 @@
+# Oneshot service driven by wot-deploy.timer. Install both files into
+# /etc/systemd/system/, adjust User and the path if your server user is not
+# "lau" (the user must own ~/wot-deploy and be in the docker group), then:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now wot-deploy.timer
+
+[Unit]
+Description=WOT api deploy (pull image, run migrations, restart api)
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=lau
+ExecStart=/home/lau/wot-deploy/deploy.sh
