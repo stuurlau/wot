@@ -1,6 +1,7 @@
 import { buildApp } from "./app.js";
-import { env } from "./env.js";
+import { getEnv } from "./env.js";
 
+const env = getEnv();
 const app = await buildApp();
 
 await app.listen({

@@ -2,13 +2,14 @@ import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 
-import { env } from "./env.js";
+import { getEnv } from "./env.js";
 import { auth } from "./lib/auth.js";
 import { ApiError } from "./lib/api-error.js";
 import { registerApiRoutes } from "./routes/api/index.js";
 import { registerHealthRoutes } from "./routes/health.js";
 
 export async function buildApp() {
+  const env = getEnv();
   const app = Fastify({ logger: true });
 
   app.setErrorHandler((error, request, reply) => {

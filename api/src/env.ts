@@ -10,8 +10,17 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32),
 });
 
-export function parseEnv(vars: NodeJS.ProcessEnv) {
+export type Env = z.infer<typeof envSchema>;
+
+export function parseEnv(vars: NodeJS.ProcessEnv): Env {
   return envSchema.parse(vars);
 }
 
-export const env = parseEnv(process.env);
+// Parsed on first use instead of at import time, so importing this module has
+// no side effects (tests can use parseEnv without a populated process.env).
+// The server still fails fast on boot at the first access.
+let cached: Env | undefined;
+
+export function getEnv(): Env {
+  return (cached ??= parseEnv(process.env));
+}
