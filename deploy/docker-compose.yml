@@ -18,7 +18,7 @@ services:
       - "host.docker.internal:host-gateway"
 
   # Cloudflare Tunnel: outbound-only connection to Cloudflare; maps the
-  # public hostname wot-api.wot-app.com to http://api:3000. Create the
+  # public hostname api.wot-app.org to http://api:3000. Create the
   # tunnel in the Zero Trust dashboard, add that public hostname, and paste
   # the tunnel token into .env. No router port forwarding required.
   cloudflared:

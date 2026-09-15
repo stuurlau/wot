@@ -3,7 +3,7 @@
 **Deployment branch:** `master` (the plan calls it `main`; rename on GitHub and
 update the two workflow files if you prefer that name).
 
-**Public hostname:** `https://wot-api.wot-app.com`
+**Public hostname:** `https://api.wot-app.org`
 
 ## Architecture
 
@@ -12,7 +12,7 @@ update the two workflow files if you prefer that name).
 | Fastify backend | Docker image `ghcr.io/stuurlau/wot-api` | Runs on the home server (BIG) |
 | Drizzle database migrations | Part of the backend image | Applied by the deploy script, not at container start |
 | PostgreSQL | Already running on BIG, external to the stack | Reached via `DATABASE_URL` |
-| Cloudflare Tunnel (`cloudflared`) | Docker container next to the API | Exposes `wot-api.wot-app.com` with outbound-only networking |
+| Cloudflare Tunnel (`cloudflared`) | Docker container next to the API | Exposes `api.wot-app.org` with outbound-only networking |
 | GitHub Actions | GitHub-hosted runners | Checks + publishes the image to GHCR; **never deploys to the server** |
 | deploy.sh + systemd timer | BIG (`~/wot-deploy`) | Pulls new images, migrates, restarts the API every 5 min |
 | Mobile client | Expo/EAS builds via GitHub Actions | Test APKs distributed through a GitHub Release |
@@ -95,11 +95,11 @@ uses; the deploy script would then restart the API into a crash loop.
 
 ### 1. Cloudflare (Zero Trust dashboard)
 
-`wot-app.com` is registered at Cloudflare, so DNS is already active.
+`wot-app.org` is registered at Cloudflare, so DNS is already active.
 
 1. Zero Trust → **Networks → Tunnels → Create a tunnel** (Cloudflared) → copy
    the tunnel token.
-2. Add a **public hostname**: `wot-api.wot-app.com` → service `http://api:3000`.
+2. Add a **public hostname**: `api.wot-app.org` → service `http://api:3000`.
 3. Keep the token for the server's `.env` (`TUNNEL_TOKEN`).
 
 ### 2. Home server (BIG)
@@ -115,7 +115,7 @@ cp .env.example .env   # then fill in:
 #   DATABASE_URL      — the Postgres already running on BIG
 #   BETTER_AUTH_SECRET — openssl rand -hex 32
 #   TUNNEL_TOKEN      — from step 1
-#   API_URL / CORS_ORIGIN — https://wot-api.wot-app.com
+#   API_URL / CORS_ORIGIN — https://api.wot-app.org
 ```
 
 If the GHCR package is private: `docker login ghcr.io` once on BIG (PAT with
@@ -156,7 +156,7 @@ Cron alternative (logs into `deploy.log`):
 docker compose ps
 systemctl status wot-deploy.timer
 journalctl -u wot-deploy.service -n 20      # or: tail ~/wot-deploy/deploy.log
-curl https://wot-api.wot-app.com/health
+curl https://api.wot-app.org/health
 ```
 
 ## Env vars — `deploy/.env`
@@ -191,7 +191,7 @@ One-time setup:
 2. Add the **EXPO_TOKEN** secret (expo.dev → Account Settings → Access Tokens)
    to the repo's Actions secrets.
 
-The `preview` EAS profile bakes `EXPO_PUBLIC_API_URL=https://wot-api.wot-app.com`
+The `preview` EAS profile bakes `EXPO_PUBLIC_API_URL=https://api.wot-app.org`
 into the APK. Production builds later get their own tag-triggered workflow and
 go through the app stores.
 
