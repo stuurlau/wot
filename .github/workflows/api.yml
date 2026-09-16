@@ -35,7 +35,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: api/package-lock.json
+          cache-dependency-path: |
+            api/package-lock.json
+            shared/types/package-lock.json
+
+      - name: Install shared/types deps (api resolves @wot/types from source)
+        working-directory: shared/types
+        run: npm ci
 
       - name: Typecheck & unit-test api
         working-directory: api

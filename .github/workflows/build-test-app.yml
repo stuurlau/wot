@@ -36,6 +36,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # The client resolves @wot/types via tsconfig paths; its zod dep must
+      # be installed for both bundling and type resolution.
+      - name: Install shared/types deps
+        working-directory: shared/types
+        run: npm ci
+
       - name: Build APK with EAS (local)
         working-directory: mobile-client
         run: |
