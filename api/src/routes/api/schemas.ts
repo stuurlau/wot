@@ -1,22 +1,21 @@
 import { z } from "zod";
 
+import {
+  createDailyLogInputSchema,
+  createPainLogInputSchema,
+  createTrainingSessionExerciseInputSchema,
+  createTrainingSessionExerciseSetInputSchema,
+  createTrainingSessionInputSchema,
+  isoDateSchema,
+} from "@wot/types";
+
 import { queryLimit, validateDateRange } from "../../lib/api-validation.js";
 
-const databaseInteger = z.number().int().min(0).max(2_147_483_647);
-const databaseSmallInteger = z.number().int().min(0).max(32_767);
-const decimal = (schema: z.ZodNumber, maximum: number) => schema.max(maximum);
-const nullableOptional = <T extends z.ZodType>(schema: T) => schema.nullable().optional();
-const isoDateSchema = z.iso.date();
-const isoDateTimeSchema = z.iso.datetime({ offset: true });
-const decimalRatingSchema = z.number().min(1).max(10);
-const kilogramsSchema = z.number().nonnegative();
-const metersSchema = z.number().nonnegative();
-const paceSecondsPerKmSchema = z.number().nonnegative();
-const rirSchema = z.number().min(0).max(10);
-const hrvSchema = z.number().nonnegative();
-
-const nullableText = nullableOptional(z.string());
-const nullableRating = nullableOptional(decimalRatingSchema);
+// Single source of truth: body schemas derive from the shared @wot/types
+// contract, tightened here with .strict() (unknown fields -> 422) and the
+// route-specific omissions (nested resources take their parent ids from the
+// URL instead of the body). Path/query schemas are route-level concerns and
+// stay local.
 
 export const trainingSessionPathSchema = z.object({ trainingSessionId: z.uuid() }).strict();
 export const exercisePathSchema = trainingSessionPathSchema.extend({ exerciseId: z.uuid() }).strict();
@@ -24,70 +23,23 @@ export const setPathSchema = exercisePathSchema.extend({ setId: z.uuid() }).stri
 export const painLogPathSchema = z.object({ painLogId: z.uuid() }).strict();
 export const dailyLogPathSchema = z.object({ date: isoDateSchema }).strict();
 
-export const createTrainingSessionBodySchema = z
-  .object({
-    startedAt: isoDateTimeSchema,
-    duration: databaseInteger,
-    srpe: decimalRatingSchema,
-    type: z.string().min(1),
-    title: nullableText,
-    notes: nullableText,
-  })
+export const createTrainingSessionBodySchema = createTrainingSessionInputSchema.strict();
+export const updateTrainingSessionBodySchema = createTrainingSessionInputSchema.partial().strict();
+
+export const createExerciseBodySchema = createTrainingSessionExerciseInputSchema
+  .omit({ trainingSessionId: true })
   .strict();
-
-export const updateTrainingSessionBodySchema = createTrainingSessionBodySchema.partial().strict();
-
-export const createExerciseBodySchema = z
-  .object({
-    name: z.string().min(1),
-    bodyRegions: nullableOptional(z.array(z.string().min(1))),
-    sortOrder: databaseSmallInteger,
-    notes: nullableText,
-  })
-  .strict();
-
 export const updateExerciseBodySchema = createExerciseBodySchema.partial().strict();
 
-export const createExerciseSetBodySchema = z
-  .object({
-    sortOrder: databaseSmallInteger,
-    weight: nullableOptional(decimal(kilogramsSchema, 9_999.99)),
-    reps: nullableOptional(databaseSmallInteger),
-    rir: nullableOptional(rirSchema),
-    distance: nullableOptional(decimal(metersSchema, 999_999.99)),
-    duration: nullableOptional(databaseInteger),
-    pace: nullableOptional(decimal(paceSecondsPerKmSchema, 9_999.99)),
-    rpe: nullableRating,
-    notes: nullableText,
-  })
+export const createExerciseSetBodySchema = createTrainingSessionExerciseSetInputSchema
+  .omit({ trainingSessionExerciseId: true })
   .strict();
-
 export const updateExerciseSetBodySchema = createExerciseSetBodySchema.partial().strict();
 
-export const dailyLogBodySchema = z
-  .object({
-    sleepDuration: nullableOptional(databaseSmallInteger),
-    sleepQuality: nullableRating,
-    soreness: nullableRating,
-    fatigue: nullableRating,
-    stress: nullableRating,
-    motivation: nullableRating,
-    hrv: nullableOptional(decimal(hrvSchema, 999.99)),
-    bodyWeight: nullableOptional(decimal(kilogramsSchema, 999.99)),
-    notes: nullableText,
-  })
-  .strict();
+export const dailyLogBodySchema = createDailyLogInputSchema.omit({ date: true }).strict();
 
-export const createPainLogBodySchema = z
-  .object({
-    date: isoDateSchema,
-    bodyRegion: z.string().min(1),
-    severity: decimalRatingSchema,
-    notes: nullableText,
-  })
-  .strict();
-
-export const updatePainLogBodySchema = createPainLogBodySchema.partial().strict();
+export const createPainLogBodySchema = createPainLogInputSchema.strict();
+export const updatePainLogBodySchema = createPainLogInputSchema.partial().strict();
 
 export const trainingSessionListQuerySchema = z
   .object({

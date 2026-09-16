@@ -4,7 +4,10 @@ FROM node:22-alpine AS deps
 WORKDIR /build/api
 COPY api/package.json api/package-lock.json ./
 COPY shared/types /build/shared/types
-RUN npm ci
+# npm links @wot/types as a symlink into node_modules; replace it with a real
+# copy so the runtime image is self-contained (its zod dep is hoisted into
+# node_modules by npm ci and resolves from the copied package).
+RUN npm ci && rm -rf node_modules/@wot/types && cp -r /build/shared/types node_modules/@wot/types
 
 FROM node:22-alpine
 WORKDIR /app

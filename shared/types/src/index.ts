@@ -27,6 +27,7 @@ export {
   rirSchema,
   secondsSchema,
   smallIntSchema,
+  userIdSchema,
 } from './primitives';
 export {
   createTrainingSessionExerciseInputSchema,

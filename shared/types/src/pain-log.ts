@@ -6,11 +6,12 @@ import {
   isoDateSchema,
   isoDateTimeSchema,
   optionalTextSchema,
+  userIdSchema,
 } from './primitives';
 
 export const painLogSchema = z.object({
   id: identifierSchema,
-  userId: identifierSchema,
+  userId: userIdSchema,
   date: isoDateSchema,
   bodyRegion: z.string().min(1),
   severity: decimalRatingSchema,

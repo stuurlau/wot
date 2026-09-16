@@ -11,13 +11,14 @@ import {
   rirSchema,
   secondsSchema,
   smallIntSchema,
+  userIdSchema,
 } from './primitives';
 
 const bodyRegionSchema = z.string().min(1);
 
 export const trainingSessionSchema = z.object({
   id: identifierSchema,
-  userId: identifierSchema,
+  userId: userIdSchema,
   startedAt: isoDateTimeSchema,
   duration: secondsSchema,
   srpe: decimalRatingSchema,
@@ -39,7 +40,7 @@ export const trainingSessionExerciseSchema = z.object({
   id: identifierSchema,
   trainingSessionId: identifierSchema,
   name: z.string().min(1),
-  bodyRegions: z.array(bodyRegionSchema).optional(),
+  bodyRegions: z.array(bodyRegionSchema).nullish(),
   sortOrder: smallIntSchema,
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
@@ -50,21 +51,22 @@ export const createTrainingSessionExerciseInputSchema = trainingSessionExerciseS
   createdAt: true,
 });
 
-export const updateTrainingSessionExerciseInputSchema = createTrainingSessionExerciseInputSchema
+export const updateTrainingSessionExerciseInputSchema = trainingSessionExerciseSchema
   .omit({ trainingSessionId: true })
   .partial();
 
+// Column bounds mirror the DB numeric(precision, scale) definitions.
 export const trainingSessionExerciseSetSchema = z.object({
   id: identifierSchema,
   trainingSessionExerciseId: identifierSchema,
   sortOrder: smallIntSchema,
-  weight: kilogramsSchema.optional(),
-  reps: smallIntSchema.optional(),
-  rir: rirSchema.optional(),
-  distance: metersSchema.optional(),
-  duration: secondsSchema.optional(),
-  pace: paceSecondsPerKmSchema.optional(),
-  rpe: decimalRatingSchema.optional(),
+  weight: kilogramsSchema.max(9_999.99).nullish(),
+  reps: smallIntSchema.nullish(),
+  rir: rirSchema.nullish(),
+  distance: metersSchema.max(999_999.99).nullish(),
+  duration: secondsSchema.nullish(),
+  pace: paceSecondsPerKmSchema.max(9_999.99).nullish(),
+  rpe: decimalRatingSchema.nullish(),
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
 });
@@ -74,7 +76,7 @@ export const createTrainingSessionExerciseSetInputSchema = trainingSessionExerci
   createdAt: true,
 });
 
-export const updateTrainingSessionExerciseSetInputSchema = createTrainingSessionExerciseSetInputSchema
+export const updateTrainingSessionExerciseSetInputSchema = trainingSessionExerciseSetSchema
   .omit({ trainingSessionExerciseId: true })
   .partial();
 
