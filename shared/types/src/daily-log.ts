@@ -10,7 +10,7 @@ import {
   optionalTextSchema,
   smallIntSchema,
   userIdSchema,
-} from './primitives';
+} from './primitives.js';
 
 export const dailyLogSchema = z.object({
   id: identifierSchema,

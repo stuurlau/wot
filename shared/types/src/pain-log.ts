@@ -7,7 +7,7 @@ import {
   isoDateTimeSchema,
   optionalTextSchema,
   userIdSchema,
-} from './primitives';
+} from './primitives.js';
 
 export const painLogSchema = z.object({
   id: identifierSchema,

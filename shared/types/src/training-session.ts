@@ -12,7 +12,7 @@ import {
   secondsSchema,
   smallIntSchema,
   userIdSchema,
-} from './primitives';
+} from './primitives.js';
 
 const bodyRegionSchema = z.string().min(1);
 

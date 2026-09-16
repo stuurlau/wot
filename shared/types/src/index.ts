@@ -5,7 +5,7 @@ export {
   type DailyLog,
   type UpdateDailyLogInput,
   updateDailyLogInputSchema,
-} from './daily-log';
+} from './daily-log.js';
 export {
   createPainLogInputSchema,
   painLogSchema,
@@ -13,7 +13,7 @@ export {
   type PainLog,
   type UpdatePainLogInput,
   updatePainLogInputSchema,
-} from './pain-log';
+} from './pain-log.js';
 export {
   decimalRatingSchema,
   hrvSchema,
@@ -28,7 +28,7 @@ export {
   secondsSchema,
   smallIntSchema,
   userIdSchema,
-} from './primitives';
+} from './primitives.js';
 export {
   createTrainingSessionExerciseInputSchema,
   createTrainingSessionExerciseSetInputSchema,
@@ -48,4 +48,4 @@ export {
   updateTrainingSessionExerciseInputSchema,
   updateTrainingSessionExerciseSetInputSchema,
   updateTrainingSessionInputSchema,
-} from './training-session';
+} from './training-session.js';
