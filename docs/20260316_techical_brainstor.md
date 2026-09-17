@@ -481,6 +481,77 @@ It has real domain logic:
 
 That logic should live in shared TS modules, not scattered across screens or API routes.
 
+## Schema architecture: Zod + Drizzle as a single source of truth
+
+The goal is one place to define data shapes, with no drift between the database, API routes, and frontend.
+
+### How it works
+
+Drizzle table definitions are the foundation. `drizzle-zod` generates Zod schemas from them. Fastify uses those schemas for runtime request validation. The frontend imports the inferred TypeScript types for type-safe fetch calls — no separate interface definitions needed.
+
+```
+Drizzle table definition
+  → drizzle-zod generates Zod schema
+    → Fastify route validates request body at runtime
+      → Frontend imports inferred TypeScript type
+```
+
+### Why Zod bridges backend and frontend
+
+A Zod schema is a runtime object, so it can actually validate data. But it also carries full TypeScript type information, which you extract with `z.infer<>`:
+
+```ts
+// packages/schemas/src/api/workout.ts
+const CreateWorkoutSchema = z.object({
+  title: z.string().min(1),
+  startedAt: z.string().datetime(),
+})
+
+type CreateWorkout = z.infer<typeof CreateWorkoutSchema>
+// → { title: string; startedAt: string }
+```
+
+The backend uses `CreateWorkoutSchema` as a runtime validator in the route. The frontend imports `CreateWorkout` as a TypeScript type when building the request payload. Both come from the same file — they cannot drift.
+
+### Deriving API schemas from Drizzle tables
+
+The DB schema and API schema are often slightly different. `drizzle-zod` handles this:
+
+```ts
+// packages/schemas/src/db/workout.ts
+export const workouts = pgTable('workouts', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  startedAt: timestamp('started_at').notNull(),
+  finishedAt: timestamp('finished_at'),
+})
+
+// packages/schemas/src/api/workout.ts
+import { createInsertSchema } from 'drizzle-zod'
+import { workouts } from '../db/workout'
+
+export const CreateWorkoutSchema = createInsertSchema(workouts, {
+  title: z.string().min(1).max(100), // stricter than the DB requires
+}).omit({ id: true })                // client should not send server-set fields
+
+export type CreateWorkout = z.infer<typeof CreateWorkoutSchema>
+```
+
+### Monorepo structure
+
+```
+packages/
+  schemas/
+    src/
+      db/       ← Drizzle table definitions
+      api/      ← API schemas derived from DB schemas (with omits and overrides)
+      index.ts  ← re-exports everything
+
+apps/
+  api/          ← imports DB schemas for queries, API schemas for route validation
+  mobile/       ← imports TypeScript types from API schemas for fetch calls
+```
+
 ## Final opinion
 
 Yes, your web-dev intuition is correct.

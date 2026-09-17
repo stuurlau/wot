@@ -1,0 +1,42 @@
+name: mobile
+
+# Fast checks for the Expo client on PRs and pushes (paths-filtered). The
+# client imports shared/types via tsconfig paths, so its deps (zod) must be
+# installed for typechecking — same as on a dev laptop.
+on:
+  push:
+    branches: [master]
+    paths:
+      - "mobile-client/**"
+      - "shared/types/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    paths:
+      - "mobile-client/**"
+      - "shared/types/**"
+      - ".github/workflows/mobile.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            mobile-client/package-lock.json
+            shared/types/package-lock.json
+
+      - name: Install shared/types deps (resolve from tsconfig paths)
+        working-directory: shared/types
+        run: npm ci
+
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint

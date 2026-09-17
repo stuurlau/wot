@@ -1,0 +1,68 @@
+name: Build test app
+
+# Manual workflow: builds the Android test APK with EAS locally on the
+# runner and attaches it to the rolling GitHub pre-release tagged "test-app"
+# (same asset name and therefore the same download link every time). Needs:
+#   - the EXPO_TOKEN secret (expo.dev access token)
+#   - a one-time `npx eas-cli init` in mobile-client/ (writes extra.eas.projectId
+#     into app.json — must be committed)
+# See docs/deployment.md.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: build-test-app
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile-client/package-lock.json
+
+      # Expo SDK 54 / RN 0.81 wants JDK 17; runners ship the Android SDK.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # The client resolves @wot/types via tsconfig paths; its zod dep must
+      # be installed for both bundling and type resolution.
+      - name: Install shared/types deps
+        working-directory: shared/types
+        run: npm ci
+
+      - name: Build APK with EAS (local)
+        working-directory: mobile-client
+        run: |
+          npm ci
+          npx --yes eas-cli@latest build \
+            --platform android \
+            --profile preview \
+            --local \
+            --non-interactive \
+            --output ../wot-test-app.apk
+
+      - name: Attach APK to the rolling test-app release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: test-app
+          name: Test app
+          body: |
+            Android test APK built from commit ${{ github.sha }}.
+
+            Always the same download link:
+            https://github.com/${{ github.repository }}/releases/download/test-app/wot-test-app.apk
+          prerelease: true
+          make_latest: false
+          files: wot-test-app.apk

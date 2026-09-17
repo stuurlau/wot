@@ -1,0 +1,30 @@
+# Staging stack for the home server (BIG). Lives in ~/wot-deploy on the
+# server together with .env (copy from .env.example) and deploy.sh.
+#
+# The database already runs on the server and is reached via DATABASE_URL in
+# .env — usually postgresql://wot:...@host.docker.internal:5432/wot for a
+# Postgres with a published port (see the extra_hosts line below), or the
+# db's compose service name if you attach this stack to the db's network.
+#
+# deploy.sh (cron/systemd timer) pulls new images and runs migrations before
+# recreating the api container. Do NOT add migrations to the image CMD.
+services:
+  api:
+    image: ghcr.io/stuurlau/wot-api:latest
+    container_name: wot-api
+    restart: unless-stopped
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Cloudflare Tunnel: outbound-only connection to Cloudflare; maps the
+  # public hostname api.wot-app.org to http://api:3000. Create the
+  # tunnel in the Zero Trust dashboard, add that public hostname, and paste
+  # the tunnel token into .env. No router port forwarding required.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: wot-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}

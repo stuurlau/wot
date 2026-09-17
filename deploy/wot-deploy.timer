@@ -1,0 +1,14 @@
+# Runs deploy.sh every 5 minutes (first run ~2 min after boot, then 5 min
+# after each completed run; Persistent=true catches up after downtime).
+# Logs go to the journal: journalctl -u wot-deploy.service.
+
+[Unit]
+Description=Run wot-deploy every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
