@@ -12,7 +12,7 @@ Core load formula: **session load = duration (seconds) × sRPE (1–10)**. All h
 /
 ├── api/             # Fastify API backend (Fastify + Drizzle + PostgreSQL + better-auth)
 ├── mobile-client/   # Expo React Native app
-├── shared/types/    # Shared Zod schemas / types (@wot/types, file dependency of api)
+├── shared/types/    # Shared Zod schemas / types (@wot/types) — single source of truth for the wire contract; used by both api (runtime + typecheck) and mobile-client (types via tsconfig paths)
 └── docs/            # Architecture decision docs (data model, auth setup, UI/UX design)
 ```
 
@@ -35,9 +35,11 @@ npm run typecheck      # tsc --noEmit
 npm run db:generate    # drizzle-kit generate (new migration)
 npm run db:migrate     # drizzle-kit migrate (apply migrations)
 npm run db:studio      # drizzle-kit studio
+npm test               # unit tests (node --test)
+npm run test:integration  # integration tests (needs the local Postgres)
 ```
 
-There is no test suite yet.
+`make setup` installs dependencies for `shared/types/`, `api/` and `mobile-client/` — the api imports `@wot/types` at runtime, so its deps must be installed for `npm run dev` and tests.
 
 ## Architecture
 

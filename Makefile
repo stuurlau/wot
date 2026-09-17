@@ -2,7 +2,7 @@
 # Default docker compose command (can be overridden with DOCKER_COMPOSE="sudo docker compose")
 DOCKER_COMPOSE ?= docker compose
 
-.PHONY: help dev up down db-up db-down db-migrate db-generate db-studio db-erd api mobile mobile-ios mobile-android mobile-web test test-unit test-int typecheck lint check clean
+.PHONY: help setup dev up down db-up db-down db-migrate db-generate db-studio db-erd api mobile mobile-ios mobile-android mobile-web test test-unit test-int typecheck lint check clean
 
 help: ## Show this help message
 	@echo "Available commands:"
@@ -10,7 +10,13 @@ help: ## Show this help message
 
 # --- Full Stack Development ---
 
+setup: ## Install dependencies for shared/types, api and mobile-client (run once after cloning)
+	cd shared/types && npm ci
+	cd api && npm ci
+	cd mobile-client && npm ci
+
 dev: ## Start PostgreSQL, apply migrations, and launch API & mobile client concurrently
+	@test -d shared/types/node_modules || { echo "shared/types deps missing — run 'make setup' first"; exit 1; }
 	@echo "Starting local database..."
 	@$(DOCKER_COMPOSE) -f api/docker-compose.yml up -d || true
 	@echo "Applying database migrations..."

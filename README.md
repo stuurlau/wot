@@ -16,6 +16,7 @@ make help
 
 | Command | Description |
 |---|---|
+| `make setup` | Install dependencies for shared/types, api and mobile-client (run once after cloning) |
 | `make dev` | Start Postgres container, apply migrations, and run API + Mobile client concurrently |
 | `make db-up` | Start local Postgres container |
 | `make db-down` | Stop local Postgres container |
