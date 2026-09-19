@@ -1,10 +1,24 @@
-import type { dailyLogs, painLogs, trainingSessionExerciseSets, trainingSessionExercises, trainingSessions } from "../db/schema/index.js";
+import type {
+  DailyLog,
+  PainLog,
+  TrainingSession,
+  TrainingSessionExercise,
+  TrainingSessionExerciseSet,
+} from "@wot/types";
 
-type TrainingSessionRow = typeof trainingSessions.$inferSelect;
-type TrainingSessionExerciseRow = typeof trainingSessionExercises.$inferSelect;
-type TrainingSessionExerciseSetRow = typeof trainingSessionExerciseSets.$inferSelect;
-type DailyLogRow = typeof dailyLogs.$inferSelect;
-type PainLogRow = typeof painLogs.$inferSelect;
+import type {
+  dailyLog,
+  painLog,
+  trainingSession,
+  trainingSessionExercise,
+  trainingSessionExerciseSet,
+} from "../db/schema/index.js";
+
+type TrainingSessionRow = typeof trainingSession.$inferSelect;
+type TrainingSessionExerciseRow = typeof trainingSessionExercise.$inferSelect;
+type TrainingSessionExerciseSetRow = typeof trainingSessionExerciseSet.$inferSelect;
+type DailyLogRow = typeof dailyLog.$inferSelect;
+type PainLogRow = typeof painLog.$inferSelect;
 
 function numberOrNull(value: string | number | null): number | null {
   return value === null ? null : Number(value);
@@ -14,10 +28,11 @@ function dateTime(value: Date): string {
   return value.toISOString();
 }
 
-export function serializeTrainingSession(row: TrainingSessionRow) {
+export function serializeTrainingSession(row: TrainingSessionRow): TrainingSession {
   const srpe = Number(row.srpe);
   return {
     id: row.id,
+    userId: row.userId,
     startedAt: dateTime(row.startedAt),
     duration: row.duration,
     srpe,
@@ -29,7 +44,7 @@ export function serializeTrainingSession(row: TrainingSessionRow) {
   };
 }
 
-export function serializeTrainingSessionExercise(row: TrainingSessionExerciseRow) {
+export function serializeTrainingSessionExercise(row: TrainingSessionExerciseRow): TrainingSessionExercise {
   return {
     id: row.id,
     trainingSessionId: row.trainingSessionId,
@@ -41,7 +56,7 @@ export function serializeTrainingSessionExercise(row: TrainingSessionExerciseRow
   };
 }
 
-export function serializeTrainingSessionExerciseSet(row: TrainingSessionExerciseSetRow) {
+export function serializeTrainingSessionExerciseSet(row: TrainingSessionExerciseSetRow): TrainingSessionExerciseSet {
   return {
     id: row.id,
     trainingSessionExerciseId: row.trainingSessionExerciseId,
@@ -58,9 +73,10 @@ export function serializeTrainingSessionExerciseSet(row: TrainingSessionExercise
   };
 }
 
-export function serializeDailyLog(row: DailyLogRow) {
+export function serializeDailyLog(row: DailyLogRow): DailyLog {
   return {
     id: row.id,
+    userId: row.userId,
     date: row.date,
     sleepDuration: row.sleepDuration,
     sleepQuality: numberOrNull(row.sleepQuality),
@@ -75,9 +91,10 @@ export function serializeDailyLog(row: DailyLogRow) {
   };
 }
 
-export function serializePainLog(row: PainLogRow) {
+export function serializePainLog(row: PainLogRow): PainLog {
   return {
     id: row.id,
+    userId: row.userId,
     date: row.date,
     bodyRegion: row.bodyRegion,
     severity: Number(row.severity),

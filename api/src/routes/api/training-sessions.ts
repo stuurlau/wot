@@ -4,9 +4,9 @@ import { z } from "zod";
 
 import { db } from "../../db/client.js";
 import {
-  trainingSessionExerciseSets,
-  trainingSessionExercises,
-  trainingSessions,
+  trainingSessionExerciseSet,
+  trainingSessionExercise,
+  trainingSession,
 } from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
 import { ApiError, notFoundError } from "../../lib/api-error.js";
@@ -42,8 +42,8 @@ const utcMidnight = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 function trainingSessionUpdateValues(
   input: TrainingSessionUpdate,
-): Partial<typeof trainingSessions.$inferInsert> {
-  const values: Partial<typeof trainingSessions.$inferInsert> = {};
+): Partial<typeof trainingSession.$inferInsert> {
+  const values: Partial<typeof trainingSession.$inferInsert> = {};
   if (input.startedAt !== undefined) values.startedAt = new Date(input.startedAt);
   if (input.duration !== undefined) values.duration = input.duration;
   if (input.srpe !== undefined) values.srpe = input.srpe.toString();
@@ -55,8 +55,8 @@ function trainingSessionUpdateValues(
 
 function exerciseUpdateValues(
   input: ExerciseUpdate,
-): Partial<typeof trainingSessionExercises.$inferInsert> {
-  const values: Partial<typeof trainingSessionExercises.$inferInsert> = {};
+): Partial<typeof trainingSessionExercise.$inferInsert> {
+  const values: Partial<typeof trainingSessionExercise.$inferInsert> = {};
   if (input.name !== undefined) values.name = input.name;
   if (input.bodyRegions !== undefined) values.bodyRegions = input.bodyRegions;
   if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
@@ -66,8 +66,8 @@ function exerciseUpdateValues(
 
 function setUpdateValues(
   input: SetUpdate,
-): Partial<typeof trainingSessionExerciseSets.$inferInsert> {
-  const values: Partial<typeof trainingSessionExerciseSets.$inferInsert> = {};
+): Partial<typeof trainingSessionExerciseSet.$inferInsert> {
+  const values: Partial<typeof trainingSessionExerciseSet.$inferInsert> = {};
   if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
   if (input.weight !== undefined) values.weight = input.weight?.toString() ?? null;
   if (input.reps !== undefined) values.reps = input.reps;
@@ -82,26 +82,26 @@ function setUpdateValues(
 
 async function requireOwnedTrainingSession(userId: string, trainingSessionId: string) {
   const [session] = await db
-    .select({ id: trainingSessions.id })
-    .from(trainingSessions)
-    .where(and(eq(trainingSessions.id, trainingSessionId), eq(trainingSessions.userId, userId)))
+    .select({ id: trainingSession.id })
+    .from(trainingSession)
+    .where(and(eq(trainingSession.id, trainingSessionId), eq(trainingSession.userId, userId)))
     .limit(1);
   if (!session) throw notFoundError();
 }
 
 async function requireOwnedExercise(userId: string, trainingSessionId: string, exerciseId: string) {
   const [exercise] = await db
-    .select({ id: trainingSessionExercises.id })
-    .from(trainingSessionExercises)
+    .select({ id: trainingSessionExercise.id })
+    .from(trainingSessionExercise)
     .innerJoin(
-      trainingSessions,
-      eq(trainingSessionExercises.trainingSessionId, trainingSessions.id),
+      trainingSession,
+      eq(trainingSessionExercise.trainingSessionId, trainingSession.id),
     )
     .where(
       and(
-        eq(trainingSessionExercises.id, exerciseId),
-        eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
-        eq(trainingSessions.userId, userId),
+        eq(trainingSessionExercise.id, exerciseId),
+        eq(trainingSessionExercise.trainingSessionId, trainingSessionId),
+        eq(trainingSession.userId, userId),
       ),
     )
     .limit(1);
@@ -115,22 +115,22 @@ async function requireOwnedSet(
   setId: string,
 ) {
   const [set] = await db
-    .select({ id: trainingSessionExerciseSets.id })
-    .from(trainingSessionExerciseSets)
+    .select({ id: trainingSessionExerciseSet.id })
+    .from(trainingSessionExerciseSet)
     .innerJoin(
-      trainingSessionExercises,
-      eq(trainingSessionExerciseSets.trainingSessionExerciseId, trainingSessionExercises.id),
+      trainingSessionExercise,
+      eq(trainingSessionExerciseSet.trainingSessionExerciseId, trainingSessionExercise.id),
     )
     .innerJoin(
-      trainingSessions,
-      eq(trainingSessionExercises.trainingSessionId, trainingSessions.id),
+      trainingSession,
+      eq(trainingSessionExercise.trainingSessionId, trainingSession.id),
     )
     .where(
       and(
-        eq(trainingSessionExerciseSets.id, setId),
-        eq(trainingSessionExerciseSets.trainingSessionExerciseId, exerciseId),
-        eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
-        eq(trainingSessions.userId, userId),
+        eq(trainingSessionExerciseSet.id, setId),
+        eq(trainingSessionExerciseSet.trainingSessionExerciseId, exerciseId),
+        eq(trainingSessionExercise.trainingSessionId, trainingSessionId),
+        eq(trainingSession.userId, userId),
       ),
     )
     .limit(1);
@@ -155,7 +155,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const input = parseRequest(createTrainingSessionBodySchema, request.body);
       const [session] = await db
-        .insert(trainingSessions)
+        .insert(trainingSession)
         .values({
           userId: authenticatedUserId(request),
           startedAt: new Date(input.startedAt),
@@ -177,25 +177,25 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
     { preHandler: requireAuthentication },
     async (request) => {
       const query = parseRequest(trainingSessionListQuerySchema, request.query, true);
-      const filters = [eq(trainingSessions.userId, authenticatedUserId(request))];
-      if (query.from) filters.push(gte(trainingSessions.startedAt, utcMidnight(query.from)));
-      if (query.to) filters.push(lt(trainingSessions.startedAt, utcMidnight(query.to)));
-      if (query.type) filters.push(eq(trainingSessions.type, query.type));
+      const filters = [eq(trainingSession.userId, authenticatedUserId(request))];
+      if (query.from) filters.push(gte(trainingSession.startedAt, utcMidnight(query.from)));
+      if (query.to) filters.push(lt(trainingSession.startedAt, utcMidnight(query.to)));
+      if (query.type) filters.push(eq(trainingSession.type, query.type));
       if (query.cursor) {
         const cursor = trainingSessionCursor(query.cursor);
         filters.push(
           or(
-            lt(trainingSessions.startedAt, cursor.startedAt),
-            and(eq(trainingSessions.startedAt, cursor.startedAt), lt(trainingSessions.id, cursor.id)),
+            lt(trainingSession.startedAt, cursor.startedAt),
+            and(eq(trainingSession.startedAt, cursor.startedAt), lt(trainingSession.id, cursor.id)),
           )!,
         );
       }
 
       const rows = await db
         .select()
-        .from(trainingSessions)
+        .from(trainingSession)
         .where(and(...filters))
-        .orderBy(desc(trainingSessions.startedAt), desc(trainingSessions.id))
+        .orderBy(desc(trainingSession.startedAt), desc(trainingSession.id))
         .limit(query.limit + 1);
       const pageRows = rows.slice(0, query.limit);
       const last = pageRows.at(-1);
@@ -217,17 +217,17 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request) => {
       const { trainingSessionId } = parseRequest(trainingSessionPathSchema, request.params);
-      const session = await db.query.trainingSessions.findFirst({
+      const session = await db.query.trainingSession.findFirst({
         where: and(
-          eq(trainingSessions.id, trainingSessionId),
-          eq(trainingSessions.userId, authenticatedUserId(request)),
+          eq(trainingSession.id, trainingSessionId),
+          eq(trainingSession.userId, authenticatedUserId(request)),
         ),
         with: {
           exercises: {
-            orderBy: asc(trainingSessionExercises.sortOrder),
+            orderBy: asc(trainingSessionExercise.sortOrder),
             with: {
               sets: {
-                orderBy: asc(trainingSessionExerciseSets.sortOrder),
+                orderBy: asc(trainingSessionExerciseSet.sortOrder),
               },
             },
           },
@@ -252,12 +252,12 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
       const { trainingSessionId } = parseRequest(trainingSessionPathSchema, request.params);
       const input = requireNonEmptyPatch(parseRequest(updateTrainingSessionBodySchema, request.body));
       const [session] = await db
-        .update(trainingSessions)
+        .update(trainingSession)
         .set(trainingSessionUpdateValues(input))
         .where(
           and(
-            eq(trainingSessions.id, trainingSessionId),
-            eq(trainingSessions.userId, authenticatedUserId(request)),
+            eq(trainingSession.id, trainingSessionId),
+            eq(trainingSession.userId, authenticatedUserId(request)),
           ),
         )
         .returning();
@@ -272,14 +272,14 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { trainingSessionId } = parseRequest(trainingSessionPathSchema, request.params);
       const [session] = await db
-        .delete(trainingSessions)
+        .delete(trainingSession)
         .where(
           and(
-            eq(trainingSessions.id, trainingSessionId),
-            eq(trainingSessions.userId, authenticatedUserId(request)),
+            eq(trainingSession.id, trainingSessionId),
+            eq(trainingSession.userId, authenticatedUserId(request)),
           ),
         )
-        .returning({ id: trainingSessions.id });
+        .returning({ id: trainingSession.id });
       if (!session) throw notFoundError();
       return reply.code(204).send();
     },
@@ -294,7 +294,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
       const input = parseRequest(createExerciseBodySchema, request.body);
       await requireOwnedTrainingSession(authenticatedUserId(request), trainingSessionId);
       const [exercise] = await db
-        .insert(trainingSessionExercises)
+        .insert(trainingSessionExercise)
         .values({
           trainingSessionId,
           name: input.name,
@@ -316,12 +316,12 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
       const input = requireNonEmptyPatch(parseRequest(updateExerciseBodySchema, request.body));
       await requireOwnedExercise(authenticatedUserId(request), trainingSessionId, exerciseId);
       const [exercise] = await db
-        .update(trainingSessionExercises)
+        .update(trainingSessionExercise)
         .set(exerciseUpdateValues(input))
         .where(
           and(
-            eq(trainingSessionExercises.id, exerciseId),
-            eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
+            eq(trainingSessionExercise.id, exerciseId),
+            eq(trainingSessionExercise.trainingSessionId, trainingSessionId),
           ),
         )
         .returning();
@@ -337,14 +337,14 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
       const { trainingSessionId, exerciseId } = parseRequest(exercisePathSchema, request.params);
       await requireOwnedExercise(authenticatedUserId(request), trainingSessionId, exerciseId);
       const [exercise] = await db
-        .delete(trainingSessionExercises)
+        .delete(trainingSessionExercise)
         .where(
           and(
-            eq(trainingSessionExercises.id, exerciseId),
-            eq(trainingSessionExercises.trainingSessionId, trainingSessionId),
+            eq(trainingSessionExercise.id, exerciseId),
+            eq(trainingSessionExercise.trainingSessionId, trainingSessionId),
           ),
         )
-        .returning({ id: trainingSessionExercises.id });
+        .returning({ id: trainingSessionExercise.id });
       if (!exercise) throw notFoundError();
       return reply.code(204).send();
     },
@@ -359,7 +359,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
       const input = parseRequest(createExerciseSetBodySchema, request.body);
       await requireOwnedExercise(authenticatedUserId(request), trainingSessionId, exerciseId);
       const [set] = await db
-        .insert(trainingSessionExerciseSets)
+        .insert(trainingSessionExerciseSet)
         .values({
           trainingSessionExerciseId: exerciseId,
           sortOrder: input.sortOrder,
@@ -386,12 +386,12 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
       const input = requireNonEmptyPatch(parseRequest(updateExerciseSetBodySchema, request.body));
       await requireOwnedSet(authenticatedUserId(request), trainingSessionId, exerciseId, setId);
       const [set] = await db
-        .update(trainingSessionExerciseSets)
+        .update(trainingSessionExerciseSet)
         .set(setUpdateValues(input))
         .where(
           and(
-            eq(trainingSessionExerciseSets.id, setId),
-            eq(trainingSessionExerciseSets.trainingSessionExerciseId, exerciseId),
+            eq(trainingSessionExerciseSet.id, setId),
+            eq(trainingSessionExerciseSet.trainingSessionExerciseId, exerciseId),
           ),
         )
         .returning();
@@ -407,14 +407,14 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
       const { trainingSessionId, exerciseId, setId } = parseRequest(setPathSchema, request.params);
       await requireOwnedSet(authenticatedUserId(request), trainingSessionId, exerciseId, setId);
       const [set] = await db
-        .delete(trainingSessionExerciseSets)
+        .delete(trainingSessionExerciseSet)
         .where(
           and(
-            eq(trainingSessionExerciseSets.id, setId),
-            eq(trainingSessionExerciseSets.trainingSessionExerciseId, exerciseId),
+            eq(trainingSessionExerciseSet.id, setId),
+            eq(trainingSessionExerciseSet.trainingSessionExerciseId, exerciseId),
           ),
         )
-        .returning({ id: trainingSessionExerciseSets.id });
+        .returning({ id: trainingSessionExerciseSet.id });
       if (!set) throw notFoundError();
       return reply.code(204).send();
     },

@@ -3,9 +3,9 @@ import type { FastifyInstance } from "fastify";
 
 import { db } from "../../db/client.js";
 import {
-  trainingSessionExerciseSets,
-  trainingSessionExercises,
-  trainingSessions,
+  trainingSessionExerciseSet,
+  trainingSessionExercise,
+  trainingSession,
 } from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
 import { parseRequest } from "../../lib/api-validation.js";
@@ -20,30 +20,30 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     async (request) => {
       const query = parseRequest(recentsQuerySchema, request.query, true);
       const rows = await db
-        .selectDistinctOn([trainingSessionExercises.name], {
-          name: trainingSessionExercises.name,
-          bodyRegions: trainingSessionExercises.bodyRegions,
-          lastUsedAt: trainingSessions.startedAt,
-          weight: trainingSessionExerciseSets.weight,
-          reps: trainingSessionExerciseSets.reps,
-          rir: trainingSessionExerciseSets.rir,
-          rpe: trainingSessionExerciseSets.rpe,
+        .selectDistinctOn([trainingSessionExercise.name], {
+          name: trainingSessionExercise.name,
+          bodyRegions: trainingSessionExercise.bodyRegions,
+          lastUsedAt: trainingSession.startedAt,
+          weight: trainingSessionExerciseSet.weight,
+          reps: trainingSessionExerciseSet.reps,
+          rir: trainingSessionExerciseSet.rir,
+          rpe: trainingSessionExerciseSet.rpe,
         })
-        .from(trainingSessionExercises)
+        .from(trainingSessionExercise)
         .innerJoin(
-          trainingSessions,
-          eq(trainingSessionExercises.trainingSessionId, trainingSessions.id),
+          trainingSession,
+          eq(trainingSessionExercise.trainingSessionId, trainingSession.id),
         )
         .leftJoin(
-          trainingSessionExerciseSets,
-          eq(trainingSessionExerciseSets.trainingSessionExerciseId, trainingSessionExercises.id),
+          trainingSessionExerciseSet,
+          eq(trainingSessionExerciseSet.trainingSessionExerciseId, trainingSessionExercise.id),
         )
-        .where(eq(trainingSessions.userId, authenticatedUserId(request)))
+        .where(eq(trainingSession.userId, authenticatedUserId(request)))
         .orderBy(
-          trainingSessionExercises.name,
-          desc(trainingSessions.startedAt),
-          desc(trainingSessionExercises.id),
-          desc(trainingSessionExerciseSets.sortOrder),
+          trainingSessionExercise.name,
+          desc(trainingSession.startedAt),
+          desc(trainingSessionExercise.id),
+          desc(trainingSessionExerciseSet.sortOrder),
         );
 
       return {
@@ -76,29 +76,29 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       const query = parseRequest(exerciseHistoryQuerySchema, request.query, true);
       const rows = await db
         .select({
-          name: trainingSessionExercises.name,
-          bodyRegions: trainingSessionExercises.bodyRegions,
-          date: trainingSessions.startedAt,
-          weight: trainingSessionExerciseSets.weight,
-          reps: trainingSessionExerciseSets.reps,
+          name: trainingSessionExercise.name,
+          bodyRegions: trainingSessionExercise.bodyRegions,
+          date: trainingSession.startedAt,
+          weight: trainingSessionExerciseSet.weight,
+          reps: trainingSessionExerciseSet.reps,
         })
-        .from(trainingSessionExercises)
+        .from(trainingSessionExercise)
         .innerJoin(
-          trainingSessions,
-          eq(trainingSessionExercises.trainingSessionId, trainingSessions.id),
+          trainingSession,
+          eq(trainingSessionExercise.trainingSessionId, trainingSession.id),
         )
         .innerJoin(
-          trainingSessionExerciseSets,
-          eq(trainingSessionExerciseSets.trainingSessionExerciseId, trainingSessionExercises.id),
+          trainingSessionExerciseSet,
+          eq(trainingSessionExerciseSet.trainingSessionExerciseId, trainingSessionExercise.id),
         )
         .where(
           and(
-            eq(trainingSessions.userId, authenticatedUserId(request)),
-            gte(trainingSessions.startedAt, utcMidnight(query.from)),
-            lt(trainingSessions.startedAt, utcMidnight(query.to)),
+            eq(trainingSession.userId, authenticatedUserId(request)),
+            gte(trainingSession.startedAt, utcMidnight(query.from)),
+            lt(trainingSession.startedAt, utcMidnight(query.to)),
           ),
         )
-        .orderBy(asc(trainingSessions.startedAt));
+        .orderBy(asc(trainingSession.startedAt));
 
       return {
         data: rows.map((row) => ({

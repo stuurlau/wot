@@ -22,6 +22,7 @@ describe("serializeTrainingSession", () => {
   it("includes computed load and serializes dates as ISO strings", () => {
     const result = serializeTrainingSession(trainingSessionRow);
     assert.equal(result.id, "ts-1");
+    assert.equal(result.userId, "u-1");
     assert.equal(result.startedAt, BASE_ISO);
     assert.equal(result.createdAt, BASE_ISO);
     assert.equal(result.srpe, 7.5);

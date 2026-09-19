@@ -1,45 +1,45 @@
 import { relations } from "drizzle-orm";
 
-import { user } from "./auth.js";
-import { dailyLogs } from "./daily-logs.js";
-import { painLogs } from "./pain-logs.js";
-import { trainingSessionExerciseSets } from "./training-session-exercise-sets.js";
-import { trainingSessionExercises } from "./training-session-exercises.js";
-import { trainingSessions } from "./training-sessions.js";
+import { users } from "./auth.js";
+import { dailyLog } from "./daily-logs.js";
+import { painLog } from "./pain-logs.js";
+import { trainingSessionExerciseSet } from "./training-session-exercise-sets.js";
+import { trainingSessionExercise } from "./training-session-exercises.js";
+import { trainingSession } from "./training-sessions.js";
 
-export const trainingSessionsRelations = relations(trainingSessions, ({ many, one }) => ({
-  user: one(user, {
-    fields: [trainingSessions.userId],
-    references: [user.id],
+export const trainingSessionRelations = relations(trainingSession, ({ many, one }) => ({
+  user: one(users, {
+    fields: [trainingSession.userId],
+    references: [users.id],
   }),
-  exercises: many(trainingSessionExercises),
+  exercises: many(trainingSessionExercise),
 }));
 
-export const trainingSessionExercisesRelations = relations(trainingSessionExercises, ({ many, one }) => ({
-  trainingSession: one(trainingSessions, {
-    fields: [trainingSessionExercises.trainingSessionId],
-    references: [trainingSessions.id],
+export const trainingSessionExerciseRelations = relations(trainingSessionExercise, ({ many, one }) => ({
+  trainingSession: one(trainingSession, {
+    fields: [trainingSessionExercise.trainingSessionId],
+    references: [trainingSession.id],
   }),
-  sets: many(trainingSessionExerciseSets),
+  sets: many(trainingSessionExerciseSet),
 }));
 
-export const trainingSessionExerciseSetsRelations = relations(trainingSessionExerciseSets, ({ one }) => ({
-  exercise: one(trainingSessionExercises, {
-    fields: [trainingSessionExerciseSets.trainingSessionExerciseId],
-    references: [trainingSessionExercises.id],
-  }),
-}));
-
-export const dailyLogsRelations = relations(dailyLogs, ({ one }) => ({
-  user: one(user, {
-    fields: [dailyLogs.userId],
-    references: [user.id],
+export const trainingSessionExerciseSetRelations = relations(trainingSessionExerciseSet, ({ one }) => ({
+  exercise: one(trainingSessionExercise, {
+    fields: [trainingSessionExerciseSet.trainingSessionExerciseId],
+    references: [trainingSessionExercise.id],
   }),
 }));
 
-export const painLogsRelations = relations(painLogs, ({ one }) => ({
-  user: one(user, {
-    fields: [painLogs.userId],
-    references: [user.id],
+export const dailyLogRelations = relations(dailyLog, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyLog.userId],
+    references: [users.id],
+  }),
+}));
+
+export const painLogRelations = relations(painLog, ({ one }) => ({
+  user: one(users, {
+    fields: [painLog.userId],
+    references: [users.id],
   }),
 }));

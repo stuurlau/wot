@@ -26,12 +26,14 @@ export const trainingSessionSchema = z.object({
   title: optionalTextSchema,
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
+  load: z.number().nonnegative(),
 });
 
 export const createTrainingSessionInputSchema = trainingSessionSchema.omit({
   id: true,
   userId: true,
   createdAt: true,
+  load: true,
 });
 
 export const updateTrainingSessionInputSchema = createTrainingSessionInputSchema.partial();

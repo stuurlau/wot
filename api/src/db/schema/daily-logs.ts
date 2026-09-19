@@ -1,14 +1,14 @@
 import { date, index, numeric, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { user } from "./auth.js";
+import { users } from "./auth.js";
 
-export const dailyLogs = pgTable(
+export const dailyLog = pgTable(
   "daily_logs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: "cascade" }),
     date: date("date", { mode: "string" }).notNull(),
     sleepDuration: smallint("sleep_duration"),
     sleepQuality: numeric("sleep_quality", { precision: 3, scale: 1 }),
