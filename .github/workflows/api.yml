@@ -8,7 +8,7 @@ name: api
 # public repo too).
 on:
   push:
-    branches: [master,feat/test-api-build]
+    branches: [master]
     paths:
       - "api/**"
       - "shared/**"
