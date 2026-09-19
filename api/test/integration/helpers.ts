@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { buildApp } from "../../src/app.js";
 import { db } from "../../src/db/client.js";
-import { user } from "../../src/db/schema/index.js";
+import { users } from "../../src/db/schema/index.js";
 
 export async function createTestApp(): Promise<FastifyInstance> {
   return buildApp();
@@ -53,5 +53,5 @@ export function auth(token: string): Record<string, string> {
  * Delete the test user (all app data cascades from the auth user row).
  */
 export async function deleteTestUser(userId: string): Promise<void> {
-  await db.delete(user).where(eq(user.id, userId));
+  await db.delete(users).where(eq(users.id, userId));
 }
