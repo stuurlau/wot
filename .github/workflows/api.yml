@@ -8,7 +8,7 @@ name: api
 # public repo too).
 on:
   push:
-    branches: [master]
+    branches: [master,feat/test-api-build]
     paths:
       - "api/**"
       - "shared/**"
@@ -59,7 +59,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.PAT_TOKEN }}
 
       - uses: docker/metadata-action@v5
         id: meta
