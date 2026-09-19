@@ -8,6 +8,20 @@
       "when": 1786887033354,
       "tag": "0000_quick_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789842559824,
+      "tag": "0001_parallel_the_call",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789842775724,
+      "tag": "0002_curly_runaways",
+      "breakpoints": true
     }
   ]
 }
