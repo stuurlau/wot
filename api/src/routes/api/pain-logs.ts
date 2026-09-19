@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { db } from "../../db/client.js";
-import { painLogs } from "../../db/schema/index.js";
+import { painLog } from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
 import { ApiError, notFoundError } from "../../lib/api-error.js";
 import {
@@ -22,8 +22,8 @@ import {
 
 type PainLogUpdate = z.infer<typeof updatePainLogBodySchema>;
 
-function painLogUpdateValues(input: PainLogUpdate): Partial<typeof painLogs.$inferInsert> {
-  const values: Partial<typeof painLogs.$inferInsert> = {};
+function painLogUpdateValues(input: PainLogUpdate): Partial<typeof painLog.$inferInsert> {
+  const values: Partial<typeof painLog.$inferInsert> = {};
   if (input.date !== undefined) values.date = input.date;
   if (input.bodyRegion !== undefined) values.bodyRegion = input.bodyRegion;
   if (input.severity !== undefined) values.severity = input.severity.toString();
@@ -47,8 +47,8 @@ export async function registerPainLogRoutes(app: FastifyInstance) {
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request, reply) => {
       const input = parseRequest(createPainLogBodySchema, request.body);
-      const [painLog] = await db
-        .insert(painLogs)
+      const [row] = await db
+        .insert(painLog)
         .values({
           userId: authenticatedUserId(request),
           date: input.date,
@@ -57,8 +57,8 @@ export async function registerPainLogRoutes(app: FastifyInstance) {
           notes: input.notes ?? null,
         })
         .returning();
-      if (!painLog) throw new ApiError(500, "INTERNAL_ERROR", "Unable to create pain log.");
-      return reply.code(201).send(serializePainLog(painLog));
+      if (!row) throw new ApiError(500, "INTERNAL_ERROR", "Unable to create pain log.");
+      return reply.code(201).send(serializePainLog(row));
     },
   );
 
@@ -67,25 +67,25 @@ export async function registerPainLogRoutes(app: FastifyInstance) {
     { preHandler: requireAuthentication },
     async (request) => {
       const query = parseRequest(painLogListQuerySchema, request.query, true);
-      const filters = [eq(painLogs.userId, authenticatedUserId(request))];
-      if (query.from) filters.push(gte(painLogs.date, query.from));
-      if (query.to) filters.push(lt(painLogs.date, query.to));
-      if (query.bodyRegion) filters.push(eq(painLogs.bodyRegion, query.bodyRegion));
+      const filters = [eq(painLog.userId, authenticatedUserId(request))];
+      if (query.from) filters.push(gte(painLog.date, query.from));
+      if (query.to) filters.push(lt(painLog.date, query.to));
+      if (query.bodyRegion) filters.push(eq(painLog.bodyRegion, query.bodyRegion));
       if (query.cursor) {
         const cursor = painLogCursor(query.cursor);
         filters.push(
           or(
-            lt(painLogs.date, cursor.value),
-            and(eq(painLogs.date, cursor.value), lt(painLogs.id, cursor.id)),
+            lt(painLog.date, cursor.value),
+            and(eq(painLog.date, cursor.value), lt(painLog.id, cursor.id)),
           )!,
         );
       }
 
       const rows = await db
         .select()
-        .from(painLogs)
+        .from(painLog)
         .where(and(...filters))
-        .orderBy(desc(painLogs.date), desc(painLogs.id))
+        .orderBy(desc(painLog.date), desc(painLog.id))
         .limit(query.limit + 1);
       const pageRows = rows.slice(0, query.limit);
       const last = pageRows.at(-1);
@@ -107,18 +107,18 @@ export async function registerPainLogRoutes(app: FastifyInstance) {
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request) => {
       const { painLogId } = parseRequest(painLogPathSchema, request.params);
-      const [painLog] = await db
+      const [row] = await db
         .select()
-        .from(painLogs)
+        .from(painLog)
         .where(
           and(
-            eq(painLogs.id, painLogId),
-            eq(painLogs.userId, authenticatedUserId(request)),
+            eq(painLog.id, painLogId),
+            eq(painLog.userId, authenticatedUserId(request)),
           ),
         )
         .limit(1);
-      if (!painLog) throw notFoundError();
-      return serializePainLog(painLog);
+      if (!row) throw notFoundError();
+      return serializePainLog(row);
     },
   );
 
@@ -128,18 +128,18 @@ export async function registerPainLogRoutes(app: FastifyInstance) {
     async (request) => {
       const { painLogId } = parseRequest(painLogPathSchema, request.params);
       const input = requireNonEmptyPatch(parseRequest(updatePainLogBodySchema, request.body));
-      const [painLog] = await db
-        .update(painLogs)
+      const [row] = await db
+        .update(painLog)
         .set(painLogUpdateValues(input))
         .where(
           and(
-            eq(painLogs.id, painLogId),
-            eq(painLogs.userId, authenticatedUserId(request)),
+            eq(painLog.id, painLogId),
+            eq(painLog.userId, authenticatedUserId(request)),
           ),
         )
         .returning();
-      if (!painLog) throw notFoundError();
-      return serializePainLog(painLog);
+      if (!row) throw notFoundError();
+      return serializePainLog(row);
     },
   );
 
@@ -148,16 +148,16 @@ export async function registerPainLogRoutes(app: FastifyInstance) {
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request, reply) => {
       const { painLogId } = parseRequest(painLogPathSchema, request.params);
-      const [painLog] = await db
-        .delete(painLogs)
+      const [row] = await db
+        .delete(painLog)
         .where(
           and(
-            eq(painLogs.id, painLogId),
-            eq(painLogs.userId, authenticatedUserId(request)),
+            eq(painLog.id, painLogId),
+            eq(painLog.userId, authenticatedUserId(request)),
           ),
         )
-        .returning({ id: painLogs.id });
-      if (!painLog) throw notFoundError();
+        .returning({ id: painLog.id });
+      if (!row) throw notFoundError();
       return reply.code(204).send();
     },
   );

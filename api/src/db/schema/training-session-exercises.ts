@@ -1,14 +1,14 @@
 import { index, pgTable, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-import { trainingSessions } from "./training-sessions.js";
+import { trainingSession } from "./training-sessions.js";
 
-export const trainingSessionExercises = pgTable(
+export const trainingSessionExercise = pgTable(
   "training_session_exercises",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     trainingSessionId: uuid("training_session_id")
       .notNull()
-      .references(() => trainingSessions.id, { onDelete: "cascade" }),
+      .references(() => trainingSession.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     bodyRegions: text("body_regions").array(),
     sortOrder: smallint("sort_order").notNull(),

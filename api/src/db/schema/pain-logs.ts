@@ -1,14 +1,14 @@
 import { date, index, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-import { user } from "./auth.js";
+import { users } from "./auth.js";
 
-export const painLogs = pgTable(
+export const painLog = pgTable(
   "pain_logs",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     userId: text("user_id")
       .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
+      .references(() => users.id, { onDelete: "cascade" }),
     date: date("date", { mode: "string" }).notNull(),
     bodyRegion: text("body_region").notNull(),
     severity: numeric("severity", { precision: 3, scale: 1 }).notNull(),

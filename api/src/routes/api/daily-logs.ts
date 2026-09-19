@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { db } from "../../db/client.js";
-import { dailyLogs } from "../../db/schema/index.js";
+import { dailyLog } from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
 import { ApiError, notFoundError } from "../../lib/api-error.js";
 import { parseRequest, rejectUnknownQuery } from "../../lib/api-validation.js";
@@ -40,11 +40,11 @@ export async function registerDailyLogRoutes(app: FastifyInstance) {
       const { date } = parseRequest(dailyLogPathSchema, request.params);
       const input = parseRequest(dailyLogBodySchema, request.body);
       const values = dailyLogValues(authenticatedUserId(request), date, input);
-      const [dailyLog] = await db
-        .insert(dailyLogs)
+      const [row] = await db
+        .insert(dailyLog)
         .values(values)
         .onConflictDoUpdate({
-          target: [dailyLogs.userId, dailyLogs.date],
+          target: [dailyLog.userId, dailyLog.date],
           set: {
             sleepDuration: values.sleepDuration,
             sleepQuality: values.sleepQuality,
@@ -58,8 +58,8 @@ export async function registerDailyLogRoutes(app: FastifyInstance) {
           },
         })
         .returning();
-      if (!dailyLog) throw new ApiError(500, "INTERNAL_ERROR", "Unable to save daily log.");
-      return serializeDailyLog(dailyLog);
+      if (!row) throw new ApiError(500, "INTERNAL_ERROR", "Unable to save daily log.");
+      return serializeDailyLog(row);
     },
   );
 
@@ -68,18 +68,18 @@ export async function registerDailyLogRoutes(app: FastifyInstance) {
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request) => {
       const { date } = parseRequest(dailyLogPathSchema, request.params);
-      const [dailyLog] = await db
+      const [row] = await db
         .select()
-        .from(dailyLogs)
+        .from(dailyLog)
         .where(
           and(
-            eq(dailyLogs.userId, authenticatedUserId(request)),
-            eq(dailyLogs.date, date),
+            eq(dailyLog.userId, authenticatedUserId(request)),
+            eq(dailyLog.date, date),
           ),
         )
         .limit(1);
-      if (!dailyLog) throw notFoundError();
-      return serializeDailyLog(dailyLog);
+      if (!row) throw notFoundError();
+      return serializeDailyLog(row);
     },
   );
 
@@ -93,15 +93,15 @@ export async function registerDailyLogRoutes(app: FastifyInstance) {
       }
       const rows = await db
         .select()
-        .from(dailyLogs)
+        .from(dailyLog)
         .where(
           and(
-            eq(dailyLogs.userId, authenticatedUserId(request)),
-            gte(dailyLogs.date, query.from),
-            lt(dailyLogs.date, query.to),
+            eq(dailyLog.userId, authenticatedUserId(request)),
+            gte(dailyLog.date, query.from),
+            lt(dailyLog.date, query.to),
           ),
         )
-        .orderBy(asc(dailyLogs.date));
+        .orderBy(asc(dailyLog.date));
       return { data: rows.map(serializeDailyLog) };
     },
   );
@@ -111,16 +111,16 @@ export async function registerDailyLogRoutes(app: FastifyInstance) {
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request, reply) => {
       const { date } = parseRequest(dailyLogPathSchema, request.params);
-      const [dailyLog] = await db
-        .delete(dailyLogs)
+      const [row] = await db
+        .delete(dailyLog)
         .where(
           and(
-            eq(dailyLogs.userId, authenticatedUserId(request)),
-            eq(dailyLogs.date, date),
+            eq(dailyLog.userId, authenticatedUserId(request)),
+            eq(dailyLog.date, date),
           ),
         )
-        .returning({ id: dailyLogs.id });
-      if (!dailyLog) throw notFoundError();
+        .returning({ id: dailyLog.id });
+      if (!row) throw notFoundError();
       return reply.code(204).send();
     },
   );
