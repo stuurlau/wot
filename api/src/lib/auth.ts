@@ -11,6 +11,13 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
   }),
+  // Keep table names plural, consistent with the app tables (and avoids the
+  // reserved word "user"). These modelNames must match the exported table
+  // names in src/db/schema/auth.ts.
+  user: { modelName: 'users' },
+  session: { modelName: 'sessions' },
+  account: { modelName: 'accounts' },
+  verification: { modelName: 'verifications' },
   emailAndPassword: {
     enabled: true,
   },
