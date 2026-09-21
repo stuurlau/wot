@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Screen } from '@/components/screen';
 import { useAuthStore } from '@/stores/auth-store';
 import Constants from 'expo-constants';
 
@@ -38,7 +38,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1">
+    <Screen>
       <KeyboardAvoidingView
         className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -169,6 +169,6 @@ export default function LoginScreen() {
           </Text>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   );
 }

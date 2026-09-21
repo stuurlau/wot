@@ -134,6 +134,9 @@ export function SetRow({
         </View>
 
         <Text className="ml-3 font-body text-[12px] tracking-[2px] text-primary">✓</Text>
+        <Pressable onPress={onDelete} hitSlop={8} className="ml-2 px-1">
+          <Text className="font-body text-[14px] text-muted-foreground">✕</Text>
+        </Pressable>
       </Pressable>
     );
   }

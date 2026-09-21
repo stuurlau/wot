@@ -1,11 +1,56 @@
-import { View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { Svg, Defs, Pattern, Rect, Line, LinearGradient, Stop } from "react-native-svg";
 
 import { Colors } from "@/constants/theme";
 
-const LINE_SPACING = 30;
+/**
+ * Ruled (grid) background rendered *inside* each screen (see `Screen`).
+ *
+ * ── Tuning knobs ──────────────────────────────────────────────────────────
+ * Adjust these and they apply identically on web (CSS) and native (SVG):
+ */
+const LINE_SPACING = 25; // px between grid lines
+const LINE_OPACITY = 0.7; // 0–1, strength of the grid lines
+const LINE_WIDTH = 1; // px line thickness
+const FADE_OPACITY = 0.9; // 0–1, how strongly the grid fades under the header / above the footer
+const FADE_TOP = 0.3; // fraction of screen height the top fade spans
+const FADE_BOTTOM = 0.06; // fraction of screen height the bottom fade spans
+
+/** '#rrggbb' + opacity → 'rgba(r,g,b,a)' (for the web CSS path). */
+function rgba(hex: string, opacity: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${opacity})`;
+}
 
 export function RuledBackground() {
+  if (Platform.OS === "web") {
+    const line = `${LINE_SPACING}px`;
+    const grid = rgba(Colors.gridLine, LINE_OPACITY);
+    const fade = (o: number) => rgba(Colors.surface, o);
+    return (
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            // web-only CSS backgroundImage (not part of the RN style types).
+            // Note: layers stack first-on-top, so the fades come first.
+            backgroundImage: [
+              // soft fade under the header
+              `linear-gradient(to bottom, ${fade(FADE_OPACITY)}, ${fade(0)} ${FADE_TOP * 100}%)`,
+              // soft fade above the footer / tab bar
+              `linear-gradient(to top, ${fade(FADE_OPACITY)}, ${fade(0)} ${FADE_BOTTOM * 100}%)`,
+              // vertical lines
+              `repeating-linear-gradient(to right, ${grid} 0px, ${grid} ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px, transparent ${line})`,
+              // horizontal lines
+              `repeating-linear-gradient(to bottom, ${grid} 0px, ${grid} ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px, transparent ${line})`,
+            ].join(", "),
+          },
+        ]}
+      />
+    );
+  }
+
   return (
     <View className="absolute inset-0" pointerEvents="none">
       <Svg width="100%" height="100%">
@@ -24,8 +69,8 @@ export function RuledBackground() {
               x2="10000"
               y2={LINE_SPACING}
               stroke={Colors.gridLine}
-              strokeWidth="1"
-              strokeOpacity={0.85}
+              strokeWidth={LINE_WIDTH}
+              strokeOpacity={LINE_OPACITY}
             />
             <Line
               x1={LINE_SPACING}
@@ -33,20 +78,17 @@ export function RuledBackground() {
               x2={LINE_SPACING}
               y2={10000}
               stroke={Colors.gridLine}
-              strokeWidth="1"
-              strokeOpacity={0.85}
+              strokeWidth={LINE_WIDTH}
+              strokeOpacity={LINE_OPACITY}
             />
           </Pattern>
-          {/* Soft surface fade only at the very top (under the AppHeader) and
-              very bottom (above the VersionFooter / tab bar). Leaves the
-              middle of the screen fully crisp. */}
-          <LinearGradient id="topFade" x1="0" y1="0" x2="0" y2="0.08">
-            <Stop offset="0" stopColor={Colors.surface} stopOpacity={0.55} />
+          <LinearGradient id="topFade" x1="0" y1="0" x2="0" y2={FADE_TOP}>
+            <Stop offset="0" stopColor={Colors.surface} stopOpacity={FADE_OPACITY} />
             <Stop offset="1" stopColor={Colors.surface} stopOpacity={0} />
           </LinearGradient>
-          <LinearGradient id="bottomFade" x1="0" y1="0.94" x2="0" y2="1">
+          <LinearGradient id="bottomFade" x1="0" y1={1 - FADE_BOTTOM} x2="0" y2="1">
             <Stop offset="0" stopColor={Colors.surface} stopOpacity={0} />
-            <Stop offset="1" stopColor={Colors.surface} stopOpacity={0.55} />
+            <Stop offset="1" stopColor={Colors.surface} stopOpacity={FADE_OPACITY} />
           </LinearGradient>
         </Defs>
         <Rect width="100%" height="100%" fill="url(#lines)" />

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Screen } from '@/components/screen';
 
 import { SessionHistoryCard } from '@/components/home/session-history-card';
 import { AppHeader } from '@/components/app-header';
@@ -15,7 +15,7 @@ export default function HistoryScreen() {
   const sessions = finishedSessions(sessionsQuery.data?.data ?? []);
 
   return (
-    <SafeAreaView className="flex-1">
+    <Screen>
       <AppHeader />
       <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 20, paddingBottom: 32 }}>
           <Text className="mb-6 font-heading text-[40px] leading-[38px] tracking-[-1.6px] text-foreground">
@@ -43,6 +43,6 @@ export default function HistoryScreen() {
             ))}
           </View>
         </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Screen } from '@/components/screen';
 
 import { BalanceBars } from '@/components/insights/balance-bars';
 import { LoadTrendChart } from '@/components/insights/load-trend-chart';
@@ -66,7 +66,7 @@ export default function InsightsScreen() {
   const empty = !hasLoad && history.length === 0;
 
   return (
-    <SafeAreaView className="flex-1">
+    <Screen>
       <AppHeader />
       <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 20, paddingBottom: 32 }}>
           <Text className="mb-6 font-heading text-[40px] leading-[38px] tracking-[-1.6px] text-foreground">
@@ -116,7 +116,7 @@ export default function InsightsScreen() {
             </>
           ) : null}
         </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }
 

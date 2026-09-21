@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Screen } from '@/components/screen';
 
 import { DataState } from '@/components/data-state';
 import { AppHeader } from '@/components/app-header';
@@ -72,14 +72,14 @@ export default function WorkoutScreen() {
 
   if (!sessionId || !startedAtMs) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <Screen className="items-center justify-center">
         <Text className="font-body text-[12px] text-muted-foreground">No active workout.</Text>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <Screen>
       <AppHeader />
       <View className="px-6 pb-2 pt-1">
         <View className="flex-row items-center justify-between">
@@ -112,6 +112,10 @@ export default function WorkoutScreen() {
       </View>
 
       {session ? (
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
         <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
           {session.exercises.length === 0 ? (
             <Pressable onPress={() => setPickerVisible(true)} className="mb-4 self-start py-1">
@@ -142,6 +146,7 @@ export default function WorkoutScreen() {
             </Text>
           </Pressable>
         </ScrollView>
+        </KeyboardAvoidingView>
       ) : (
         <View className="flex-1 px-6 pt-6">
           <DataState message="Loading workout…" />
@@ -162,6 +167,6 @@ export default function WorkoutScreen() {
         onLogPain={() => setPainVisible(true)}
       />
       <PainSheet visible={painVisible} onClose={() => setPainVisible(false)} />
-    </SafeAreaView>
+    </Screen>
   );
 }

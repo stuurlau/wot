@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "mobile-client",
+    "name": "WOT",
     "slug": "mobile-client",
-    "version": "1.0.0",
+    "version": "0.0.0-alpha",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobileclient",
@@ -20,6 +20,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false
     },
     "web": {

@@ -25,7 +25,6 @@ import 'react-native-reanimated';
 import { View } from 'react-native';
 
 import { useAuthStore } from '@/stores/auth-store';
-import { RuledBackground } from '@/components/ruled-background';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -79,7 +78,6 @@ export default function RootLayout() {
       <ThemeProvider value={DefaultTheme}>
         <View className="flex-1 bg-background">
           <AuthGuard />
-          <RuledBackground />
           <Stack
             screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}
           >

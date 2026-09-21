@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import type { RecentExercise } from '@/lib/api';
 import type { TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
-import { useCreateExerciseSet, useDeleteExerciseSet, useUpdateExerciseSet } from '@/hooks/api';
+import { useCreateExerciseSet, useDeleteExercise, useDeleteExerciseSet, useUpdateExerciseSet } from '@/hooks/api';
 import { SetRow, type SetInput } from './set-row';
 
 type ExerciseBlockProps = {
@@ -27,6 +27,8 @@ export function ExerciseBlock({ sessionId, exercise, recent }: ExerciseBlockProp
   const createSet = useCreateExerciseSet(sessionId, exercise.id);
   const updateSet = useUpdateExerciseSet(sessionId, exercise.id);
   const deleteSet = useDeleteExerciseSet(sessionId, exercise.id);
+  const deleteExercise = useDeleteExercise(sessionId);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const strengthReference =
     recent?.lastSet.weight != null || recent?.lastSet.reps != null
@@ -39,11 +41,34 @@ export function ExerciseBlock({ sessionId, exercise, recent }: ExerciseBlockProp
         <Text className="font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground">
           {exercise.name}
         </Text>
-        {exercise.bodyRegions && exercise.bodyRegions.length > 0 ? (
-          <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-            {exercise.bodyRegions.join(' · ')}
-          </Text>
-        ) : null}
+        <View className="flex-row items-baseline gap-3">
+          {exercise.bodyRegions && exercise.bodyRegions.length > 0 ? (
+            <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
+              {exercise.bodyRegions.join(' · ')}
+            </Text>
+          ) : null}
+          <Pressable
+            hitSlop={8}
+            onPress={() => {
+              if (confirmRemove) {
+                deleteExercise.mutate(exercise.id);
+              } else {
+                setConfirmRemove(true);
+                setTimeout(() => setConfirmRemove(false), 3000);
+              }
+            }}
+          >
+            <Text
+              className={
+                confirmRemove
+                  ? 'font-body text-[9px] uppercase tracking-[2px] text-destructive'
+                  : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
+              }
+            >
+              {confirmRemove ? 'Tap again to remove' : 'Remove'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <View className="mb-2 flex-row gap-2">
