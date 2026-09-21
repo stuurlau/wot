@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View, type ViewStyle } from "react-native";
 import { Svg, Defs, Pattern, Rect, Line, LinearGradient, Stop } from "react-native-svg";
 
 import { Colors } from "@/constants/theme";
@@ -27,27 +27,22 @@ export function RuledBackground() {
     const line = `${LINE_SPACING}px`;
     const grid = rgba(Colors.gridLine, LINE_OPACITY);
     const fade = (o: number) => rgba(Colors.surface, o);
+    // web-only CSS backgroundImage (not part of the RN style types).
+    // Note: layers stack first-on-top, so the fades come first.
+    const webGridStyle = {
+      backgroundImage: [
+        // soft fade under the header
+        `linear-gradient(to bottom, ${fade(FADE_OPACITY)}, ${fade(0)} ${FADE_TOP * 100}%)`,
+        // soft fade above the footer / tab bar
+        `linear-gradient(to top, ${fade(FADE_OPACITY)}, ${fade(0)} ${FADE_BOTTOM * 100}%)`,
+        // vertical lines
+        `repeating-linear-gradient(to right, ${grid} 0px, ${grid} ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px, transparent ${line})`,
+        // horizontal lines
+        `repeating-linear-gradient(to bottom, ${grid} 0px, ${grid} ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px, transparent ${line})`,
+      ].join(", "),
+    } as unknown as ViewStyle;
     return (
-      <View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            // web-only CSS backgroundImage (not part of the RN style types).
-            // Note: layers stack first-on-top, so the fades come first.
-            backgroundImage: [
-              // soft fade under the header
-              `linear-gradient(to bottom, ${fade(FADE_OPACITY)}, ${fade(0)} ${FADE_TOP * 100}%)`,
-              // soft fade above the footer / tab bar
-              `linear-gradient(to top, ${fade(FADE_OPACITY)}, ${fade(0)} ${FADE_BOTTOM * 100}%)`,
-              // vertical lines
-              `repeating-linear-gradient(to right, ${grid} 0px, ${grid} ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px, transparent ${line})`,
-              // horizontal lines
-              `repeating-linear-gradient(to bottom, ${grid} 0px, ${grid} ${LINE_WIDTH}px, transparent ${LINE_WIDTH}px, transparent ${line})`,
-            ].join(", "),
-          },
-        ]}
-      />
+      <View pointerEvents="none" style={[StyleSheet.absoluteFill, webGridStyle]} />
     );
   }
 
