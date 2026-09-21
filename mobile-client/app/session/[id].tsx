@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Screen } from '@/components/screen';
 
 import { AppHeader } from '@/components/app-header';
 import { VersionFooter } from '@/components/version-footer';
-import { useCreateTrainingSession, useTrainingSession } from '@/hooks/api';
+import { useCreateTrainingSession, useDeleteTrainingSession, useTrainingSession } from '@/hooks/api';
 import { exercises } from '@/lib/api';
 import { useActiveSessionStore } from '@/stores/active-session-store';
 
@@ -19,15 +19,17 @@ export default function SessionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: session } = useTrainingSession(id ?? '');
   const createSession = useCreateTrainingSession();
+  const deleteSession = useDeleteTrainingSession();
   const startActive = useActiveSessionStore((s) => s.start);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!session) {
     return (
-      <SafeAreaView className="flex-1 bg-background">
+      <Screen>
         <AppHeader />
         <Text className="px-6 pt-6 font-body text-[12px] text-muted-foreground">Loading…</Text>
-      </SafeAreaView>
+      </Screen>
     );
   }
 
@@ -56,7 +58,7 @@ export default function SessionDetailScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1">
+    <Screen>
       <AppHeader />
       <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 20, paddingBottom: 32 }}>
           <Pressable onPress={() => router.back()} className="mb-4 self-start">
@@ -155,8 +157,30 @@ export default function SessionDetailScreen() {
               {createSession.isPending ? 'Starting…' : 'Log again'}
             </Text>
           </Pressable>
+
+          <Pressable
+            onPress={() => {
+              if (!id) return;
+              if (confirmDelete) {
+                deleteSession.mutate(id, { onSuccess: () => router.back() });
+              } else {
+                setConfirmDelete(true);
+                setTimeout(() => setConfirmDelete(false), 3000);
+              }
+            }}
+            disabled={deleteSession.isPending}
+            className="mt-4 items-center py-2"
+          >
+            <Text className="font-body text-[10px] uppercase tracking-[3px] text-destructive">
+              {deleteSession.isPending
+                ? 'Deleting…'
+                : confirmDelete
+                  ? 'Tap again to delete this workout'
+                  : 'Delete workout'}
+            </Text>
+          </Pressable>
         </ScrollView>
       <VersionFooter />
-    </SafeAreaView>
+    </Screen>
   );
 }

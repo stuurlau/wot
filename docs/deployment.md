@@ -184,6 +184,11 @@ The mobile client is never hosted on the server; test APKs go through GitHub.
 
       https://github.com/stuurlau/wot/releases/download/test-app/wot-test-app.apk
 
+- **`.github/workflows/mobile-release.yml`** — pushing a `v*` tag builds the
+  same APK and attaches it to a versioned GitHub release for that tag
+  (`wot-<tag>.apk`, auto-generated notes; tags containing `-` become
+  pre-releases).
+
 One-time setup:
 
 1. `cd mobile-client && npx eas-cli login && npx eas-cli init` — writes
@@ -192,8 +197,8 @@ One-time setup:
    to the repo's Actions secrets.
 
 The `preview` EAS profile bakes `EXPO_PUBLIC_API_URL=https://api.wot-app.org`
-into the APK. Production builds later get their own tag-triggered workflow and
-go through the app stores.
+into the APK. Production builds (app bundles for the Play Store) get their own
+workflow later.
 
 ## Rollback
 

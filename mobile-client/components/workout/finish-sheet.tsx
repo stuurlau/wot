@@ -41,9 +41,12 @@ export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPai
   const canSave = srpe !== null;
 
   const save = async () => {
+    if (srpe === null) {
+      setError('One more thing: tap a number under "How hard was it?" (1–10).');
+      return;
+    }
     const minutes = parseInt(durationMin, 10);
     const durationSeconds = Number.isFinite(minutes) && minutes > 0 ? minutes * 60 : 60;
-    if (srpe === null) return;
     setError(null);
     try {
       await updateSession.mutateAsync({
@@ -85,7 +88,7 @@ export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPai
 
       <View className="mb-5">
         <Text className="mb-2 font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
-          How hard was it?
+          How hard was it? (required)
         </Text>
         <RatingScale
           value={srpe}
@@ -176,8 +179,12 @@ export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPai
 
       <Pressable
         onPress={() => void save()}
-        disabled={!canSave || updateSession.isPending}
-        className="items-center rounded-2xl bg-primary px-6 py-4 active:opacity-80"
+        disabled={updateSession.isPending}
+        className={
+          canSave
+            ? 'items-center rounded-2xl bg-primary px-6 py-4 active:opacity-80'
+            : 'items-center rounded-2xl bg-primary/40 px-6 py-4'
+        }
       >
         <Text className="font-body-bold text-[11px] uppercase tracking-[3px] text-primary-foreground">
           {updateSession.isPending ? 'Saving…' : 'Save workout'}
