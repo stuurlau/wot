@@ -7,12 +7,13 @@ name: api
 # self-hosted runner or inbound access from GitHub is needed (works for a
 # public repo too).
 on:
+  # Version tags always publish, so a release ships an up-to-date API image
+  # even when only the mobile client changed. Master pushes publish too;
+  # the path filter lives only on PRs (a single `push` trigger can't scope
+  # paths per ref type, and unchanged code is a cheap cache hit anyway).
   push:
     branches: [master]
-    paths:
-      - "api/**"
-      - "shared/**"
-      - ".github/workflows/api.yml"
+    tags: ["v*"]
   pull_request:
     paths:
       - "api/**"
@@ -68,6 +69,7 @@ jobs:
           tags: |
             type=raw,value=latest
             type=sha
+            type=raw,value=${{ github.ref_name }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
 
       - uses: docker/build-push-action@v6
         with:
