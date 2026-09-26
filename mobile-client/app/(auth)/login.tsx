@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
 
@@ -39,15 +37,11 @@ export default function LoginScreen() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
           <View className="flex-1 px-8 pt-12 pb-6">
 
             {/* Brand section */}
@@ -157,18 +151,17 @@ export default function LoginScreen() {
               </Link>
             </View>
           </View>
-        </ScrollView>
+      </KeyboardAwareScrollView>
 
-        {/* Version bar */}
-        <View
-          className="px-8 py-3 flex-row items-center"
-          style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' }}
-        >
-          <Text className="font-body text-[9px] tracking-[3px] text-muted-foreground uppercase">
-            WOT v{Constants.expoConfig?.version ?? '0.0.0'}
-          </Text>
-        </View>
-      </KeyboardAvoidingView>
+      {/* Version bar */}
+      <View
+        className="px-8 py-3 flex-row items-center"
+        style={{ borderTopWidth: 0.5, borderTopColor: 'rgba(0,0,0,0.08)' }}
+      >
+        <Text className="font-body text-[9px] tracking-[3px] text-muted-foreground uppercase">
+          WOT v{Constants.expoConfig?.version ?? '0.0.0'}
+        </Text>
+      </View>
     </Screen>
   );
 }

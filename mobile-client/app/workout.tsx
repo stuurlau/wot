@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import { Screen } from '@/components/screen';
 
@@ -112,11 +113,10 @@ export default function WorkoutScreen() {
       </View>
 
       {session ? (
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        <KeyboardAwareScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}
         >
-        <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ paddingBottom: 40 }}>
           {session.exercises.length === 0 ? (
             <Pressable onPress={() => setPickerVisible(true)} className="mb-4 self-start py-1">
               <Text className="font-body text-[13px] leading-5 text-muted-foreground">
@@ -145,8 +145,7 @@ export default function WorkoutScreen() {
               + Pain
             </Text>
           </Pressable>
-        </ScrollView>
-        </KeyboardAvoidingView>
+        </KeyboardAwareScrollView>
       ) : (
         <View className="flex-1 px-6 pt-6">
           <DataState message="Loading workout…" />
