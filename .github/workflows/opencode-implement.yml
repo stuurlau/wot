@@ -1,0 +1,52 @@
+name: opencode-implement
+
+# Issue → PR pipeline, step 1: labeling an issue `agent` (or opening an issue
+# that already has the label) dispatches the implementer. It branches off
+# master, implements the issue, runs checks, and opens exactly one PR with
+# `Closes #N` in the body. Requires the `agent` label to exist in the repo
+# (create once: GitHub UI or `gh label create agent`).
+on:
+  issues:
+    types: [opened, labeled]
+
+concurrency:
+  group: opencode-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  implement:
+    if: contains(github.event.issue.labels.*.name, 'agent')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run opencode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode-go/kimi-k3
+          prompt: |
+            You are the implementer agent for the WOT repo. Implement issue #${{ github.event.issue.number }}, end to end, exactly once.
+
+            Process:
+            1. Read `AGENTS.md` at the repo root first and follow it. Read the issue title, body and all comments. If the requirements are ambiguous in a way that changes the design, ask concrete questions in an issue comment and stop — do not guess.
+            2. Create a branch `agent/issue-${{ github.event.issue.number }}-<short-slug>` from `master`.
+            3. Implement the smallest change that fully satisfies the issue. Follow existing code conventions; no unrelated refactors.
+            4. Run `make setup`, then the checks for every package you touched (`make check` covers all). Fix failures until green.
+            5. Open exactly one pull request targeting `master` with `Closes #${{ github.event.issue.number }}` in the body. PR body: summary of changes, which checks you ran and their results, and anything you deliberately left out.
+            6. Comment on the issue with a link to the PR.
+
+            Rules:
+            - One PR per issue. Never push to `master` directly. Never force-push.
+            - Never commit secrets; add new env variables as documented placeholders only.
+            - For big behavior or architecture changes, add a dated doc in `docs/` (see AGENTS.md).

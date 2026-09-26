@@ -24,7 +24,7 @@ implement it end to end.
 5. Before the PR: run the full typecheck + unit tests for every package you
    touched and make sure they pass.
 6. Push a branch `agent/<plan-slug>` and open a PR
-   (`gh pr create`) targeting `main` whose body links the plan file and
+   (`gh pr create`) targeting `master` whose body links the plan file and
    summarizes the changes and verification commands.
 7. Update the plan file: tick the completed steps, set status line at top to
    `status: in-review` and record the PR URL.
@@ -32,7 +32,7 @@ implement it end to end.
 ## Rules
 
 - Stay inside the scope of the plan and its referenced files.
-- never push directly to `main`; never force-push.
+- never push directly to `master`; never force-push.
 - If `gh` or the remote is unavailable, report the finished branch name and
   commit list so the user can push.
 - End your reply with: branch name, PR URL, list of commits, verification
