@@ -1,0 +1,53 @@
+name: opencode-review
+
+# Issue → PR pipeline, step 2: a PR opened from an `agent/` branch triggers
+# the reviewer. It verifies the diff against the linked issue and AGENTS.md,
+# fixes problems itself (small commits on top of the PR branch), then leaves
+# one summary review for the human maintainer.
+#
+# Only `opened` / `ready_for_review` trigger this — the reviewer's own pushes
+# (synchronize) must not re-trigger it (loop guard).
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+concurrency:
+  group: opencode-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: startsWith(github.event.pull_request.head.ref, 'agent/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run opencode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode-go/kimi-k3
+          prompt: |
+            You are the reviewer agent for the WOT repo. Review pull request #${{ github.event.pull_request.number }} and FIX what you find.
+
+            Process:
+            1. Read `AGENTS.md` at the repo root first and follow it.
+            2. Find the linked issue (`Closes #...` in the PR body) and read it — the PR must fully and only solve it.
+            3. Review the full diff: correctness, edge cases, security, and the data-model / UX / coding conventions from AGENTS.md. Flag scope creep.
+            4. Run `make setup`, then `make check`. Fix all failures.
+            5. Commit your fixes directly to the PR branch as small conventional commits on top — never rewrite existing commits, never force-push. If nothing needs fixing, change nothing.
+            6. Leave exactly one review on the PR summarizing: what you checked, what you fixed (commit list), check results, ending with `@${{ github.repository_owner }} ready for your review`. If the PR is fundamentally wrong, explain why and request changes instead of patching over it.
+
+            Rules:
+            - Stay within the PR's scope; no unrelated refactors.
+            - Never push to `master`.
