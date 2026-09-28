@@ -23,6 +23,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { View } from 'react-native';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -76,19 +77,21 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={DefaultTheme}>
-        <View className="flex-1 bg-background">
-          <AuthGuard />
-          <Stack
-            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}
-          >
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="workout" options={{ presentation: 'modal', gestureEnabled: false }} />
-            <Stack.Screen name="session/[id]" />
-          </Stack>
-          <PortalHost />
-          <StatusBar style="dark" />
-        </View>
+        <KeyboardProvider>
+          <View className="flex-1 bg-background">
+            <AuthGuard />
+            <Stack
+              screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}
+            >
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="workout" options={{ presentation: 'modal', gestureEnabled: false }} />
+              <Stack.Screen name="session/[id]" />
+            </Stack>
+            <PortalHost />
+            <StatusBar style="dark" />
+          </View>
+        </KeyboardProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
