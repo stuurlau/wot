@@ -1,5 +1,11 @@
 name: opencode
 
+# On-demand agent: comment `/oc <instruction>` (or `/opencode`) on any issue,
+# PR, or PR review comment and opencode executes it — replying, branching off,
+# or committing to the PR branch depending on context.
+#
+# Model ladder (see AGENTS.md): primary kimi-k3; on failure — typically
+# exhausted OpenCode Go usage limits — one automatic retry with glm-5.2.
 on:
   issue_comment:
     types: [created]
@@ -14,20 +20,50 @@ jobs:
       contains(github.event.comment.body, ' /opencode') ||
       startsWith(github.event.comment.body, '/opencode')
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     permissions:
       id-token: write
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
+      - name: Check OPENCODE_API_KEY secret
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          if [ -z "$OPENCODE_API_KEY" ]; then
+            echo "::error::OPENCODE_API_KEY secret is empty or missing. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           persist-credentials: false
 
-      - name: Run opencode
+      - name: "Run opencode (primary: kimi-k3)"
+        id: primary
+        continue-on-error: true
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
           model: opencode-go/kimi-k3
+
+      - name: "Run opencode (fallback: glm-5.2)"
+        id: fallback
+        if: steps.primary.outcome == 'failure'
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode-go/glm-5.2
+
+      # Both attempts failed: explain on the issue/PR and keep the run red.
+      - name: Report failure
+        if: steps.primary.outcome == 'failure' && steps.fallback.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --body "The agent could not complete this request. Both model attempts (kimi-k3, then glm-5.2) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab, or post the \`/oc\` comment again." || true
+          exit 1

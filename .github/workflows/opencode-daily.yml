@@ -4,6 +4,9 @@ name: opencode-daily
 # reviews agent PRs and leaves comments; the next morning this run addresses
 # them (code fixes or plain answers) and pushes to the PR branch. For instant
 # reaction, comment `/oc <instruction>` on the PR instead (opencode.yml).
+#
+# Model ladder (see AGENTS.md): primary kimi-k3; on failure — typically
+# exhausted OpenCode Go usage limits — one automatic retry with glm-5.2.
 on:
   schedule:
     - cron: "0 6 * * *" # daily at 06:00 UTC
@@ -16,35 +19,65 @@ concurrency:
 jobs:
   sweep:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       id-token: write
       contents: write
       pull-requests: write
       issues: write
+    env:
+      PROMPT: |
+        You are the daily maintenance agent for the WOT repo. Address pending human feedback on agent-authored PRs. Read `AGENTS.md` at the repo root first and follow it.
+
+        Process:
+        1. List open PRs whose head branch starts with `opencode/` (e.g. `gh pr list --state open --json number,headRefName,title`).
+        2. For each PR, fetch reviews, review comments and issue comments (`gh pr view` / `gh api`). Skip the PR when there are no human comments newer than the last bot commit or bot comment — nothing to do.
+        3. For each PR with pending feedback: check out its branch, read ALL unresolved review threads, and address each one — fix the code, or reply explaining why no change is needed. Answer questions with a reply, not code changes.
+        4. Run `make setup`, then the checks for every package you touched (`make check` covers all). Fix failures until green.
+        5. Commit fixes as small conventional commits and push to the PR branch, then leave exactly one comment on the PR summarizing how each piece of feedback was handled.
+        6. Process each PR this way, one at a time, then stop.
+
+        Rules:
+        - Only touch `opencode/` branches. Never push to `master`. Never force-push.
+        - If no PR has pending feedback, end the session without changing anything.
     steps:
+      - name: Check OPENCODE_API_KEY secret
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          if [ -z "$OPENCODE_API_KEY" ]; then
+            echo "::error::OPENCODE_API_KEY secret is empty or missing. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           persist-credentials: false
 
-      - name: Run opencode
+      - name: "Run opencode (primary: kimi-k3)"
+        id: primary
+        continue-on-error: true
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
           model: opencode-go/kimi-k3
-          prompt: |
-            You are the daily maintenance agent for the WOT repo. Address pending human feedback on agent-authored PRs. Read `AGENTS.md` at the repo root first and follow it.
+          prompt: ${{ env.PROMPT }}
 
-            Process:
-            1. List open PRs whose head branch starts with `agent/` (e.g. `gh pr list --state open --json number,headRefName,title`).
-            2. For each PR, fetch reviews, review comments and issue comments (`gh pr view` / `gh api`). Skip the PR when there are no human comments newer than the last bot commit or bot comment — nothing to do.
-            3. For each PR with pending feedback: check out its branch, read ALL unresolved review threads, and address each one — fix the code, or reply explaining why no change is needed. Answer questions with a reply, not code changes.
-            4. Run `make setup`, then the checks for every package you touched (`make check` covers all). Fix failures until green.
-            5. Commit fixes as small conventional commits and push to the PR branch, then leave exactly one comment on the PR summarizing how each piece of feedback was handled.
-            6. Process each PR this way, one at a time, then stop.
+      - name: "Run opencode (fallback: glm-5.2)"
+        id: fallback
+        if: steps.primary.outcome == 'failure'
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode-go/glm-5.2
+          prompt: ${{ env.PROMPT }}
 
-            Rules:
-            - Only touch `agent/` branches. Never push to `master`. Never force-push.
-            - If no PR has pending feedback, end the session without changing anything.
+      # Scheduled run: no issue to comment on — just keep the run red.
+      - name: Report failure
+        if: steps.primary.outcome == 'failure' && steps.fallback.outcome == 'failure'
+        run: |
+          echo "::error::Both model attempts (kimi-k3, then glm-5.2) failed — most likely exhausted OpenCode Go usage limits (see https://opencode.ai/auth) or a transient error. Re-run from the Actions tab."
+          exit 1
