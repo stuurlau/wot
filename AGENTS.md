@@ -133,18 +133,26 @@ Releases are manual: merge to `master`, then push a `v*` tag.
 
 The repo runs an automated issue→PR pipeline with opencode. Full behavior lives in the workflow files; the contract is:
 
-1. **Implement** (`opencode-implement.yml`): labeling an issue **`agent`** dispatches the implementer. It creates a branch `agent/issue-<N>-<slug>` from `master`, implements the issue, runs checks, and opens **one PR per issue** with `Closes #<N>` in the body.
-2. **Review & fix** (`opencode-review.yml`): a PR opened from an `agent/` branch triggers the reviewer. It verifies the diff against the linked issue and this file, fixes problems with fixup commits on the PR branch, and leaves one summary review.
+1. **Implement** (`opencode-implement.yml`): labeling an issue **`agent`** dispatches the implementer. The `anomalyco/opencode` action creates the branch (`opencode/issue<N>-<timestamp>`) from `master`; the agent implements, runs checks, and commits — the action pushes and opens **one PR per issue** with `Closes #<N>` in the body. The agent must never create/switch branches, push, or open the PR itself: if the branch changes mid-session, the action silently skips PR creation.
+2. **Review & fix** (`opencode-review.yml`): a PR opened from an `opencode/` branch triggers the reviewer. It verifies the diff against the linked issue and this file, fixes problems with fixup commits on the PR branch, and leaves one summary review.
 3. **Human feedback**: comment `/oc <instruction>` on an issue/PR for an instant run (`opencode.yml`), or just leave review comments — the daily sweep (`opencode-daily.yml`) addresses them and pushes fixes.
 4. Human merges; releases are tagged manually.
 
 Rules for agents running in this pipeline:
 
 - Read this `AGENTS.md` first and follow it.
-- One PR per issue, branch prefix `agent/`, target `master`, `Closes #<N>` in the body.
+- One PR per issue, target `master`, `Closes #<N>` in the body. Branches use the action's `opencode/` prefix — agents never create or switch branches themselves.
 - Run `make setup` then the checks for every package you touched (`make check` covers all) before opening or updating a PR; report results in the PR body / review summary.
 - Stay scoped to the issue. No unrelated refactors.
 - If requirements are ambiguous, ask in an issue comment instead of guessing.
+
+### Models and usage limits
+
+CI runs on the OpenCode Go subscription, which enforces per-model rolling budgets (5-hour / weekly / monthly — see `https://opencode.ai/docs/go/`).
+
+- Primary model: `opencode-go/kimi-k3` (smallest budget tier). On any failure — typically exhausted limits — every workflow automatically retries once with `opencode-go/glm-5.2` (~4x the budget).
+- If both attempts fail, the workflow comments on the issue/PR (when there is one) and stays red. Retry later via Actions → Re-run, or re-add the `agent` label.
+- CI shares the K3 budget with local opencode usage: heavy CI runs can temporarily exhaust K3 for local sessions too. Check usage at `https://opencode.ai/auth`.
 
 ## Local agent workflow (opencode TUI)
 

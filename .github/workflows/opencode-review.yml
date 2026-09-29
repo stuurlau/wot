@@ -1,12 +1,15 @@
 name: opencode-review
 
-# Issue → PR pipeline, step 2: a PR opened from an `agent/` branch triggers
+# Issue → PR pipeline, step 2: a PR opened from an `opencode/` branch triggers
 # the reviewer. It verifies the diff against the linked issue and AGENTS.md,
 # fixes problems itself (small commits on top of the PR branch), then leaves
 # one summary review for the human maintainer.
 #
 # Only `opened` / `ready_for_review` trigger this — the reviewer's own pushes
 # (synchronize) must not re-trigger it (loop guard).
+#
+# Model ladder (see AGENTS.md): primary kimi-k3; on failure — typically
+# exhausted OpenCode Go usage limits — one automatic retry with glm-5.2.
 on:
   pull_request:
     types: [opened, ready_for_review]
@@ -17,37 +20,72 @@ concurrency:
 
 jobs:
   review:
-    if: startsWith(github.event.pull_request.head.ref, 'agent/')
+    if: startsWith(github.event.pull_request.head.ref, 'opencode/')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       id-token: write
       contents: write
       pull-requests: write
       issues: write
+    env:
+      PROMPT: |
+        You are the reviewer agent for the WOT repo. Review pull request #${{ github.event.pull_request.number }} and FIX what you find.
+
+        Process:
+        1. Read `AGENTS.md` at the repo root first and follow it.
+        2. Find the linked issue (`Closes #...` in the PR body) and read it — the PR must fully and only solve it.
+        3. Review the full diff: correctness, edge cases, security, and the data-model / UX / coding conventions from AGENTS.md. Flag scope creep.
+        4. Run `make setup`, then `make check`. Fix all failures.
+        5. Commit your fixes directly to the PR branch as small conventional commits on top — never rewrite existing commits, never force-push. If nothing needs fixing, change nothing.
+        6. Leave exactly one review on the PR summarizing: what you checked, what you fixed (commit list), check results, ending with `@${{ github.repository_owner }} ready for your review`. If the PR is fundamentally wrong, explain why and request changes instead of patching over it.
+
+        If a previous review attempt already left commits or comments on this PR, continue from there instead of duplicating work.
+
+        Rules:
+        - Stay within the PR's scope; no unrelated refactors.
+        - Stay on the checked-out PR branch — never create, switch, or rename branches; the infrastructure handles pushing.
+        - Never push to `master`.
     steps:
+      - name: Check OPENCODE_API_KEY secret
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        run: |
+          if [ -z "$OPENCODE_API_KEY" ]; then
+            echo "::error::OPENCODE_API_KEY secret is empty or missing. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           persist-credentials: false
 
-      - name: Run opencode
+      - name: "Run opencode (primary: kimi-k3)"
+        id: primary
+        continue-on-error: true
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
           model: opencode-go/kimi-k3
-          prompt: |
-            You are the reviewer agent for the WOT repo. Review pull request #${{ github.event.pull_request.number }} and FIX what you find.
+          prompt: ${{ env.PROMPT }}
 
-            Process:
-            1. Read `AGENTS.md` at the repo root first and follow it.
-            2. Find the linked issue (`Closes #...` in the PR body) and read it — the PR must fully and only solve it.
-            3. Review the full diff: correctness, edge cases, security, and the data-model / UX / coding conventions from AGENTS.md. Flag scope creep.
-            4. Run `make setup`, then `make check`. Fix all failures.
-            5. Commit your fixes directly to the PR branch as small conventional commits on top — never rewrite existing commits, never force-push. If nothing needs fixing, change nothing.
-            6. Leave exactly one review on the PR summarizing: what you checked, what you fixed (commit list), check results, ending with `@${{ github.repository_owner }} ready for your review`. If the PR is fundamentally wrong, explain why and request changes instead of patching over it.
+      - name: "Run opencode (fallback: glm-5.2)"
+        id: fallback
+        if: steps.primary.outcome == 'failure'
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+        with:
+          model: opencode-go/glm-5.2
+          prompt: ${{ env.PROMPT }}
 
-            Rules:
-            - Stay within the PR's scope; no unrelated refactors.
-            - Never push to `master`.
+      # Both attempts failed: explain on the PR and keep the run red.
+      - name: Report failure
+        if: steps.primary.outcome == 'failure' && steps.fallback.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment "${{ github.event.pull_request.number }}" --body "The reviewer agent could not complete its pass. Both model attempts (kimi-k3, then glm-5.2) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab." || true
+          exit 1
