@@ -58,6 +58,9 @@ jobs:
       - name: "Run opencode (primary: kimi-k3)"
         id: primary
         continue-on-error: true
+        # opencode retries usage-limit 429s indefinitely — cap the step so a
+        # stuck primary hands over to the fallback instead of burning the job.
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -67,7 +70,7 @@ jobs:
 
       - name: "Run opencode (fallback: glm-5.2)"
         id: fallback
-        if: steps.primary.outcome == 'failure'
+        if: steps.primary.outcome != 'success'
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -77,7 +80,7 @@ jobs:
 
       # Scheduled run: no issue to comment on — just keep the run red.
       - name: Report failure
-        if: steps.primary.outcome == 'failure' && steps.fallback.outcome == 'failure'
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success'
         run: |
           echo "::error::Both model attempts (kimi-k3, then glm-5.2) failed — most likely exhausted OpenCode Go usage limits (see https://opencode.ai/auth) or a transient error. Re-run from the Actions tab."
           exit 1
