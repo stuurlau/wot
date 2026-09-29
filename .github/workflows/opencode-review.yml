@@ -64,6 +64,9 @@ jobs:
       - name: "Run opencode (primary: kimi-k3)"
         id: primary
         continue-on-error: true
+        # opencode retries usage-limit 429s indefinitely — cap the step so a
+        # stuck primary hands over to the fallback instead of burning the job.
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -73,7 +76,7 @@ jobs:
 
       - name: "Run opencode (fallback: glm-5.2)"
         id: fallback
-        if: steps.primary.outcome == 'failure'
+        if: steps.primary.outcome != 'success'
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -83,7 +86,7 @@ jobs:
 
       # Both attempts failed: explain on the PR and keep the run red.
       - name: Report failure
-        if: steps.primary.outcome == 'failure' && steps.fallback.outcome == 'failure'
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
