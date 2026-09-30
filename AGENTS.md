@@ -151,8 +151,8 @@ Rules for agents running in this pipeline:
 
 CI runs on the OpenCode Go subscription, which enforces per-model rolling budgets (5-hour / weekly / monthly — see `https://opencode.ai/docs/go/`).
 
-- Primary model: `opencode-go/kimi-k3` (smallest budget tier). On any failure — typically exhausted limits — every workflow automatically retries once with `opencode-go/glm-5.2` (~4x the budget). opencode retries usage-limit 429s indefinitely, so the primary step is capped with a step-level `timeout-minutes`; a timed-out primary counts as not-successful and hands over to the fallback.
-- If both attempts fail, the workflow comments on the issue/PR (when there is one) and stays red. Retry later via Actions → Re-run, or re-add the `agent` label.
+- Primary model: `opencode-go/kimi-k3` (smallest budget tier). On any failure — typically exhausted limits — every workflow falls back to `opencode-go/glm-5.2` (~4x the budget), then, if the `OPENCODE_API_KEY_FALLBACK` secret (second OpenCode Go account, fresh budgets) is set, to kimi-k3 with that key. opencode retries usage-limit 429s indefinitely, so every rung is capped with a step-level `timeout-minutes` (25); a timed-out rung counts as not-successful and hands over to the next.
+- If all attempts fail, the workflow comments on the issue/PR (when there is one) and stays red. Retry later via Actions → Re-run, or re-add the `agent` label.
 - CI shares the K3 budget with local opencode usage: heavy CI runs can temporarily exhaust K3 for local sessions too. Check usage at `https://opencode.ai/auth`.
 
 ## Local agent workflow (opencode TUI)

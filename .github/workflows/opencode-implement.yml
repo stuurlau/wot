@@ -63,7 +63,7 @@ jobs:
         continue-on-error: true
         # opencode retries usage-limit 429s indefinitely — cap the step so a
         # stuck primary hands over to the fallback instead of burning the job.
-        timeout-minutes: 10
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -73,8 +73,9 @@ jobs:
 
       - name: "Run opencode (fallback: glm-5.2)"
         id: fallback
+        continue-on-error: true
         if: steps.primary.outcome != 'success'
-        timeout-minutes: 10
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -86,8 +87,9 @@ jobs:
       # primary model with OPENCODE_API_KEY_FALLBACK. Skipped when unset.
       - name: "Run opencode (fallback key: kimi-k3)"
         id: fallbackkey
+        continue-on-error: true
         if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && env.OPENCODE_API_KEY_FALLBACK != ''
-        timeout-minutes: 10
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
@@ -95,11 +97,11 @@ jobs:
           model: opencode-go/kimi-k3
           prompt: ${{ env.PROMPT }}
 
-      # All attempts failed: explain on the issue and keep the run read.
+      # All attempts failed: explain on the issue and keep the run red.
       - name: Report failure
         if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && steps.fallbackkey.outcome != 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue comment "${{ github.event.issue.number }}" --body "The agent could not complete this task. Both model attempts (kimi-k3, then glm-5.2) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab, or remove and re-add the \`agent\` label." || true
+          gh issue comment "${{ github.event.issue.number }}" --body "The agent could not complete this task. All model attempts (kimi-k3, glm-5.2, fallback key) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab, or remove and re-add the \`agent\` label." || true
           exit 1

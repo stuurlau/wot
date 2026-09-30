@@ -26,6 +26,7 @@ jobs:
       pull-requests: write
       issues: write
     env:
+      OPENCODE_API_KEY_FALLBACK: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
       PROMPT: |
         You are the daily maintenance agent for the WOT repo. Address pending human feedback on agent-authored PRs. Read `AGENTS.md` at the repo root first and follow it.
 
@@ -70,7 +71,9 @@ jobs:
 
       - name: "Run opencode (fallback: glm-5.2)"
         id: fallback
+        continue-on-error: true
         if: steps.primary.outcome != 'success'
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -78,9 +81,23 @@ jobs:
           model: opencode-go/glm-5.2
           prompt: ${{ env.PROMPT }}
 
+      # Second OpenCode Go account (fresh per-model budgets): retry the
+      # primary model with OPENCODE_API_KEY_FALLBACK. Skipped when unset.
+      - name: "Run opencode (fallback key: kimi-k3)"
+        id: fallbackkey
+        continue-on-error: true
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && env.OPENCODE_API_KEY_FALLBACK != ''
+        timeout-minutes: 25
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
+        with:
+          model: opencode-go/kimi-k3
+          prompt: ${{ env.PROMPT }}
+
       # Scheduled run: no issue to comment on — just keep the run red.
       - name: Report failure
-        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success'
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && steps.fallbackkey.outcome != 'success'
         run: |
-          echo "::error::Both model attempts (kimi-k3, then glm-5.2) failed — most likely exhausted OpenCode Go usage limits (see https://opencode.ai/auth) or a transient error. Re-run from the Actions tab."
+          echo "::error::All model attempts (kimi-k3, glm-5.2, fallback key) failed — most likely exhausted OpenCode Go usage limits (see https://opencode.ai/auth) or a transient error. Re-run from the Actions tab."
           exit 1

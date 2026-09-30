@@ -29,6 +29,7 @@ jobs:
       pull-requests: write
       issues: write
     env:
+      OPENCODE_API_KEY_FALLBACK: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
       PROMPT: |
         You are the reviewer agent for the WOT repo. Review pull request #${{ github.event.pull_request.number }} and FIX what you find.
 
@@ -76,7 +77,9 @@ jobs:
 
       - name: "Run opencode (fallback: glm-5.2)"
         id: fallback
+        continue-on-error: true
         if: steps.primary.outcome != 'success'
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -84,11 +87,25 @@ jobs:
           model: opencode-go/glm-5.2
           prompt: ${{ env.PROMPT }}
 
-      # Both attempts failed: explain on the PR and keep the run red.
+      # Second OpenCode Go account (fresh per-model budgets): retry the
+      # primary model with OPENCODE_API_KEY_FALLBACK. Skipped when unset.
+      - name: "Run opencode (fallback key: kimi-k3)"
+        id: fallbackkey
+        continue-on-error: true
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && env.OPENCODE_API_KEY_FALLBACK != ''
+        timeout-minutes: 25
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
+        with:
+          model: opencode-go/kimi-k3
+          prompt: ${{ env.PROMPT }}
+
+      # All attempts failed: explain on the PR and keep the run red.
       - name: Report failure
-        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success'
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && steps.fallbackkey.outcome != 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue comment "${{ github.event.pull_request.number }}" --body "The reviewer agent could not complete its pass. Both model attempts (kimi-k3, then glm-5.2) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab." || true
+          gh issue comment "${{ github.event.pull_request.number }}" --body "The reviewer agent could not complete its pass. All model attempts (kimi-k3, glm-5.2, fallback key) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab." || true
           exit 1
