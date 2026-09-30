@@ -1,18 +1,23 @@
 name: opencode-review
 
-# Issue → PR pipeline, step 2: a PR opened from an `opencode/` branch triggers
-# the reviewer. It verifies the diff against the linked issue and AGENTS.md,
-# fixes problems itself (small commits on top of the PR branch), then leaves
-# one summary review for the human maintainer.
+# Issue → PR pipeline, step 2: adding the `agent-review` label to a PR from an
+# `opencode/` branch triggers the reviewer. It verifies the diff against the
+# linked issue and AGENTS.md, fixes problems itself (small commits on top of
+# the PR branch), then leaves one summary review for the human maintainer.
 #
-# Only `opened` / `ready_for_review` trigger this — the reviewer's own pushes
-# (synchronize) must not re-trigger it (loop guard).
+# Label-gated instead of auto-on-open: `opencode github run` asserts that the
+# event *actor* has admin/write on the repo. Implementer PRs are opened by
+# `opencode-agent[bot]`, which reports `permission: none` — only a human
+# labeler (or a re-run of a label-triggered run) passes the check.
+#
+# Retry: re-run from the Actions tab, or remove and re-add the label.
+# The reviewer's own pushes (synchronize) must not re-trigger it (loop guard).
 #
 # Model ladder (see AGENTS.md): primary kimi-k3; on failure — typically
 # exhausted OpenCode Go usage limits — one automatic retry with glm-5.2.
 on:
   pull_request:
-    types: [opened, ready_for_review]
+    types: [labeled]
 
 concurrency:
   group: opencode-review-${{ github.event.pull_request.number }}
@@ -20,7 +25,7 @@ concurrency:
 
 jobs:
   review:
-    if: startsWith(github.event.pull_request.head.ref, 'opencode/')
+    if: startsWith(github.event.pull_request.head.ref, 'opencode/') && github.event.label.name == 'agent-review'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -107,5 +112,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue comment "${{ github.event.pull_request.number }}" --body "The reviewer agent could not complete its pass. All model attempts (kimi-k3, glm-5.2, fallback key) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab." || true
+          gh issue comment "${{ github.event.pull_request.number }}" --body "The reviewer agent could not complete its pass. All model attempts (kimi-k3, glm-5.2, fallback key) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab, or remove and re-add the \`agent-review\` label." || true
           exit 1
