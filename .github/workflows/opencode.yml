@@ -26,6 +26,8 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+    env:
+      OPENCODE_API_KEY_FALLBACK: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
     steps:
       - name: Check OPENCODE_API_KEY secret
         env:
@@ -55,18 +57,33 @@ jobs:
 
       - name: "Run opencode (fallback: glm-5.2)"
         id: fallback
+        continue-on-error: true
         if: steps.primary.outcome != 'success'
+        timeout-minutes: 25
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
           model: opencode-go/glm-5.2
 
-      # Both attempts failed: explain on the issue/PR and keep the run red.
+      # Second OpenCode Go account (fresh per-model budgets): retry the
+      # primary model with OPENCODE_API_KEY_FALLBACK. Skipped when unset.
+      - name: "Run opencode (fallback key: kimi-k3)"
+        id: fallbackkey
+        continue-on-error: true
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && env.OPENCODE_API_KEY_FALLBACK != ''
+        timeout-minutes: 25
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
+        with:
+          model: opencode-go/kimi-k3
+
+      # All attempts failed: explain on the issue/PR and keep the run red.
       - name: Report failure
-        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success'
+        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && steps.fallbackkey.outcome != 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue comment "${{ github.event.issue.number }}" --body "The agent could not complete this request. Both model attempts (kimi-k3, then glm-5.2) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab, or post the \`/oc\` comment again." || true
+          gh issue comment "${{ github.event.issue.number }}" --body "The agent could not complete this request. All model attempts (kimi-k3, glm-5.2, fallback key) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab, or post the \`/oc\` comment again." || true
           exit 1
