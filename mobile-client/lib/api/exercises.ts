@@ -1,6 +1,7 @@
 import type {
   CreateTrainingSessionExerciseInput,
   CreateTrainingSessionExerciseSetInput,
+  RenameExercisesInput,
   TrainingSessionExercise,
   TrainingSessionExerciseSet,
   UpdateTrainingSessionExerciseInput,
@@ -99,4 +100,12 @@ export const exercises = {
     apiClient
       .get<{ data: ExerciseHistoryRow[] }>('/exercises/history', { params })
       .then((r) => r.data.data),
+
+  similar: (name: string) =>
+    apiClient
+      .get<{ data: string[] }>('/exercises/similar', { params: { name } })
+      .then((r) => r.data.data),
+
+  rename: (body: RenameExercisesInput) =>
+    apiClient.patch<{ updated: number }>('/exercises/rename', body).then((r) => r.data),
 };

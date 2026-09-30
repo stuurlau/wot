@@ -46,7 +46,11 @@ export function useUpdateTrainingSession(id: string) {
       queryClient.setQueryData<TrainingSessionDetail>(trainingSessionKeys.detail(id), (old) =>
         old ? { ...old, ...updated } : { ...updated, exercises: [] },
       );
-      queryClient.invalidateQueries({ queryKey: trainingSessionKeys.list() });
+      // Invalidate the whole subtree: list() without params ends in
+      // `undefined`, which never partial-matches the parameterized list keys
+      // (Home/History), so a finished session would stay invisible until the
+      // next app start.
+      queryClient.invalidateQueries({ queryKey: trainingSessionKeys.all });
     },
   });
 }

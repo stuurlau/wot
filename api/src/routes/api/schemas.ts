@@ -7,6 +7,7 @@ import {
   createTrainingSessionExerciseSetInputSchema,
   createTrainingSessionInputSchema,
   isoDateSchema,
+  renameExercisesInputSchema,
 } from "@wot/types";
 
 import { queryLimit, validateDateRange } from "../../lib/api-validation.js";
@@ -76,6 +77,14 @@ export const recentsQuerySchema = z
     limit: queryLimit(50, 20),
   })
   .strict();
+
+export const similarExercisesQuerySchema = z
+  .object({
+    name: z.string().min(1),
+  })
+  .strict();
+
+export const renameExercisesBodySchema = renameExercisesInputSchema.strict();
 
 export const exerciseHistoryQuerySchema = z
   .object({

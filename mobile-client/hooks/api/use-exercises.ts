@@ -2,10 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { exercises } from '@/lib/api';
 import type { ExerciseHistoryParams } from '@/lib/api';
+import type { RenameExercisesInput } from '@wot/types';
 
 export const exerciseKeys = {
-  recents: (limit?: number) => ['exercises', 'recents', limit] as const,
-  history: (params?: ExerciseHistoryParams) => ['exercises', 'history', params] as const,
+  all: ['exercises'] as const,
+  recents: (limit?: number) => [...exerciseKeys.all, 'recents', limit] as const,
+  history: (params?: ExerciseHistoryParams) => [...exerciseKeys.all, 'history', params] as const,
+  similar: (name: string) => [...exerciseKeys.all, 'similar', name] as const,
 };
 
 export function useRecentExercises(limit?: number) {
@@ -22,6 +25,14 @@ export function useExerciseHistory(params: ExerciseHistoryParams) {
   });
 }
 
+export function useSimilarExercises(name: string | null) {
+  return useQuery({
+    queryKey: exerciseKeys.similar(name ?? ''),
+    queryFn: () => exercises.similar(name!),
+    enabled: !!name,
+  });
+}
+
 export function useCreateExercise(trainingSessionId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -29,7 +40,7 @@ export function useCreateExercise(trainingSessionId: string) {
       exercises.create(trainingSessionId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['training-sessions', 'detail', trainingSessionId] });
-      queryClient.invalidateQueries({ queryKey: exerciseKeys.recents() });
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.all });
     },
   });
 }
@@ -46,7 +57,7 @@ export function useUpdateExercise(trainingSessionId: string) {
     }) => exercises.update(trainingSessionId, exerciseId, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['training-sessions', 'detail', trainingSessionId] });
-      queryClient.invalidateQueries({ queryKey: exerciseKeys.recents() });
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.all });
     },
   });
 }
@@ -57,7 +68,19 @@ export function useDeleteExercise(trainingSessionId: string) {
     mutationFn: (exerciseId: string) => exercises.delete(trainingSessionId, exerciseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['training-sessions', 'detail', trainingSessionId] });
-      queryClient.invalidateQueries({ queryKey: exerciseKeys.recents() });
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.all });
+    },
+  });
+}
+
+export function useRenameExercises() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RenameExercisesInput) => exercises.rename(body),
+    onSuccess: () => {
+      // Renames touch exercises across many past sessions, so both subtrees go.
+      queryClient.invalidateQueries({ queryKey: ['training-sessions'] });
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.all });
     },
   });
 }
