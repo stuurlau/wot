@@ -114,10 +114,38 @@ describe("training sessions", () => {
       });
 
       assert.equal(res.statusCode, 201, res.body);
-      const body = res.json<{ id: string; name: string; trainingSessionId: string }>();
+      const body = res.json<{
+        id: string;
+        name: string;
+        trainingSessionId: string;
+        supersetGroup: number | null;
+      }>();
       assert.equal(body.name, "Bench Press");
       assert.equal(body.trainingSessionId, sessionId);
+      assert.equal(body.supersetGroup, null);
       exerciseId = body.id;
+    });
+
+    it("patches the exercise superset group", async () => {
+      const joinRes = await app.inject({
+        method: "PATCH",
+        url: `/api/v1/sessions/${sessionId}/exercises/${exerciseId}`,
+        payload: { supersetGroup: 1 },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(joinRes.statusCode, 200, joinRes.body);
+      assert.equal(joinRes.json<{ supersetGroup: number | null }>().supersetGroup, 1);
+
+      const leaveRes = await app.inject({
+        method: "PATCH",
+        url: `/api/v1/sessions/${sessionId}/exercises/${exerciseId}`,
+        payload: { supersetGroup: null },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(leaveRes.statusCode, 200, leaveRes.body);
+      assert.equal(leaveRes.json<{ supersetGroup: number | null }>().supersetGroup, null);
     });
 
     it("adds a set to the exercise", async () => {
@@ -130,14 +158,22 @@ describe("training sessions", () => {
           reps: 8,
           rir: 2,
           rpe: 8,
+          rest: 95,
         },
         headers: auth(testUser.token),
       });
 
       assert.equal(res.statusCode, 201, res.body);
-      const body = res.json<{ id: string; weight: number; reps: number; trainingSessionExerciseId: string }>();
+      const body = res.json<{
+        id: string;
+        weight: number;
+        reps: number;
+        rest: number | null;
+        trainingSessionExerciseId: string;
+      }>();
       assert.equal(body.weight, 80);
       assert.equal(body.reps, 8);
+      assert.equal(body.rest, 95);
       assert.equal(body.trainingSessionExerciseId, exerciseId);
       setId = body.id;
     });
@@ -154,14 +190,17 @@ describe("training sessions", () => {
         exercises: {
           id: string;
           name: string;
-          sets: { id: string; weight: number; reps: number }[];
+          supersetGroup: number | null;
+          sets: { id: string; weight: number; reps: number; rest: number | null }[];
         }[];
       }>();
       assert.equal(body.exercises.length, 1);
       assert.equal(body.exercises[0].name, "Bench Press");
+      assert.equal(body.exercises[0].supersetGroup, null);
       assert.equal(body.exercises[0].sets.length, 1);
       assert.equal(body.exercises[0].sets[0].weight, 80);
       assert.equal(body.exercises[0].sets[0].reps, 8);
+      assert.equal(body.exercises[0].sets[0].rest, 95);
     });
 
     it("patches the set", async () => {

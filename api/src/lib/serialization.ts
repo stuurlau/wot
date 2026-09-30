@@ -51,6 +51,7 @@ export function serializeTrainingSessionExercise(row: TrainingSessionExerciseRow
     name: row.name,
     bodyRegions: row.bodyRegions,
     sortOrder: row.sortOrder,
+    supersetGroup: row.supersetGroup,
     notes: row.notes,
     createdAt: dateTime(row.createdAt),
   };
@@ -68,6 +69,7 @@ export function serializeTrainingSessionExerciseSet(row: TrainingSessionExercise
     duration: row.duration,
     pace: numberOrNull(row.pace),
     rpe: numberOrNull(row.rpe),
+    rest: row.rest,
     notes: row.notes,
     createdAt: dateTime(row.createdAt),
   };

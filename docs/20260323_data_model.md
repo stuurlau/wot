@@ -64,6 +64,7 @@ Child rows of a training session. Each row represents an exercise performed duri
 | `name` | `text` | free text: "Bench Press", "Back Squat" |
 | `body_regions` | `text[]` | e.g. `["push", "shoulders"]`, nullable |
 | `sort_order` | `smallint` | preserves ordering within a session |
+| `superset_group` | `smallint` | nullable; exercises sharing a number form one superset |
 | `notes` | `text` | optional free text |
 | `created_at` | `timestamptz` | defaults to now |
 
@@ -85,6 +86,7 @@ Child rows of a training session exercise. Each row represents a single set, int
 | `duration` | `integer` | seconds, nullable |
 | `pace` | `numeric(6,2)` | seconds per km, nullable |
 | `rpe` | `numeric(3,1)` | set RPE, 1–10, decimals allowed, nullable |
+| `rest` | `integer` | seconds of rest before the set, nullable |
 | `notes` | `text` | optional free text |
 | `created_at` | `timestamptz` | defaults to now |
 

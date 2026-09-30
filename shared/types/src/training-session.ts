@@ -44,6 +44,7 @@ export const trainingSessionExerciseSchema = z.object({
   name: z.string().min(1),
   bodyRegions: z.array(bodyRegionSchema).nullish(),
   sortOrder: smallIntSchema,
+  supersetGroup: smallIntSchema.nullish(),
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
 });
@@ -69,6 +70,7 @@ export const trainingSessionExerciseSetSchema = z.object({
   duration: secondsSchema.nullish(),
   pace: paceSecondsPerKmSchema.max(9_999.99).nullish(),
   rpe: decimalRatingSchema.nullish(),
+  rest: secondsSchema.nullish(),
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
 });

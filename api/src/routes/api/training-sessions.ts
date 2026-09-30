@@ -60,6 +60,7 @@ function exerciseUpdateValues(
   if (input.name !== undefined) values.name = input.name;
   if (input.bodyRegions !== undefined) values.bodyRegions = input.bodyRegions;
   if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
+  if (input.supersetGroup !== undefined) values.supersetGroup = input.supersetGroup ?? null;
   if (input.notes !== undefined) values.notes = input.notes;
   return values;
 }
@@ -76,6 +77,7 @@ function setUpdateValues(
   if (input.duration !== undefined) values.duration = input.duration;
   if (input.pace !== undefined) values.pace = input.pace?.toString() ?? null;
   if (input.rpe !== undefined) values.rpe = input.rpe?.toString() ?? null;
+  if (input.rest !== undefined) values.rest = input.rest ?? null;
   if (input.notes !== undefined) values.notes = input.notes;
   return values;
 }
@@ -300,6 +302,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
           name: input.name,
           bodyRegions: input.bodyRegions ?? null,
           sortOrder: input.sortOrder,
+          supersetGroup: input.supersetGroup ?? null,
           notes: input.notes ?? null,
         })
         .returning();
@@ -370,6 +373,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
           duration: input.duration ?? null,
           pace: input.pace?.toString() ?? null,
           rpe: input.rpe?.toString() ?? null,
+          rest: input.rest ?? null,
           notes: input.notes ?? null,
         })
         .returning();

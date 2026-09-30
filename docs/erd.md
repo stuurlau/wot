@@ -71,6 +71,7 @@ erDiagram
         text name "free text: Bench Press…"
         text_array body_regions "push, legs…"
         smallint sort_order
+        smallint superset_group "exercises sharing a number form one superset"
         text notes
         timestamptz created_at
     }
@@ -86,6 +87,7 @@ erDiagram
         integer duration "seconds"
         numeric pace "sec/km (6,2)"
         numeric rpe "1–10 (3,1)"
+        integer rest "seconds of rest before the set"
         text notes
         timestamptz created_at
     }

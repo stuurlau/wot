@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
 import type { RecentExercise } from '@/lib/api';
 import type { TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
-import { useCreateExerciseSet, useDeleteExercise, useDeleteExerciseSet, useUpdateExerciseSet } from '@/hooks/api';
+import { useCreateExerciseSet, useDeleteExercise, useDeleteExerciseSet, useUpdateExercise, useUpdateExerciseSet } from '@/hooks/api';
+import { elapsedRestSeconds, useRestTimerStore } from '@/stores/rest-timer-store';
 import { SetRow, type SetInput } from './set-row';
 
 type ExerciseBlockProps = {
   sessionId: string;
   exercise: TrainingSessionExercise & { sets: TrainingSessionExerciseSet[] };
   recent?: RecentExercise | null;
+  /** Group the exercise moves to when its superset badge is pressed. */
+  nextSupersetGroup: number | null;
 };
 
 function toSetBody(input: SetInput, sortOrder: number) {
@@ -17,18 +21,32 @@ function toSetBody(input: SetInput, sortOrder: number) {
     sortOrder,
     weight: input.weight ?? undefined,
     reps: input.reps ?? undefined,
+    rir: input.rir ?? undefined,
     distance: input.distance ?? undefined,
     duration: input.duration ?? undefined,
   };
 }
 
-export function ExerciseBlock({ sessionId, exercise, recent }: ExerciseBlockProps) {
+export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }: ExerciseBlockProps) {
   const [mode, setMode] = useState<'strength' | 'cardio'>('strength');
   const createSet = useCreateExerciseSet(sessionId, exercise.id);
   const updateSet = useUpdateExerciseSet(sessionId, exercise.id);
   const deleteSet = useDeleteExerciseSet(sessionId, exercise.id);
+  const updateExercise = useUpdateExercise(sessionId);
   const deleteExercise = useDeleteExercise(sessionId);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [rirToggled, setRirToggled] = useState(false);
+
+  // RIR stays visible once it has been used on this exercise (this session or
+  // via the recents of an earlier one), or once the user asked for it.
+  const showRir =
+    rirToggled || exercise.sets.some((s) => s.rir != null) || recent?.lastSet.rir != null;
+
+  const logSet = (input: SetInput) => {
+    const rest = elapsedRestSeconds(sessionId);
+    useRestTimerStore.getState().start(sessionId);
+    createSet.mutate({ ...toSetBody(input, exercise.sets.length), rest: rest ?? undefined });
+  };
 
   const strengthReference =
     recent?.lastSet.weight != null || recent?.lastSet.reps != null
@@ -42,6 +60,31 @@ export function ExerciseBlock({ sessionId, exercise, recent }: ExerciseBlockProp
           {exercise.name}
         </Text>
         <View className="flex-row items-baseline gap-3">
+          <Pressable
+            hitSlop={8}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              updateExercise.mutate({
+                exerciseId: exercise.id,
+                body: { supersetGroup: nextSupersetGroup },
+              });
+            }}
+            className={
+              exercise.supersetGroup != null
+                ? 'self-center rounded-full bg-primary px-2 py-0.5'
+                : 'self-center rounded-full bg-surface-container-low px-2 py-0.5'
+            }
+          >
+            <Text
+              className={
+                exercise.supersetGroup != null
+                  ? 'font-body text-[9px] uppercase tracking-[2px] text-primary-foreground'
+                  : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
+              }
+            >
+              {exercise.supersetGroup != null ? `SS${exercise.supersetGroup}` : 'SS'}
+            </Text>
+          </Pressable>
           {exercise.bodyRegions && exercise.bodyRegions.length > 0 ? (
             <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
               {exercise.bodyRegions.join(' · ')}
@@ -104,10 +147,13 @@ export function ExerciseBlock({ sessionId, exercise, recent }: ExerciseBlockProp
             values={{
               weight: set.weight ?? null,
               reps: set.reps ?? null,
+              rir: set.rir ?? null,
               distance: set.distance ?? null,
               duration: set.duration ?? null,
             }}
             lastReference={null}
+            showRir={showRir}
+            onShowRir={() => setRirToggled(true)}
             busy={updateSet.isPending || deleteSet.isPending}
             onCreate={() => {}}
             onUpdate={(input) => updateSet.mutate({ setId: set.id, body: toSetBody(input, i) })}
@@ -121,10 +167,10 @@ export function ExerciseBlock({ sessionId, exercise, recent }: ExerciseBlockProp
           mode={mode}
           values={null}
           lastReference={mode === 'strength' ? strengthReference : null}
+          showRir={mode === 'strength' && showRir}
+          onShowRir={() => setRirToggled(true)}
           busy={createSet.isPending}
-          onCreate={(input) =>
-            createSet.mutate(toSetBody(input, exercise.sets.length))
-          }
+          onCreate={logSet}
           onUpdate={() => {}}
           onDelete={() => {}}
         />

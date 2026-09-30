@@ -17,6 +17,7 @@ export const trainingSessionExerciseSet = pgTable(
     duration: integer("duration"),
     pace: numeric("pace", { precision: 6, scale: 2 }),
     rpe: numeric("rpe", { precision: 3, scale: 1 }),
+    rest: integer("rest"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

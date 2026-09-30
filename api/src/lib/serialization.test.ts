@@ -36,6 +36,7 @@ const trainingExerciseRow = {
   name: "Bench Press",
   bodyRegions: ["push", "chest"],
   sortOrder: 1,
+  supersetGroup: 1,
   notes: null,
   createdAt: BASE_DATE,
 };
@@ -51,6 +52,7 @@ const trainingExerciseSetRow = {
   duration: null,
   pace: null,
   rpe: "7.0",
+  rest: 95,
   notes: null,
   createdAt: BASE_DATE,
 };
@@ -61,6 +63,7 @@ describe("serializeTrainingSessionExercise", () => {
     assert.equal(result.trainingSessionId, "ts-1");
     assert.equal(result.name, "Bench Press");
     assert.deepEqual(result.bodyRegions, ["push", "chest"]);
+    assert.equal(result.supersetGroup, 1);
   });
 });
 
@@ -71,6 +74,7 @@ describe("serializeTrainingSessionExerciseSet", () => {
     assert.equal(result.weight, 80);
     assert.equal(result.rir, 2);
     assert.equal(result.rpe, 7);
+    assert.equal(result.rest, 95);
     assert.equal(result.distance, null);
   });
 });

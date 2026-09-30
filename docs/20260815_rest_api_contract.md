@@ -88,6 +88,7 @@ All WOT-owned failures use this envelope:
   "name": "Bench Press",
   "bodyRegions": ["push", "shoulders"],
   "sortOrder": 0,
+  "supersetGroup": null,
   "notes": null,
   "createdAt": "2026-08-15T10:14:29.012Z",
   "sets": []
@@ -111,6 +112,7 @@ exercise or body-region catalogue.
   "duration": null,
   "pace": null,
   "rpe": 8,
+  "rest": 95,
   "notes": null,
   "createdAt": "2026-08-15T10:14:29.100Z"
 }
@@ -189,9 +191,13 @@ exercise or body-region catalogue.
   "name": "Bench Press",
   "bodyRegions": ["push", "shoulders"],
   "sortOrder": 0,
+  "supersetGroup": null,
   "notes": null
 }
 ```
+
+`supersetGroup` is optional; exercises in a session sharing a group number
+form one superset.
 
 `POST /sessions/{sessionId}/exercises/{exerciseId}/sets` body:
 
@@ -205,14 +211,16 @@ exercise or body-region catalogue.
   "distance": null,
   "duration": null,
   "pace": null,
+  "rest": 95,
   "notes": null
 }
 ```
 
 `sortOrder` is required. All measurement fields are optional:
-`weight`, `reps`, `rir`, `distance`, `duration`, `pace`, and `rpe`.
-Non-negative integer limits apply to `reps`, set `duration`, and
-`sortOrder`; `rir` is from 0 to 10 and set `rpe` is from 1 to 10.
+`weight`, `reps`, `rir`, `distance`, `duration`, `pace`, `rpe`, and `rest`.
+Non-negative integer limits apply to `reps`, set `duration`, `rest`, and
+`sortOrder`; `rir` is from 0 to 10 and set `rpe` is from 1 to 10. `rest` is
+the seconds of rest before the set.
 
 `GET /sessions` query parameters:
 

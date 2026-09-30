@@ -5,6 +5,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { RatingScale } from '@/components/ui/rating-scale';
 import { useUpdateTrainingSession } from '@/hooks/api';
 import { useActiveSessionStore } from '@/stores/active-session-store';
+import { useRestTimerStore } from '@/stores/rest-timer-store';
 import { router } from 'expo-router';
 
 type FinishSheetProps = {
@@ -20,6 +21,7 @@ const SESSION_TYPES = ['strength', 'run', 'ride', 'mobility', 'other'] as const;
 export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPain }: FinishSheetProps) {
   const updateSession = useUpdateTrainingSession(sessionId);
   const clear = useActiveSessionStore((s) => s.clear);
+  const stopRest = useRestTimerStore((s) => s.stop);
 
   const [durationMin, setDurationMin] = useState('0');
   const [srpe, setSrpe] = useState<number | null>(null);
@@ -60,6 +62,7 @@ export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPai
       return;
     }
     clear();
+    stopRest();
     onClose();
     router.back();
   };

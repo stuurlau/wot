@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 export type SetInput = {
   weight: number | null;
   reps: number | null;
+  rir: number | null;
   distance: number | null;
   duration: number | null;
 };
@@ -16,6 +17,8 @@ type SetRowProps = {
   mode: 'strength' | 'cardio';
   values: SetInput | null; // null => empty "add next set" row
   lastReference: string | null;
+  showRir: boolean;
+  onShowRir: () => void;
   busy: boolean;
   onCreate: (input: SetInput) => void;
   onUpdate: (input: SetInput) => void;
@@ -32,6 +35,8 @@ const STRENGTH_FIELDS: FieldDef[] = [
   { key: 'reps', label: 'reps' },
 ];
 
+const RIR_FIELD: FieldDef = { key: 'rir', label: 'rir' };
+
 const CARDIO_FIELDS: FieldDef[] = [
   { key: 'distance', label: 'km' },
   { key: 'duration', label: 'min' },
@@ -42,12 +47,19 @@ export function SetRow({
   mode,
   values,
   lastReference,
+  showRir,
+  onShowRir,
   busy,
   onCreate,
   onUpdate,
   onDelete,
 }: SetRowProps) {
-  const fields = mode === 'strength' ? STRENGTH_FIELDS : CARDIO_FIELDS;
+  const fields =
+    mode === 'strength'
+      ? showRir
+        ? [...STRENGTH_FIELDS, RIR_FIELD]
+        : STRENGTH_FIELDS
+      : CARDIO_FIELDS;
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [editKey, setEditKey] = useState<keyof SetInput | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -60,12 +72,14 @@ export function SetRow({
         ? {
             weight: key === 'weight' ? toNumber(editValue) : values.weight,
             reps: key === 'reps' ? toNumber(editValue) : values.reps,
+            rir: key === 'rir' ? toNumber(editValue) : values.rir,
             distance: null,
             duration: null,
           }
         : {
             weight: null,
             reps: null,
+            rir: null,
             distance: key === 'distance' ? toNumber(editValue) : values.distance,
             duration: key === 'duration' ? toNumber(editValue) : values.duration,
           };
@@ -105,7 +119,7 @@ export function SetRow({
                   onSubmitEditing={() => commitEdit(f.key)}
                   keyboardType="numeric"
                   autoFocus
-                  className="min-w-[56px] border-b border-primary pb-0.5 text-right font-body-medium text-[16px] text-foreground"
+                  className="min-w-[56px] border-b border-primary pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
                   style={{ fontVariant: ['tabular-nums'] }}
                 />
               );
@@ -160,10 +174,18 @@ export function SetRow({
             placeholder={f.label}
             placeholderTextColor="rgba(0,0,0,0.3)"
             keyboardType="numeric"
-            className="min-w-[56px] border-b border-border pb-0.5 text-right font-body-medium text-[16px] text-foreground"
+            className="min-w-[56px] border-b border-border pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
             style={{ fontVariant: ['tabular-nums'] }}
           />
         ))}
+
+        {mode === 'strength' && !showRir ? (
+          <Pressable onPress={onShowRir} hitSlop={8} className="ml-1 py-1">
+            <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
+              + RIR
+            </Text>
+          </Pressable>
+        ) : null}
 
         {lastReference ? (
           <Text className="ml-1 max-w-[120px] font-body text-[10px] text-muted-foreground">
@@ -180,12 +202,14 @@ export function SetRow({
                 ? {
                     weight: toNumber(draft.weight ?? ''),
                     reps: toNumber(draft.reps ?? ''),
+                    rir: showRir ? toNumber(draft.rir ?? '') : null,
                     distance: null,
                     duration: null,
                   }
                 : {
                     weight: null,
                     reps: null,
+                    rir: null,
                     distance: toNumber(draft.distance ?? ''),
                     duration: toNumber(draft.duration ?? ''),
                   };
