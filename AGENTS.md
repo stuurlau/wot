@@ -135,7 +135,7 @@ Releases are manual: merge to `master`, then push a `v*` tag.
 The repo runs an automated issue→PR pipeline with opencode. Full behavior lives in the workflow files; the contract is:
 
 1. **Implement** (`opencode-implement.yml`): labeling an issue **`agent`** dispatches the implementer. The `anomalyco/opencode` action creates the branch (`opencode/issue<N>-<timestamp>`) from `master`; the agent implements, runs checks, and commits — the action pushes and opens **one PR per issue** with `Closes #<N>` in the body. The agent must never create/switch branches, push, or open the PR itself: if the branch changes mid-session, the action silently skips PR creation.
-2. **Review & fix** (`opencode-review.yml`): a PR opened from an `opencode/` branch triggers the reviewer. It verifies the diff against the linked issue and this file, fixes problems with fixup commits on the PR branch, and leaves one summary review.
+2. **Review & fix** (`opencode-review.yml`): adding the **`agent-review`** label to a PR from an `opencode/` branch dispatches the reviewer. It verifies the diff against the linked issue and this file, fixes problems with fixup commits on the PR branch, and leaves one summary review. (Label-gated, not auto-on-open: the action asserts the event actor has admin/write — PRs opened by `opencode-agent[bot]` report `permission: none` and would always fail. Retry = re-run from the Actions tab or re-add the label.)
 3. **Human feedback**: comment `/oc <instruction>` on an issue/PR for an instant run (`opencode.yml`), or just leave review comments — the daily sweep (`opencode-daily.yml`) addresses them and pushes fixes.
 4. Human merges; releases are tagged manually.
 
