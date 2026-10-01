@@ -5,7 +5,7 @@ name: opencode-daily
 # them (code fixes or plain answers) and pushes to the PR branch. For instant
 # reaction, comment `/oc <instruction>` on the PR instead (opencode.yml).
 #
-# Single model: kimi-k3, capped at 25 min. The repo `opencode.json` denies
+# Single model: kimi-k3, capped at 60 min. The repo `opencode.json` denies
 # `external_directory`, so out-of-workspace reads fail fast instead of
 # hanging on an unanswerable permission prompt; opencode still retries
 # usage-limit 429s indefinitely — the cap turns that into a failure instead
@@ -63,7 +63,7 @@ jobs:
 
       - name: "Run opencode"
         id: primary
-        timeout-minutes: 25
+        timeout-minutes: 60
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}

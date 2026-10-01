@@ -151,7 +151,7 @@ Rules for agents running in this pipeline:
 
 CI runs on the OpenCode Go subscription, which enforces per-model rolling budgets (5-hour / weekly / monthly — see `https://opencode.ai/docs/go/`).
 
-- Model: `opencode-go/kimi-k3` (smallest budget tier), one attempt per run. Step timeouts: 25 min on every opencode run step. The repo `opencode.json` denies `external_directory`, so out-of-workspace reads fail fast instead of hanging on an unanswered permission prompt; opencode still retries usage-limit 429s indefinitely, so the step cap turns that into a failure. No model fallbacks (removed: observed hangs were gateway-wide outages or stuck permission prompts, which fallback models/keys hit identically — they just burned budget and CI time).
+- Model: `opencode-go/kimi-k3` (smallest budget tier), one attempt per run. Step timeouts: 60 min on every opencode run step. The repo `opencode.json` denies `external_directory`, so out-of-workspace reads fail fast instead of hanging on an unanswered permission prompt; opencode still retries usage-limit 429s indefinitely, so the step cap turns that into a failure. No model fallbacks (removed: observed hangs were gateway-wide outages or stuck permission prompts, which fallback models/keys hit identically — they just burned budget and CI time).
 - On failure the workflow comments on the issue/PR (when there is one) and stays red. Retry via Actions → Re-run, or re-add the trigger label.
 - CI shares the K3 budget with local opencode usage: heavy CI runs can temporarily exhaust K3 for local sessions too. Check usage at `https://opencode.ai/auth`.
 

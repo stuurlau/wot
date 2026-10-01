@@ -6,7 +6,7 @@ name: opencode-implement
 # `Closes #N` in the body. Requires the `agent` label to exist in the repo
 # (create once: GitHub UI or `gh label create agent`).
 #
-# Single model: kimi-k3, capped at 25 min. The repo `opencode.json` denies
+# Single model: kimi-k3, capped at 60 min. The repo `opencode.json` denies
 # `external_directory`, so out-of-workspace reads fail fast instead of
 # hanging on an unanswerable permission prompt; opencode still retries
 # usage-limit 429s indefinitely — the cap turns that into a failure instead
@@ -66,7 +66,7 @@ jobs:
         id: primary
         # opencode retries usage-limit 429s indefinitely — cap the step so an
         # exhausted budget fails the run instead of burning the whole job.
-        timeout-minutes: 25
+        timeout-minutes: 60
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
