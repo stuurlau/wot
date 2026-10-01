@@ -3,6 +3,7 @@ import { relations } from "drizzle-orm";
 import { users } from "./auth.js";
 import { dailyLog } from "./daily-logs.js";
 import { painLog } from "./pain-logs.js";
+import { restTime } from "./rest-times.js";
 import { trainingSessionExerciseSet } from "./training-session-exercise-sets.js";
 import { trainingSessionExercise } from "./training-session-exercises.js";
 import { trainingSession } from "./training-sessions.js";
@@ -23,10 +24,25 @@ export const trainingSessionExerciseRelations = relations(trainingSessionExercis
   sets: many(trainingSessionExerciseSet),
 }));
 
-export const trainingSessionExerciseSetRelations = relations(trainingSessionExerciseSet, ({ one }) => ({
+export const trainingSessionExerciseSetRelations = relations(trainingSessionExerciseSet, ({ one, many }) => ({
   exercise: one(trainingSessionExercise, {
     fields: [trainingSessionExerciseSet.trainingSessionExerciseId],
     references: [trainingSessionExercise.id],
+  }),
+  restTimesBefore: many(restTime, { relationName: "restTimeSetBefore" }),
+  restTimesAfter: many(restTime, { relationName: "restTimeSetAfter" }),
+}));
+
+export const restTimeRelations = relations(restTime, ({ one }) => ({
+  setBefore: one(trainingSessionExerciseSet, {
+    fields: [restTime.setBeforeId],
+    references: [trainingSessionExerciseSet.id],
+    relationName: "restTimeSetBefore",
+  }),
+  setAfter: one(trainingSessionExerciseSet, {
+    fields: [restTime.setAfterId],
+    references: [trainingSessionExerciseSet.id],
+    relationName: "restTimeSetAfter",
   }),
 }));
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   createDailyLogInputSchema,
   createPainLogInputSchema,
+  createRestTimeInputSchema,
   createTrainingSessionExerciseInputSchema,
   createTrainingSessionExerciseSetInputSchema,
   createTrainingSessionInputSchema,
@@ -35,6 +36,21 @@ export const createExerciseSetBodySchema = createTrainingSessionExerciseSetInput
   .omit({ trainingSessionExerciseId: true })
   .strict();
 export const updateExerciseSetBodySchema = createExerciseSetBodySchema.partial().strict();
+
+export const createRestTimeBodySchema = createRestTimeInputSchema
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.setBeforeId === value.setAfterId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["setAfterId"],
+        message: "Must differ from setBeforeId.",
+      });
+    }
+    if (new Date(value.tillAt).getTime() < new Date(value.fromAt).getTime()) {
+      ctx.addIssue({ code: "custom", path: ["tillAt"], message: "Must be later than fromAt." });
+    }
+  });
 
 export const dailyLogBodySchema = createDailyLogInputSchema.omit({ date: true }).strict();
 

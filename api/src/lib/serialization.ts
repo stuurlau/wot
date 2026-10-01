@@ -1,6 +1,7 @@
 import type {
   DailyLog,
   PainLog,
+  RestTime,
   TrainingSession,
   TrainingSessionExercise,
   TrainingSessionExerciseSet,
@@ -9,6 +10,7 @@ import type {
 import type {
   dailyLog,
   painLog,
+  restTime,
   trainingSession,
   trainingSessionExercise,
   trainingSessionExerciseSet,
@@ -17,6 +19,7 @@ import type {
 type TrainingSessionRow = typeof trainingSession.$inferSelect;
 type TrainingSessionExerciseRow = typeof trainingSessionExercise.$inferSelect;
 type TrainingSessionExerciseSetRow = typeof trainingSessionExerciseSet.$inferSelect;
+type RestTimeRow = typeof restTime.$inferSelect;
 type DailyLogRow = typeof dailyLog.$inferSelect;
 type PainLogRow = typeof painLog.$inferSelect;
 
@@ -69,8 +72,18 @@ export function serializeTrainingSessionExerciseSet(row: TrainingSessionExercise
     duration: row.duration,
     pace: numberOrNull(row.pace),
     rpe: numberOrNull(row.rpe),
-    rest: row.rest,
     notes: row.notes,
+    createdAt: dateTime(row.createdAt),
+  };
+}
+
+export function serializeRestTime(row: RestTimeRow): RestTime {
+  return {
+    id: row.id,
+    setBeforeId: row.setBeforeId,
+    setAfterId: row.setAfterId,
+    fromAt: dateTime(row.fromAt),
+    tillAt: dateTime(row.tillAt),
     createdAt: dateTime(row.createdAt),
   };
 }

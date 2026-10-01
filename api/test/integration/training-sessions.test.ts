@@ -158,7 +158,6 @@ describe("training sessions", () => {
           reps: 8,
           rir: 2,
           rpe: 8,
-          rest: 95,
         },
         headers: auth(testUser.token),
       });
@@ -168,12 +167,10 @@ describe("training sessions", () => {
         id: string;
         weight: number;
         reps: number;
-        rest: number | null;
         trainingSessionExerciseId: string;
       }>();
       assert.equal(body.weight, 80);
       assert.equal(body.reps, 8);
-      assert.equal(body.rest, 95);
       assert.equal(body.trainingSessionExerciseId, exerciseId);
       setId = body.id;
     });
@@ -191,7 +188,7 @@ describe("training sessions", () => {
           id: string;
           name: string;
           supersetGroup: number | null;
-          sets: { id: string; weight: number; reps: number; rest: number | null }[];
+          sets: { id: string; weight: number; reps: number }[];
         }[];
       }>();
       assert.equal(body.exercises.length, 1);
@@ -200,7 +197,6 @@ describe("training sessions", () => {
       assert.equal(body.exercises[0].sets.length, 1);
       assert.equal(body.exercises[0].sets[0].weight, 80);
       assert.equal(body.exercises[0].sets[0].reps, 8);
-      assert.equal(body.exercises[0].sets[0].rest, 95);
     });
 
     it("patches the set", async () => {
@@ -251,6 +247,144 @@ describe("training sessions", () => {
         headers: auth(testUser.token),
       });
       assert.equal(res.statusCode, 404);
+    });
+  });
+
+  describe("rest times", () => {
+    let sessionId: string;
+    let setBeforeId: string;
+    let setAfterId: string;
+
+    before(async () => {
+      const sessionRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/sessions",
+        payload: SESSION_BODY,
+        headers: auth(testUser.token),
+      });
+      sessionId = sessionRes.json<{ id: string }>().id;
+      const exerciseRes = await app.inject({
+        method: "POST",
+        url: `/api/v1/sessions/${sessionId}/exercises`,
+        payload: { name: "Back Squat", sortOrder: 0 },
+        headers: auth(testUser.token),
+      });
+      const exerciseId = exerciseRes.json<{ id: string }>().id;
+      for (const sortOrder of [0, 1]) {
+        const setRes = await app.inject({
+          method: "POST",
+          url: `/api/v1/sessions/${sessionId}/exercises/${exerciseId}/sets`,
+          payload: { sortOrder, weight: 100, reps: 5 },
+          headers: auth(testUser.token),
+        });
+        const id = setRes.json<{ id: string }>().id;
+        if (sortOrder === 0) setBeforeId = id;
+        else setAfterId = id;
+      }
+    });
+
+    it("creates a rest time between two sets of the session", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: `/api/v1/sessions/${sessionId}/rest-times`,
+        payload: {
+          setBeforeId,
+          setAfterId,
+          fromAt: "2026-08-16T08:10:00.000Z",
+          tillAt: "2026-08-16T08:12:05.000Z",
+        },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(res.statusCode, 201, res.body);
+      const body = res.json<{
+        id: string;
+        setBeforeId: string;
+        setAfterId: string;
+        fromAt: string;
+        tillAt: string;
+      }>();
+      assert.ok(body.id);
+      assert.equal(body.setBeforeId, setBeforeId);
+      assert.equal(body.setAfterId, setAfterId);
+      assert.equal(body.fromAt, "2026-08-16T08:10:00.000Z");
+      assert.equal(body.tillAt, "2026-08-16T08:12:05.000Z");
+    });
+
+    it("rejects a rest time between a set and itself", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: `/api/v1/sessions/${sessionId}/rest-times`,
+        payload: {
+          setBeforeId,
+          setAfterId: setBeforeId,
+          fromAt: "2026-08-16T08:10:00.000Z",
+          tillAt: "2026-08-16T08:12:05.000Z",
+        },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(res.statusCode, 422);
+    });
+
+    it("rejects a rest time ending before it starts", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: `/api/v1/sessions/${sessionId}/rest-times`,
+        payload: {
+          setBeforeId,
+          setAfterId,
+          fromAt: "2026-08-16T08:12:05.000Z",
+          tillAt: "2026-08-16T08:10:00.000Z",
+        },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(res.statusCode, 422);
+    });
+
+    it("returns 404 when a set belongs to another session", async () => {
+      const otherSessionRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/sessions",
+        payload: SESSION_BODY,
+        headers: auth(testUser.token),
+      });
+      const otherSessionId = otherSessionRes.json<{ id: string }>().id;
+
+      const res = await app.inject({
+        method: "POST",
+        url: `/api/v1/sessions/${otherSessionId}/rest-times`,
+        payload: {
+          setBeforeId,
+          setAfterId,
+          fromAt: "2026-08-16T08:10:00.000Z",
+          tillAt: "2026-08-16T08:12:05.000Z",
+        },
+        headers: auth(testUser.token),
+      });
+
+      assert.equal(res.statusCode, 404);
+    });
+
+    it("returns 404 for another user's session", async () => {
+      const other = await createTestUser(app);
+      try {
+        const res = await app.inject({
+          method: "POST",
+          url: `/api/v1/sessions/${sessionId}/rest-times`,
+          payload: {
+            setBeforeId,
+            setAfterId,
+            fromAt: "2026-08-16T08:10:00.000Z",
+            tillAt: "2026-08-16T08:12:05.000Z",
+          },
+          headers: auth(other.token),
+        });
+        assert.equal(res.statusCode, 404);
+      } finally {
+        await deleteTestUser(other.userId);
+      }
     });
   });
 
