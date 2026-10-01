@@ -4,8 +4,8 @@ import * as Haptics from 'expo-haptics';
 
 import type { RecentExercise } from '@/lib/api';
 import type { TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
-import { useCreateExerciseSet, useDeleteExercise, useDeleteExerciseSet, useUpdateExercise, useUpdateExerciseSet } from '@/hooks/api';
-import { elapsedRestSeconds, useRestTimerStore } from '@/stores/rest-timer-store';
+import { useCreateExerciseSet, useCreateRestTime, useDeleteExercise, useDeleteExerciseSet, useUpdateExercise, useUpdateExerciseSet } from '@/hooks/api';
+import { useRestTimerStore } from '@/stores/rest-timer-store';
 import { SetRow, type SetInput } from './set-row';
 
 type ExerciseBlockProps = {
@@ -22,6 +22,7 @@ function toSetBody(input: SetInput, sortOrder: number) {
     weight: input.weight ?? undefined,
     reps: input.reps ?? undefined,
     rir: input.rir ?? undefined,
+    rpe: input.rpe ?? undefined,
     distance: input.distance ?? undefined,
     duration: input.duration ?? undefined,
   };
@@ -30,22 +31,42 @@ function toSetBody(input: SetInput, sortOrder: number) {
 export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }: ExerciseBlockProps) {
   const [mode, setMode] = useState<'strength' | 'cardio'>('strength');
   const createSet = useCreateExerciseSet(sessionId, exercise.id);
+  const createRestTime = useCreateRestTime(sessionId);
   const updateSet = useUpdateExerciseSet(sessionId, exercise.id);
   const deleteSet = useDeleteExerciseSet(sessionId, exercise.id);
   const updateExercise = useUpdateExercise(sessionId);
   const deleteExercise = useDeleteExercise(sessionId);
   const [confirmRemove, setConfirmRemove] = useState(false);
-  const [rirToggled, setRirToggled] = useState(false);
+  const [intensityToggled, setIntensityToggled] = useState(false);
+  const [intensityOverride, setIntensityOverride] = useState<'rir' | 'rpe' | null>(null);
 
-  // RIR stays visible once it has been used on this exercise (this session or
-  // via the recents of an earlier one), or once the user asked for it.
-  const showRir =
-    rirToggled || exercise.sets.some((s) => s.rir != null) || recent?.lastSet.rir != null;
+  // The intensity input stays visible once it has been used on this exercise
+  // (this session or via the recents of an earlier one), or once the user
+  // asked for it. RIR is the default; the label press flips between RIR/RPE.
+  const hasRir = exercise.sets.some((s) => s.rir != null) || recent?.lastSet.rir != null;
+  const hasRpe = exercise.sets.some((s) => s.rpe != null) || recent?.lastSet.rpe != null;
+  const showIntensity = intensityToggled || hasRir || hasRpe;
+  const intensity = intensityOverride ?? (hasRpe && !hasRir ? 'rpe' : 'rir');
 
-  const logSet = (input: SetInput) => {
-    const rest = elapsedRestSeconds(sessionId);
-    useRestTimerStore.getState().start(sessionId);
-    createSet.mutate({ ...toSetBody(input, exercise.sets.length), rest: rest ?? undefined });
+  const logSet = async (input: SetInput) => {
+    const rest = useRestTimerStore.getState();
+    const restFromMs = rest.sessionId === sessionId ? rest.startedAtMs : null;
+    const setBeforeId = rest.sessionId === sessionId ? rest.previousSetId : null;
+    let created: TrainingSessionExerciseSet;
+    try {
+      created = await createSet.mutateAsync(toSetBody(input, exercise.sets.length));
+    } catch {
+      return; // react-query exposes the error; keep the rest clock running
+    }
+    useRestTimerStore.getState().start(sessionId, created.id);
+    if (setBeforeId && restFromMs !== null) {
+      createRestTime.mutate({
+        setBeforeId,
+        setAfterId: created.id,
+        fromAt: new Date(restFromMs).toISOString(),
+        tillAt: new Date().toISOString(),
+      });
+    }
   };
 
   const strengthReference =
@@ -148,12 +169,15 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
               weight: set.weight ?? null,
               reps: set.reps ?? null,
               rir: set.rir ?? null,
+              rpe: set.rpe ?? null,
               distance: set.distance ?? null,
               duration: set.duration ?? null,
             }}
             lastReference={null}
-            showRir={showRir}
-            onShowRir={() => setRirToggled(true)}
+            showIntensity={showIntensity}
+            intensity={intensity}
+            onShowIntensity={() => setIntensityToggled(true)}
+            onFlipIntensity={() => setIntensityOverride(intensity === 'rir' ? 'rpe' : 'rir')}
             busy={updateSet.isPending || deleteSet.isPending}
             onCreate={() => {}}
             onUpdate={(input) => updateSet.mutate({ setId: set.id, body: toSetBody(input, i) })}
@@ -167,8 +191,10 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
           mode={mode}
           values={null}
           lastReference={mode === 'strength' ? strengthReference : null}
-          showRir={mode === 'strength' && showRir}
-          onShowRir={() => setRirToggled(true)}
+          showIntensity={mode === 'strength' && showIntensity}
+          intensity={intensity}
+          onShowIntensity={() => setIntensityToggled(true)}
+          onFlipIntensity={() => setIntensityOverride(intensity === 'rir' ? 'rpe' : 'rir')}
           busy={createSet.isPending}
           onCreate={logSet}
           onUpdate={() => {}}

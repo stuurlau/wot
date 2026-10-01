@@ -6,6 +6,7 @@ export type SetInput = {
   weight: number | null;
   reps: number | null;
   rir: number | null;
+  rpe: number | null;
   distance: number | null;
   duration: number | null;
 };
@@ -17,8 +18,11 @@ type SetRowProps = {
   mode: 'strength' | 'cardio';
   values: SetInput | null; // null => empty "add next set" row
   lastReference: string | null;
-  showRir: boolean;
-  onShowRir: () => void;
+  showIntensity: boolean;
+  /** Which effort scale the intensity input writes to. */
+  intensity: 'rir' | 'rpe';
+  onShowIntensity: () => void;
+  onFlipIntensity: () => void;
   busy: boolean;
   onCreate: (input: SetInput) => void;
   onUpdate: (input: SetInput) => void;
@@ -35,8 +39,6 @@ const STRENGTH_FIELDS: FieldDef[] = [
   { key: 'reps', label: 'reps' },
 ];
 
-const RIR_FIELD: FieldDef = { key: 'rir', label: 'rir' };
-
 const CARDIO_FIELDS: FieldDef[] = [
   { key: 'distance', label: 'km' },
   { key: 'duration', label: 'min' },
@@ -47,17 +49,20 @@ export function SetRow({
   mode,
   values,
   lastReference,
-  showRir,
-  onShowRir,
+  showIntensity,
+  intensity,
+  onShowIntensity,
+  onFlipIntensity,
   busy,
   onCreate,
   onUpdate,
   onDelete,
 }: SetRowProps) {
+  const intensityField: FieldDef = { key: intensity, label: intensity };
   const fields =
     mode === 'strength'
-      ? showRir
-        ? [...STRENGTH_FIELDS, RIR_FIELD]
+      ? showIntensity
+        ? [...STRENGTH_FIELDS, intensityField]
         : STRENGTH_FIELDS
       : CARDIO_FIELDS;
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -73,6 +78,7 @@ export function SetRow({
             weight: key === 'weight' ? toNumber(editValue) : values.weight,
             reps: key === 'reps' ? toNumber(editValue) : values.reps,
             rir: key === 'rir' ? toNumber(editValue) : values.rir,
+            rpe: key === 'rpe' ? toNumber(editValue) : values.rpe,
             distance: null,
             duration: null,
           }
@@ -80,6 +86,7 @@ export function SetRow({
             weight: null,
             reps: null,
             rir: null,
+            rpe: null,
             distance: key === 'distance' ? toNumber(editValue) : values.distance,
             duration: key === 'duration' ? toNumber(editValue) : values.duration,
           };
@@ -124,6 +131,7 @@ export function SetRow({
                 />
               );
             }
+            const isIntensity = f.key === 'rir' || f.key === 'rpe';
             return (
               <Pressable
                 key={f.key}
@@ -139,9 +147,17 @@ export function SetRow({
                 >
                   {renderValue(f.key)}
                 </Text>
-                <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-                  {f.label}
-                </Text>
+                {isIntensity ? (
+                  <Pressable onPress={onFlipIntensity} hitSlop={8}>
+                    <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
+                      {f.label} ⇄
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
+                    {f.label}
+                  </Text>
+                )}
               </Pressable>
             );
           })}
@@ -166,21 +182,35 @@ export function SetRow({
       </Text>
 
       <View className="flex-1 flex-row items-center justify-end gap-2">
-        {fields.map((f) => (
-          <TextInput
-            key={f.key}
-            value={draft[f.key] ?? ''}
-            onChangeText={(t) => setDraft((p) => ({ ...p, [f.key]: t }))}
-            placeholder={f.label}
-            placeholderTextColor="rgba(0,0,0,0.3)"
-            keyboardType="numeric"
-            className="min-w-[56px] border-b border-border pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
-            style={{ fontVariant: ['tabular-nums'] }}
-          />
-        ))}
+        {fields.map((f) => {
+          const isIntensity = f.key === 'rir' || f.key === 'rpe';
+          const input = (
+            <TextInput
+              key={f.key}
+              value={draft[f.key] ?? ''}
+              onChangeText={(t) => setDraft((p) => ({ ...p, [f.key]: t }))}
+              placeholder={f.label}
+              placeholderTextColor="rgba(0,0,0,0.3)"
+              keyboardType="numeric"
+              className="min-w-[56px] border-b border-border pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
+              style={{ fontVariant: ['tabular-nums'] }}
+            />
+          );
+          if (!isIntensity) return input;
+          return (
+            <View key={f.key}>
+              {input}
+              <Pressable onPress={onFlipIntensity} hitSlop={8}>
+                <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
+                  {f.label} ⇄
+                </Text>
+              </Pressable>
+            </View>
+          );
+        })}
 
-        {mode === 'strength' && !showRir ? (
-          <Pressable onPress={onShowRir} hitSlop={8} className="ml-1 py-1">
+        {mode === 'strength' && !showIntensity ? (
+          <Pressable onPress={onShowIntensity} hitSlop={8} className="ml-1 py-1">
             <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
               + RIR
             </Text>
@@ -202,7 +232,8 @@ export function SetRow({
                 ? {
                     weight: toNumber(draft.weight ?? ''),
                     reps: toNumber(draft.reps ?? ''),
-                    rir: showRir ? toNumber(draft.rir ?? '') : null,
+                    rir: showIntensity && intensity === 'rir' ? toNumber(draft.rir ?? '') : null,
+                    rpe: showIntensity && intensity === 'rpe' ? toNumber(draft.rpe ?? '') : null,
                     distance: null,
                     duration: null,
                   }
@@ -210,6 +241,7 @@ export function SetRow({
                     weight: null,
                     reps: null,
                     rir: null,
+                    rpe: null,
                     distance: toNumber(draft.distance ?? ''),
                     duration: toNumber(draft.duration ?? ''),
                   };
