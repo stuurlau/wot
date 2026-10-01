@@ -6,9 +6,11 @@ name: opencode-implement
 # `Closes #N` in the body. Requires the `agent` label to exist in the repo
 # (create once: GitHub UI or `gh label create agent`).
 #
-# Model ladder (see AGENTS.md): primary kimi-k3; on failure — typically
-# exhausted OpenCode Go usage limits, K3 has the smallest budget — one
-# automatic retry with glm-5.2 (4x the monthly budget).
+# Single model: kimi-k3, capped at 60 min (opencode retries usage-limit 429s
+# and unanswered permission prompts indefinitely — the cap turns a hang into
+# a failure instead of burning the job). No model fallbacks: observed hangs
+# were gateway-wide, so retrying with another model/key just burned budget
+# and CI time. Retry by re-running.
 on:
   issues:
     types: [opened, labeled]
@@ -28,7 +30,6 @@ jobs:
       pull-requests: write
       issues: write
     env:
-      OPENCODE_API_KEY_FALLBACK: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
       PROMPT: |
         You are the implementer agent for the WOT repo. Implement issue #${{ github.event.issue.number }}, end to end.
 
@@ -58,12 +59,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: "Run opencode (primary: kimi-k3)"
+      - name: "Run opencode"
         id: primary
-        continue-on-error: true
-        # opencode retries usage-limit 429s indefinitely — cap the step so a
-        # stuck primary hands over to the fallback instead of burning the job.
-        timeout-minutes: 25
+        # opencode retries usage-limit 429s and unanswered permission prompts
+        # indefinitely — cap the step so a hang fails the run instead of
+        # burning the whole job.
+        timeout-minutes: 60
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -71,37 +72,11 @@ jobs:
           model: opencode-go/kimi-k3
           prompt: ${{ env.PROMPT }}
 
-      - name: "Run opencode (fallback: glm-5.2)"
-        id: fallback
-        continue-on-error: true
-        if: steps.primary.outcome != 'success'
-        timeout-minutes: 25
-        uses: anomalyco/opencode/github@latest
-        env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-        with:
-          model: opencode-go/glm-5.2
-          prompt: ${{ env.PROMPT }}
-
-      # Second OpenCode Go account (fresh per-model budgets): retry the
-      # primary model with OPENCODE_API_KEY_FALLBACK. Skipped when unset.
-      - name: "Run opencode (fallback key: kimi-k3)"
-        id: fallbackkey
-        continue-on-error: true
-        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && env.OPENCODE_API_KEY_FALLBACK != ''
-        timeout-minutes: 25
-        uses: anomalyco/opencode/github@latest
-        env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}
-        with:
-          model: opencode-go/kimi-k3
-          prompt: ${{ env.PROMPT }}
-
-      # All attempts failed: explain on the issue and keep the run red.
+      # On failure: explain on the issue and keep the run red.
       - name: Report failure
-        if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && steps.fallbackkey.outcome != 'success'
+        if: steps.primary.outcome != 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue comment "${{ github.event.issue.number }}" --body "The agent could not complete this task. All model attempts (kimi-k3, glm-5.2, fallback key) failed — most likely the OpenCode Go usage limits are exhausted (rolling 5-hour / weekly / monthly budgets, see https://opencode.ai/auth), or a transient error occurred. To retry: re-run this workflow from the Actions tab, or remove and re-add the \`agent\` label." || true
+          gh issue comment "${{ github.event.issue.number }}" --body "The agent could not complete this task (see the run log). Most likely an OpenCode Go outage/hang or exhausted usage limits (rolling 5-hour / weekly / monthly budgets — https://opencode.ai/auth). To retry: re-run this workflow from the Actions tab, or remove and re-add the \`agent\` label." || true
           exit 1
