@@ -44,6 +44,7 @@ export const trainingSessionExerciseSchema = z.object({
   name: z.string().min(1),
   bodyRegions: z.array(bodyRegionSchema).nullish(),
   sortOrder: smallIntSchema,
+  supersetGroup: smallIntSchema.nullish(),
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
 });
@@ -82,6 +83,21 @@ export const updateTrainingSessionExerciseSetInputSchema = trainingSessionExerci
   .omit({ trainingSessionExerciseId: true })
   .partial();
 
+// A rest interval always sits between two sets of the same session.
+export const restTimeSchema = z.object({
+  id: identifierSchema,
+  setBeforeId: identifierSchema,
+  setAfterId: identifierSchema,
+  fromAt: isoDateTimeSchema,
+  tillAt: isoDateTimeSchema,
+  createdAt: isoDateTimeSchema,
+});
+
+export const createRestTimeInputSchema = restTimeSchema.omit({
+  id: true,
+  createdAt: true,
+});
+
 export type TrainingSession = z.infer<typeof trainingSessionSchema>;
 export type CreateTrainingSessionInput = z.infer<typeof createTrainingSessionInputSchema>;
 export type UpdateTrainingSessionInput = z.infer<typeof updateTrainingSessionInputSchema>;
@@ -91,3 +107,5 @@ export type UpdateTrainingSessionExerciseInput = z.infer<typeof updateTrainingSe
 export type TrainingSessionExerciseSet = z.infer<typeof trainingSessionExerciseSetSchema>;
 export type CreateTrainingSessionExerciseSetInput = z.infer<typeof createTrainingSessionExerciseSetInputSchema>;
 export type UpdateTrainingSessionExerciseSetInput = z.infer<typeof updateTrainingSessionExerciseSetInputSchema>;
+export type RestTime = z.infer<typeof restTimeSchema>;
+export type CreateRestTimeInput = z.infer<typeof createRestTimeInputSchema>;

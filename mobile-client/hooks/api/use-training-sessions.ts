@@ -60,3 +60,10 @@ export function useDeleteTrainingSession() {
     },
   });
 }
+
+export function useCreateRestTime(id: string) {
+  return useMutation({
+    mutationFn: (body: Parameters<typeof trainingSessions.createRestTime>[1]) =>
+      trainingSessions.createRestTime(id, body),
+  });
+}

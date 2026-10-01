@@ -1,5 +1,7 @@
 import type {
+  CreateRestTimeInput,
   CreateTrainingSessionInput,
+  RestTime,
   TrainingSession,
   TrainingSessionExercise,
   TrainingSessionExerciseSet,
@@ -42,4 +44,7 @@ export const trainingSessions = {
     apiClient.patch<TrainingSessionWithLoad>(`/sessions/${id}`, body).then((r) => r.data),
 
   delete: (id: string) => apiClient.delete(`/sessions/${id}`),
+
+  createRestTime: (id: string, body: CreateRestTimeInput) =>
+    apiClient.post<RestTime>(`/sessions/${id}/rest-times`, body).then((r) => r.data),
 };

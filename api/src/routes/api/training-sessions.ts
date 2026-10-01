@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, gte, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, or } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { db } from "../../db/client.js";
 import {
+  restTime,
   trainingSessionExerciseSet,
   trainingSessionExercise,
   trainingSession,
@@ -17,6 +18,7 @@ import {
 } from "../../lib/api-validation.js";
 import { decodeCursor, encodeCursor } from "../../lib/cursor.js";
 import {
+  serializeRestTime,
   serializeTrainingSession,
   serializeTrainingSessionExercise,
   serializeTrainingSessionExerciseSet,
@@ -24,6 +26,7 @@ import {
 import {
   createExerciseBodySchema,
   createExerciseSetBodySchema,
+  createRestTimeBodySchema,
   createTrainingSessionBodySchema,
   exercisePathSchema,
   setPathSchema,
@@ -60,6 +63,7 @@ function exerciseUpdateValues(
   if (input.name !== undefined) values.name = input.name;
   if (input.bodyRegions !== undefined) values.bodyRegions = input.bodyRegions;
   if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
+  if (input.supersetGroup !== undefined) values.supersetGroup = input.supersetGroup ?? null;
   if (input.notes !== undefined) values.notes = input.notes;
   return values;
 }
@@ -135,6 +139,32 @@ async function requireOwnedSet(
     )
     .limit(1);
   if (!set) throw notFoundError();
+}
+
+async function requireOwnedSessionSets(
+  userId: string,
+  trainingSessionId: string,
+  setIds: string[],
+) {
+  const rows = await db
+    .select({ id: trainingSessionExerciseSet.id })
+    .from(trainingSessionExerciseSet)
+    .innerJoin(
+      trainingSessionExercise,
+      eq(trainingSessionExerciseSet.trainingSessionExerciseId, trainingSessionExercise.id),
+    )
+    .innerJoin(
+      trainingSession,
+      eq(trainingSessionExercise.trainingSessionId, trainingSession.id),
+    )
+    .where(
+      and(
+        inArray(trainingSessionExerciseSet.id, setIds),
+        eq(trainingSessionExercise.trainingSessionId, trainingSessionId),
+        eq(trainingSession.userId, userId),
+      ),
+    );
+  if (rows.length !== new Set(setIds).size) throw notFoundError();
 }
 
 function trainingSessionCursor(cursor: string) {
@@ -300,6 +330,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
           name: input.name,
           bodyRegions: input.bodyRegions ?? null,
           sortOrder: input.sortOrder,
+          supersetGroup: input.supersetGroup ?? null,
           notes: input.notes ?? null,
         })
         .returning();
@@ -417,6 +448,33 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
         .returning({ id: trainingSessionExerciseSet.id });
       if (!set) throw notFoundError();
       return reply.code(204).send();
+    },
+  );
+
+  // Rest time routes
+  app.post(
+    "/sessions/:trainingSessionId/rest-times",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request, reply) => {
+      const { trainingSessionId } = parseRequest(trainingSessionPathSchema, request.params);
+      const input = parseRequest(createRestTimeBodySchema, request.body);
+      const userId = authenticatedUserId(request);
+      await requireOwnedTrainingSession(userId, trainingSessionId);
+      await requireOwnedSessionSets(userId, trainingSessionId, [
+        input.setBeforeId,
+        input.setAfterId,
+      ]);
+      const [created] = await db
+        .insert(restTime)
+        .values({
+          setBeforeId: input.setBeforeId,
+          setAfterId: input.setAfterId,
+          fromAt: new Date(input.fromAt),
+          tillAt: new Date(input.tillAt),
+        })
+        .returning();
+      if (!created) throw new ApiError(500, "INTERNAL_ERROR", "Unable to create rest time.");
+      return reply.code(201).send(serializeRestTime(created));
     },
   );
 }

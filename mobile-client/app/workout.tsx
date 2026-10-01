@@ -11,7 +11,9 @@ import { ExerciseBlock } from '@/components/workout/exercise-block';
 import { ExercisePickerSheet } from '@/components/workout/exercise-picker-sheet';
 import { FinishSheet } from '@/components/workout/finish-sheet';
 import { useRecentExercises, useTrainingSession, useUpdateTrainingSession } from '@/hooks/api';
+import { nextSupersetGroup } from '@/lib/superset';
 import { useActiveSessionStore } from '@/stores/active-session-store';
+import { useRestTimerStore } from '@/stores/rest-timer-store';
 
 function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -26,6 +28,10 @@ function formatElapsed(ms: number): string {
 export default function WorkoutScreen() {
   const sessionId = useActiveSessionStore((s) => s.sessionId);
   const startedAtMs = useActiveSessionStore((s) => s.startedAtMs);
+  const restStartedAtMs = useRestTimerStore((s) =>
+    s.sessionId !== null && s.sessionId === sessionId ? s.startedAtMs : null,
+  );
+  const stopRest = useRestTimerStore((s) => s.stop);
   const { data: session } = useTrainingSession(sessionId ?? '');
   const { data: recents = [] } = useRecentExercises(20);
   const updateSession = useUpdateTrainingSession(sessionId ?? '');
@@ -102,6 +108,22 @@ export default function WorkoutScreen() {
           </Pressable>
         </View>
 
+        {restStartedAtMs !== null ? (
+          <View className="mt-1 flex-row items-center justify-end gap-3">
+            <Text
+              className="font-body text-[11px] uppercase tracking-[2px] text-muted-foreground"
+              style={{ fontVariant: ['tabular-nums'] }}
+            >
+              Rest {formatElapsed(now - restStartedAtMs)}
+            </Text>
+            <Pressable onPress={stopRest} hitSlop={8}>
+              <Text className="font-body text-[11px] uppercase tracking-[2px] text-primary">
+                Stop
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <TextInput
           value={title}
           onChangeText={setTitle}
@@ -116,6 +138,7 @@ export default function WorkoutScreen() {
         <KeyboardAwareScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
         >
           {session.exercises.length === 0 ? (
             <Pressable onPress={() => setPickerVisible(true)} className="mb-4 self-start py-1">
@@ -130,6 +153,7 @@ export default function WorkoutScreen() {
                 sessionId={sessionId}
                 exercise={exercise}
                 recent={recentByName.get(exercise.name) ?? null}
+                nextSupersetGroup={nextSupersetGroup(session.exercises, exercise.id)}
               />
             ))
           )}
