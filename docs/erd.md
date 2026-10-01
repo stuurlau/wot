@@ -13,6 +13,8 @@ erDiagram
     user ||--o{ pain_logs : "logs"
     training_sessions ||--o{ training_session_exercises : "contains"
     training_session_exercises ||--o{ training_session_exercise_sets : "contains"
+    training_session_exercise_sets ||--o{ rest_times : "set_before"
+    training_session_exercise_sets ||--o{ rest_times : "set_after"
 
     user {
         text id PK
@@ -87,8 +89,16 @@ erDiagram
         integer duration "seconds"
         numeric pace "sec/km (6,2)"
         numeric rpe "1–10 (3,1)"
-        integer rest "seconds of rest before the set"
         text notes
+        timestamptz created_at
+    }
+
+    rest_times {
+        uuid id PK
+        uuid set_before_id FK "set the rest follows"
+        uuid set_after_id FK "set the rest precedes"
+        timestamptz from_at "rest start"
+        timestamptz till_at "rest end"
         timestamptz created_at
     }
 

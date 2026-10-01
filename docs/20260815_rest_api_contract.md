@@ -112,9 +112,25 @@ exercise or body-region catalogue.
   "duration": null,
   "pace": null,
   "rpe": 8,
-  "rest": 95,
   "notes": null,
   "createdAt": "2026-08-15T10:14:29.100Z"
+}
+```
+
+### Rest time
+
+A rest interval always sits between two sets of the same session; the sets may
+belong to different exercises (supersets). Duration is derived as
+`tillAt - fromAt`.
+
+```json
+{
+  "id": "2c4e6a8b-0d1f-4a5b-8c7d-9e0f1a2b3c4d",
+  "setBeforeId": "6a91c20e-8ef9-4ca9-abf3-f4b211e353ac",
+  "setAfterId": "7b02d31f-9f0a-5db0-bd4e-b0f2c4e5a6bd",
+  "fromAt": "2026-08-15T06:35:12.000Z",
+  "tillAt": "2026-08-15T06:36:47.000Z",
+  "createdAt": "2026-08-15T10:14:29.200Z"
 }
 ```
 
@@ -165,6 +181,7 @@ exercise or body-region catalogue.
 | `POST` | `/sessions/{sessionId}/exercises/{exerciseId}/sets` | Add one set to an exercise. |
 | `PATCH` | `/sessions/{sessionId}/exercises/{exerciseId}/sets/{setId}` | Update a set. |
 | `DELETE` | `/sessions/{sessionId}/exercises/{exerciseId}/sets/{setId}` | Delete a set. |
+| `POST` | `/sessions/{sessionId}/rest-times` | Record a rest interval between two sets. |
 
 `POST /sessions` body:
 
@@ -211,16 +228,30 @@ form one superset.
   "distance": null,
   "duration": null,
   "pace": null,
-  "rest": 95,
   "notes": null
 }
 ```
 
 `sortOrder` is required. All measurement fields are optional:
-`weight`, `reps`, `rir`, `distance`, `duration`, `pace`, `rpe`, and `rest`.
-Non-negative integer limits apply to `reps`, set `duration`, `rest`, and
-`sortOrder`; `rir` is from 0 to 10 and set `rpe` is from 1 to 10. `rest` is
-the seconds of rest before the set.
+`weight`, `reps`, `rir`, `distance`, `duration`, `pace`, and `rpe`.
+Non-negative integer limits apply to `reps`, set `duration`, and
+`sortOrder`; `rir` is from 0 to 10 and set `rpe` is from 1 to 10.
+
+`POST /sessions/{sessionId}/rest-times` body:
+
+```json
+{
+  "setBeforeId": "6a91c20e-8ef9-4ca9-abf3-f4b211e353ac",
+  "setAfterId": "7b02d31f-9f0a-5db0-bd4e-b0f2c4e5a6bd",
+  "fromAt": "2026-08-15T06:35:12.000Z",
+  "tillAt": "2026-08-15T06:36:47.000Z"
+}
+```
+
+All fields are required. Both sets must exist within the same session (a
+session that does not own them returns `404`), `setAfterId` must differ from
+`setBeforeId`, and `tillAt` must not be earlier than `fromAt`. Deleting either
+set cascade-deletes the rest interval.
 
 `GET /sessions` query parameters:
 
