@@ -8,8 +8,11 @@ export const exerciseKeys = {
   all: ['exercises'] as const,
   recents: (limit?: number) => [...exerciseKeys.all, 'recents', limit] as const,
   history: (params?: ExerciseHistoryParams) => [...exerciseKeys.all, 'history', params] as const,
-  similar: (name: string) => [...exerciseKeys.all, 'similar', name] as const,
 };
+
+// Fetches all distinct names the user has ever logged (the recents endpoint
+// dedupes by name); the API caps `limit` at 500.
+const EXERCISE_NAMES_LIMIT = 500;
 
 export function useRecentExercises(limit?: number) {
   return useQuery({
@@ -25,11 +28,16 @@ export function useExerciseHistory(params: ExerciseHistoryParams) {
   });
 }
 
-export function useSimilarExercises(name: string | null) {
+// All known exercise names, cached in the query store so fuzzy "rename
+// similar" matching runs fully client-side and keeps working on a flaky
+// connection. Names change rarely; the exercise mutations invalidate
+// exerciseKeys.all, so a generous staleTime avoids refetch churn.
+export function useExerciseNames() {
   return useQuery({
-    queryKey: exerciseKeys.similar(name ?? ''),
-    queryFn: () => exercises.similar(name!),
-    enabled: !!name,
+    queryKey: exerciseKeys.recents(EXERCISE_NAMES_LIMIT),
+    queryFn: () => exercises.recents(EXERCISE_NAMES_LIMIT),
+    select: (recents) => recents.map((recent) => recent.name),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

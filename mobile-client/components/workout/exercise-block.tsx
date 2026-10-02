@@ -9,11 +9,12 @@ import {
   useCreateRestTime,
   useDeleteExercise,
   useDeleteExerciseSet,
+  useExerciseNames,
   useRenameExercises,
-  useSimilarExercises,
   useUpdateExercise,
   useUpdateExerciseSet,
 } from '@/hooks/api';
+import { findSimilarNames } from '@/lib/similarity';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
 import { SetRow, type SetInput } from './set-row';
 
@@ -86,8 +87,12 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
   const [renameFrom, setRenameFrom] = useState<string | null>(null);
   const [renameTo, setRenameTo] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const similar = useSimilarExercises(renameFrom);
-  const renameCandidates = (similar.data ?? []).filter((name) => name !== renameTo);
+  // Fuzzy matching runs locally over the cached names, so the rename offer
+  // needs no extra round-trip after the rename itself.
+  const { data: exerciseNames = [] } = useExerciseNames();
+  const renameCandidates = renameFrom
+    ? findSimilarNames(renameFrom, exerciseNames).filter((name) => name !== renameTo)
+    : [];
 
   const commitName = async () => {
     setEditingName(false);

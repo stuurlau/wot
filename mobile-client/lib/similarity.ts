@@ -1,11 +1,12 @@
 // Fuzzy exercise-name matching for the "rename similar exercises" flow.
 // Trigram Dice coefficient over normalized names: tolerant of typos, case,
-// spacing and word order, deterministic, and cheap enough to run over a
-// user's distinct names in memory (no pg_trgm extension required).
+// spacing and word order. Runs fully client-side over the user's cached
+// exercise names (see `useExerciseNames`), so the suggestion keeps working
+// on a flaky connection.
 
 export const NAME_SIMILARITY_THRESHOLD = 0.5;
 
-const normalize = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
+const normalize = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
 
 function trigrams(value: string): Set<string> {
   const padded = ` ${value} `;
@@ -28,4 +29,11 @@ export function nameSimilarity(a: string, b: string): number {
     if (tb.has(gram)) overlap++;
   }
   return (2 * overlap) / (ta.size + tb.size);
+}
+
+/** Names from `names` that fuzzy-match `query`, best match first. */
+export function findSimilarNames(query: string, names: string[]): string[] {
+  return names
+    .filter((name) => nameSimilarity(query, name) >= NAME_SIMILARITY_THRESHOLD)
+    .sort((a, b) => nameSimilarity(query, b) - nameSimilarity(query, a) || a.localeCompare(b));
 }

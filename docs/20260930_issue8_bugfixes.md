@@ -39,18 +39,20 @@ sheet (check-in, pain, finish, exercise picker).
 - After a rename, an inline offer appears: *Also rename "\<old\>" in past
   workouts?* listing all of the user's similar exercise names, with
   **Rename all** / **Dismiss** actions.
-- Two new endpoints back this:
-  - `GET /api/v1/exercises/similar?name=…` returns the user's distinct
-    exercise names with trigram Dice similarity ≥ 0.5 to `name`
-    (case/spacing-insensitive, typo-tolerant; `api/src/lib/similarity.ts`).
-    Fuzzy matching lives here, in suggestion space only.
-  - `PATCH /api/v1/exercises/rename` takes `{ from: string[], to: string }`
-    (schema: `renameExercisesInputSchema` in `@wot/types`) and renames the
-    user's exercises matching the listed names **exactly**, returning
-    `{ updated: n }`. The destructive operation stays deterministic because
-    the client confirms the concrete name list first.
+- Fuzzy matching runs **client-side** (`mobile-client/lib/similarity.ts`:
+  trigram Dice similarity ≥ 0.5, case/spacing-insensitive, typo-tolerant)
+  over all known exercise names, which the client caches in the query store
+  via `useExerciseNames` (a high-limit `GET /exercises/recents` call; the
+  endpoint's `limit` cap was raised to 500 for this). So the suggestion
+  keeps working on a flaky connection — no extra round-trip after a rename.
+- One new endpoint backs the destructive half:
+  `PATCH /api/v1/exercises/rename` takes `{ from: string[], to: string }`
+  (schema: `renameExercisesInputSchema` in `@wot/types`) and renames the
+  user's exercises matching the listed names **exactly**, returning
+  `{ updated: n }`. The destructive operation stays deterministic because
+  the client confirms the concrete name list first.
 - The trigram approach runs in memory over a user's distinct names (small)
-    and needs no `pg_trgm` extension or migration.
+  and needs no `pg_trgm` extension or migration.
 
 ## 4. Set-row edit affordances were always visible
 
@@ -67,7 +69,7 @@ before tapping ✓.
 ## Deliberately left out
 
 - No DB migration — the rename endpoint reuses the existing `name` column and
-  similarity runs in app code.
+  similarity runs client-side.
 - No per-name cherry-picking in the rename offer — the issue asks for a
   "rename all" option; the candidate list is shown for review before
   confirming.

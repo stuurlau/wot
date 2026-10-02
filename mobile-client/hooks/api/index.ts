@@ -12,7 +12,7 @@ export {
   exerciseKeys,
   useRecentExercises,
   useExerciseHistory,
-  useSimilarExercises,
+  useExerciseNames,
   useCreateExercise,
   useUpdateExercise,
   useDeleteExercise,

@@ -88,15 +88,11 @@ export const painLogListQuerySchema = z
   .strict()
   .superRefine((value, ctx) => validateDateRange(value, ctx));
 
+// The cap is generous so the client can cache every distinct name the user
+// has ever logged and run fuzzy "rename similar" matching client-side.
 export const recentsQuerySchema = z
   .object({
-    limit: queryLimit(50, 20),
-  })
-  .strict();
-
-export const similarExercisesQuerySchema = z
-  .object({
-    name: z.string().min(1),
+    limit: queryLimit(500, 20),
   })
   .strict();
 

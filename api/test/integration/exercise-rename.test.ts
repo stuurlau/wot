@@ -36,6 +36,7 @@ describe("exercise rename", () => {
   let testUser: TestUser;
   let otherUser: TestUser;
   let sessionIds: string[];
+  let otherSessionId: string;
 
   before(async () => {
     app = await createTestApp();
@@ -46,7 +47,7 @@ describe("exercise rename", () => {
     sessionIds.push(await createSessionWithExercise(app, testUser.token, "2026-08-20T08:00:00.000Z", "Bench Press"));
     sessionIds.push(await createSessionWithExercise(app, testUser.token, "2026-08-22T08:00:00.000Z", "benchpress"));
     sessionIds.push(await createSessionWithExercise(app, testUser.token, "2026-08-24T08:00:00.000Z", "Squat"));
-    await createSessionWithExercise(app, otherUser.token, "2026-08-20T08:00:00.000Z", "Bench Press");
+    otherSessionId = await createSessionWithExercise(app, otherUser.token, "2026-08-20T08:00:00.000Z", "Bench Press");
   });
 
   after(async () => {
@@ -54,20 +55,6 @@ describe("exercise rename", () => {
     await deleteTestUser(otherUser.userId);
     await app.close();
     await pool.end();
-  });
-
-  it("suggests fuzzy-matching distinct names, scoped to the user", async () => {
-    const res = await app.inject({
-      method: "GET",
-      url: "/api/v1/exercises/similar?name=Benchpress",
-      headers: auth(testUser.token),
-    });
-
-    assert.equal(res.statusCode, 200, res.body);
-    const { data } = res.json<{ data: string[] }>();
-    assert.ok(data.includes("Bench Press"));
-    assert.ok(data.includes("benchpress"));
-    assert.ok(!data.includes("Squat"));
   });
 
   it("renames exactly the listed names across all of the user's sessions", async () => {
@@ -92,12 +79,13 @@ describe("exercise rename", () => {
     }
 
     // The other user's identically named exercise is untouched.
-    const otherSimilar = await app.inject({
+    const otherDetail = await app.inject({
       method: "GET",
-      url: "/api/v1/exercises/similar?name=Benchpress",
+      url: `/api/v1/sessions/${otherSessionId}`,
       headers: auth(otherUser.token),
     });
-    assert.deepEqual(otherSimilar.json<{ data: string[] }>().data, ["Bench Press"]);
+    const { exercises } = otherDetail.json<{ exercises: { name: string }[] }>();
+    assert.equal(exercises[0]?.name, "Bench Press");
   });
 
   it("rejects invalid bodies with 422", async () => {
@@ -114,14 +102,5 @@ describe("exercise rename", () => {
       });
       assert.equal(res.statusCode, 422, `expected 422 for ${JSON.stringify(payload)}, got ${res.statusCode}`);
     }
-  });
-
-  it("rejects a similar query without a name", async () => {
-    const res = await app.inject({
-      method: "GET",
-      url: "/api/v1/exercises/similar",
-      headers: auth(testUser.token),
-    });
-    assert.equal(res.statusCode, 400);
   });
 });

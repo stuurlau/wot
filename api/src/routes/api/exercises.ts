@@ -9,51 +9,22 @@ import {
 } from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
 import { parseRequest, rejectUnknownQuery } from "../../lib/api-validation.js";
-import { NAME_SIMILARITY_THRESHOLD, nameSimilarity } from "../../lib/similarity.js";
 import {
   exerciseHistoryQuerySchema,
   recentsQuerySchema,
   renameExercisesBodySchema,
-  similarExercisesQuerySchema,
 } from "./schemas.js";
 
 const utcMidnight = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 export async function registerExerciseRoutes(app: FastifyInstance) {
-  app.get(
-    "/exercises/similar",
-    { preHandler: requireAuthentication },
-    async (request) => {
-      const query = parseRequest(similarExercisesQuerySchema, request.query, true);
-      const rows = await db
-        .selectDistinct({ name: trainingSessionExercise.name })
-        .from(trainingSessionExercise)
-        .innerJoin(
-          trainingSession,
-          eq(trainingSessionExercise.trainingSessionId, trainingSession.id),
-        )
-        .where(eq(trainingSession.userId, authenticatedUserId(request)));
-
-      return {
-        data: rows
-          .map((row) => row.name)
-          .filter((name) => nameSimilarity(query.name, name) >= NAME_SIMILARITY_THRESHOLD)
-          .sort(
-            (a, b) =>
-              nameSimilarity(query.name, b) - nameSimilarity(query.name, a) ||
-              a.localeCompare(b),
-          ),
-      };
-    },
-  );
-
   app.patch(
     "/exercises/rename",
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request) => {
       const input = parseRequest(renameExercisesBodySchema, request.body);
-      // `from` names are matched exactly: the fuzzy part lives in
-      // GET /exercises/similar, and the client confirms the concrete list.
+      // `from` names are matched exactly: the fuzzy matching lives in the
+      // client, which confirms the concrete list before calling this.
       const updated = await db
         .update(trainingSessionExercise)
         .set({ name: input.to })
