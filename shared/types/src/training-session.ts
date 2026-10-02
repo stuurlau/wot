@@ -83,6 +83,13 @@ export const updateTrainingSessionExerciseSetInputSchema = trainingSessionExerci
   .omit({ trainingSessionExerciseId: true })
   .partial();
 
+// Bulk rename: every `from` name is matched exactly (names come from the
+// similar-names endpoint, which does the fuzzy part), all matches become `to`.
+export const renameExercisesInputSchema = z.object({
+  from: z.array(z.string().min(1)).min(1).max(100),
+  to: z.string().min(1),
+});
+
 // A rest interval always sits between two sets of the same session.
 export const restTimeSchema = z.object({
   id: identifierSchema,
@@ -107,5 +114,6 @@ export type UpdateTrainingSessionExerciseInput = z.infer<typeof updateTrainingSe
 export type TrainingSessionExerciseSet = z.infer<typeof trainingSessionExerciseSetSchema>;
 export type CreateTrainingSessionExerciseSetInput = z.infer<typeof createTrainingSessionExerciseSetInputSchema>;
 export type UpdateTrainingSessionExerciseSetInput = z.infer<typeof updateTrainingSessionExerciseSetInputSchema>;
+export type RenameExercisesInput = z.infer<typeof renameExercisesInputSchema>;
 export type RestTime = z.infer<typeof restTimeSchema>;
 export type CreateRestTimeInput = z.infer<typeof createRestTimeInputSchema>;

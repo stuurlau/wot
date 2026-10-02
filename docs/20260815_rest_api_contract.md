@@ -321,10 +321,12 @@ then `id` descending.
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/exercises/recents` | Supply the exercise picker with recent names and their last set values. |
+| `PATCH` | `/exercises/rename` | Rename all of the user's exercises with the given names. |
 
-`GET /exercises/recents?limit=20` accepts `limit` from 1 to 50 (default
+`GET /exercises/recents?limit=20` accepts `limit` from 1 to 500 (default
 20). It returns the latest exercise for each distinct, exact `name`, ordered
-by last use:
+by last use. With a high `limit` the client can cache every name the user
+has ever logged and run fuzzy "rename similar" matching client-side:
 
 ```json
 {
@@ -338,6 +340,21 @@ by last use:
   ]
 }
 ```
+
+`PATCH /exercises/rename` body:
+
+```json
+{
+  "from": ["Benchpress", "bench press"],
+  "to": "Bench Press"
+}
+```
+
+Every exercise owned by the user whose `name` matches a `from` entry exactly
+is renamed to `to`; the response is `{ "updated": 2 }`. Matching is exact on
+purpose — the fuzzy part happens client-side over the cached exercise names
+(no network round-trip), and the user confirms the concrete list before the
+client calls this endpoint.
 
 *Note:* Higher-order metrics (monotony, strain, ACWR, load summaries) are derived exclusively on the client/frontend side to eliminate server compute load and network round-trips.
 

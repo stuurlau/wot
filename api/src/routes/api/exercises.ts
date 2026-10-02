@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 
 import { db } from "../../db/client.js";
@@ -8,12 +8,44 @@ import {
   trainingSession,
 } from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
-import { parseRequest } from "../../lib/api-validation.js";
-import { exerciseHistoryQuerySchema, recentsQuerySchema } from "./schemas.js";
+import { parseRequest, rejectUnknownQuery } from "../../lib/api-validation.js";
+import {
+  exerciseHistoryQuerySchema,
+  recentsQuerySchema,
+  renameExercisesBodySchema,
+} from "./schemas.js";
 
 const utcMidnight = (date: string) => new Date(`${date}T00:00:00.000Z`);
 
 export async function registerExerciseRoutes(app: FastifyInstance) {
+  app.patch(
+    "/exercises/rename",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request) => {
+      const input = parseRequest(renameExercisesBodySchema, request.body);
+      // `from` names are matched exactly: the fuzzy matching lives in the
+      // client, which confirms the concrete list before calling this.
+      const updated = await db
+        .update(trainingSessionExercise)
+        .set({ name: input.to })
+        .where(
+          and(
+            inArray(trainingSessionExercise.name, input.from),
+            inArray(
+              trainingSessionExercise.trainingSessionId,
+              db
+                .select({ id: trainingSession.id })
+                .from(trainingSession)
+                .where(eq(trainingSession.userId, authenticatedUserId(request))),
+            ),
+          ),
+        )
+        .returning({ id: trainingSessionExercise.id });
+
+      return { updated: updated.length };
+    },
+  );
+
   app.get(
     "/exercises/recents",
     { preHandler: requireAuthentication },

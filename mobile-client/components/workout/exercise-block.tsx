@@ -1,10 +1,20 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 import type { RecentExercise } from '@/lib/api';
 import type { TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
-import { useCreateExerciseSet, useCreateRestTime, useDeleteExercise, useDeleteExerciseSet, useUpdateExercise, useUpdateExerciseSet } from '@/hooks/api';
+import {
+  useCreateExerciseSet,
+  useCreateRestTime,
+  useDeleteExercise,
+  useDeleteExerciseSet,
+  useExerciseNames,
+  useRenameExercises,
+  useUpdateExercise,
+  useUpdateExerciseSet,
+} from '@/hooks/api';
+import { findSimilarNames } from '@/lib/similarity';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
 import { SetRow, type SetInput } from './set-row';
 
@@ -36,6 +46,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
   const deleteSet = useDeleteExerciseSet(sessionId, exercise.id);
   const updateExercise = useUpdateExercise(sessionId);
   const deleteExercise = useDeleteExercise(sessionId);
+  const renameExercises = useRenameExercises();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [intensityToggled, setIntensityToggled] = useState(false);
   const [intensityOverride, setIntensityOverride] = useState<'rir' | 'rpe' | null>(null);
@@ -69,17 +80,90 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
     }
   };
 
+  // Inline rename: tap the title to edit, commit on blur/submit. When the
+  // name actually changed, offer to rename fuzzy-matched names everywhere.
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [renameFrom, setRenameFrom] = useState<string | null>(null);
+  const [renameTo, setRenameTo] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  // Fuzzy matching runs locally over the cached names, so the rename offer
+  // needs no extra round-trip after the rename itself.
+  const { data: exerciseNames = [] } = useExerciseNames();
+  const renameCandidates = renameFrom
+    ? findSimilarNames(renameFrom, exerciseNames).filter((name) => name !== renameTo)
+    : [];
+
+  const commitName = async () => {
+    setEditingName(false);
+    const trimmed = nameDraft.trim();
+    if (trimmed === '' || trimmed === exercise.name) return;
+    setError(null);
+    try {
+      await updateExercise.mutateAsync({ exerciseId: exercise.id, body: { name: trimmed } });
+    } catch {
+      setError("Couldn't rename the exercise. Try again.");
+      return;
+    }
+    setRenameTo(trimmed);
+    setRenameFrom(exercise.name);
+  };
+
+  const confirmRenameAll = async () => {
+    setError(null);
+    try {
+      await renameExercises.mutateAsync({ from: renameCandidates, to: renameTo });
+    } catch {
+      setError("Couldn't rename everywhere. Try again.");
+      return;
+    }
+    setRenameFrom(null);
+  };
+
   const strengthReference =
     recent?.lastSet.weight != null || recent?.lastSet.reps != null
       ? `${recent.lastSet.weight ?? '—'} × ${recent.lastSet.reps ?? '—'}`
       : null;
 
+  const lastSet = exercise.sets.at(-1) ?? null;
+  const previousValues: SetInput | null = lastSet
+    ? {
+        weight: lastSet.weight ?? null,
+        reps: lastSet.reps ?? null,
+        rir: lastSet.rir ?? null,
+        rpe: lastSet.rpe ?? null,
+        distance: lastSet.distance ?? null,
+        duration: lastSet.duration ?? null,
+      }
+    : null;
+
   return (
     <View className="mb-8">
       <View className="mb-1 flex-row items-baseline justify-between">
-        <Text className="font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground">
-          {exercise.name}
-        </Text>
+        {editingName ? (
+          <TextInput
+            value={nameDraft}
+            onChangeText={setNameDraft}
+            onBlur={() => void commitName()}
+            onSubmitEditing={() => void commitName()}
+            autoFocus
+            autoCapitalize="words"
+            className="flex-1 border-b border-primary font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground"
+          />
+        ) : (
+          <Pressable
+            className="flex-1"
+            hitSlop={4}
+            onPress={() => {
+              setNameDraft(exercise.name);
+              setEditingName(true);
+            }}
+          >
+            <Text className="font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground">
+              {exercise.name}
+            </Text>
+          </Pressable>
+        )}
         <View className="flex-row items-baseline gap-3">
           <Pressable
             hitSlop={8}
@@ -134,6 +218,35 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
           </Pressable>
         </View>
       </View>
+
+      {error ? (
+        <Text className="mb-2 font-body text-[12px] text-destructive">{error}</Text>
+      ) : null}
+
+      {renameFrom && renameCandidates.length > 0 ? (
+        <View className="mb-2 rounded-xl bg-surface-container-low px-3 py-2">
+          <Text className="mb-2 font-body text-[11px] leading-4 text-foreground">
+            Also rename {renameCandidates.map((name) => `“${name}”`).join(', ')} to “{renameTo}”
+            in past workouts?
+          </Text>
+          <View className="flex-row gap-4">
+            <Pressable
+              onPress={() => void confirmRenameAll()}
+              disabled={renameExercises.isPending}
+              hitSlop={8}
+            >
+              <Text className="font-body text-[10px] uppercase tracking-[2px] text-primary">
+                {renameExercises.isPending ? 'Renaming…' : 'Rename all'}
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => setRenameFrom(null)} hitSlop={8}>
+              <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
+                Dismiss
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       <View className="mb-2 flex-row gap-2">
         {(['strength', 'cardio'] as const).map((m) => (
@@ -191,6 +304,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
           mode={mode}
           values={null}
           lastReference={mode === 'strength' ? strengthReference : null}
+          previousValues={previousValues}
           showIntensity={mode === 'strength' && showIntensity}
           intensity={intensity}
           onShowIntensity={() => setIntensityToggled(true)}

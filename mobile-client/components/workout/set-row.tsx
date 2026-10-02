@@ -18,6 +18,7 @@ type SetRowProps = {
   mode: 'strength' | 'cardio';
   values: SetInput | null; // null => empty "add next set" row
   lastReference: string | null;
+  previousValues?: SetInput | null; // previous set of this exercise, for Copy
   showIntensity: boolean;
   /** Which effort scale the intensity input writes to. */
   intensity: 'rir' | 'rpe';
@@ -49,6 +50,7 @@ export function SetRow({
   mode,
   values,
   lastReference,
+  previousValues,
   showIntensity,
   intensity,
   onShowIntensity,
@@ -68,6 +70,27 @@ export function SetRow({
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [editKey, setEditKey] = useState<keyof SetInput | null>(null);
   const [editValue, setEditValue] = useState('');
+  // Saved rows keep their ✓/✕ affordances hidden until the row is tapped.
+  const [expanded, setExpanded] = useState(false);
+
+  const copyable =
+    previousValues != null &&
+    (mode === 'strength'
+      ? previousValues.weight != null || previousValues.reps != null
+      : previousValues.distance != null || previousValues.duration != null);
+
+  const copyPrevious = () => {
+    if (!previousValues) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDraft({
+      weight: previousValues.weight?.toString() ?? '',
+      reps: previousValues.reps?.toString() ?? '',
+      rir: previousValues.rir?.toString() ?? '',
+      rpe: previousValues.rpe?.toString() ?? '',
+      distance: previousValues.distance?.toString() ?? '',
+      duration: previousValues.duration?.toString() ?? '',
+    });
+  };
 
   const commitEdit = (key: keyof SetInput) => {
     setEditKey(null);
@@ -102,6 +125,7 @@ export function SetRow({
     return (
       <Pressable
         className="flex-row items-center justify-between py-2"
+        onPress={() => setExpanded((v) => !v)}
         onLongPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           onDelete();
@@ -163,10 +187,14 @@ export function SetRow({
           })}
         </View>
 
-        <Text className="ml-3 font-body text-[12px] tracking-[2px] text-primary">✓</Text>
-        <Pressable onPress={onDelete} hitSlop={8} className="ml-2 px-1">
-          <Text className="font-body text-[14px] text-muted-foreground">✕</Text>
-        </Pressable>
+        {expanded ? (
+          <>
+            <Text className="ml-3 font-body text-[12px] tracking-[2px] text-primary">✓</Text>
+            <Pressable onPress={onDelete} hitSlop={8} className="ml-2 px-1">
+              <Text className="font-body text-[14px] text-muted-foreground">✕</Text>
+            </Pressable>
+          </>
+        ) : null}
       </Pressable>
     );
   }
@@ -221,6 +249,14 @@ export function SetRow({
           <Text className="ml-1 max-w-[120px] font-body text-[10px] text-muted-foreground">
             last {lastReference}
           </Text>
+        ) : null}
+
+        {copyable ? (
+          <Pressable onPress={copyPrevious} hitSlop={8} className="ml-1 px-1 py-1">
+            <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
+              Copy
+            </Text>
+          </Pressable>
         ) : null}
 
         <Pressable

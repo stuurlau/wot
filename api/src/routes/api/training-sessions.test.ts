@@ -13,6 +13,7 @@ const AUTHENTICATED_ROUTES = [
   { method: "GET" as const, url: "/api/v1/pain-logs" },
   { method: "GET" as const, url: "/api/v1/exercises/recents" },
   { method: "GET" as const, url: "/api/v1/exercises/history?from=2026-08-01&to=2026-09-01" },
+  { method: "PATCH" as const, url: "/api/v1/exercises/rename" },
 ];
 
 describe("training-session routes", () => {
