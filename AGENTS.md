@@ -135,7 +135,7 @@ Releases are manual: merge to `master`, then push a `v*` tag.
 The repo runs an automated issue→PR pipeline with opencode. Full behavior lives in the workflow files; the contract is:
 
 1. **Implement** (`opencode-implement.yml`): labeling an issue **`agent`** dispatches the implementer. The `anomalyco/opencode` action creates the branch (`opencode/issue<N>-<timestamp>`) from `master`; the agent implements, runs checks, and commits — the action pushes and opens **one PR per issue** with `Closes #<N>` in the body. The agent must never create/switch branches, push, or open the PR itself: if the branch changes mid-session, the action silently skips PR creation.
-2. **Review & fix** (`opencode-review.yml`): a PR opened from an `opencode/` branch triggers the reviewer. It verifies the diff against the linked issue and this file, fixes problems with fixup commits on the PR branch, and leaves one summary review.
+2. **Review & fix** (`opencode-review.yml`): adding the **`agent-review`** label to a PR from an `opencode/` branch dispatches the reviewer. It verifies the diff against the linked issue and this file, fixes problems with fixup commits on the PR branch, and leaves one summary review. (Label-gated, not auto-on-open: the action asserts the event actor has admin/write — PRs opened by `opencode-agent[bot]` report `permission: none` and would always fail. Retry = re-run from the Actions tab or re-add the label.)
 3. **Human feedback**: comment `/oc <instruction>` on an issue/PR for an instant run (`opencode.yml`), or just leave review comments — the daily sweep (`opencode-daily.yml`) addresses them and pushes fixes.
 4. Human merges; releases are tagged manually.
 
@@ -151,8 +151,8 @@ Rules for agents running in this pipeline:
 
 CI runs on the OpenCode Go subscription, which enforces per-model rolling budgets (5-hour / weekly / monthly — see `https://opencode.ai/docs/go/`).
 
-- Primary model: `opencode-go/kimi-k3` (smallest budget tier). On any failure — typically exhausted limits — every workflow falls back to `opencode-go/glm-5.2` (~4x the budget), then, if the `OPENCODE_API_KEY_FALLBACK` secret (second OpenCode Go account, fresh budgets) is set, to kimi-k3 with that key. opencode retries usage-limit 429s indefinitely, so every rung is capped with a step-level `timeout-minutes` (25); a timed-out rung counts as not-successful and hands over to the next.
-- If all attempts fail, the workflow comments on the issue/PR (when there is one) and stays red. Retry later via Actions → Re-run, or re-add the `agent` label.
+- Model: `opencode-go/kimi-k3` (smallest budget tier), one attempt per run. Step timeouts: 60 min on every opencode run step. The repo `opencode.json` denies `external_directory`, so out-of-workspace reads fail fast instead of hanging on an unanswered permission prompt; opencode still retries usage-limit 429s indefinitely, so the step cap turns that into a failure. No model fallbacks (removed: observed hangs were gateway-wide outages or stuck permission prompts, which fallback models/keys hit identically — they just burned budget and CI time).
+- On failure the workflow comments on the issue/PR (when there is one) and stays red. Retry via Actions → Re-run, or re-add the trigger label.
 - CI shares the K3 budget with local opencode usage: heavy CI runs can temporarily exhaust K3 for local sessions too. Check usage at `https://opencode.ai/auth`.
 
 ## Local agent workflow (opencode TUI)

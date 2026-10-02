@@ -5,6 +5,7 @@ export {
   useCreateTrainingSession,
   useUpdateTrainingSession,
   useDeleteTrainingSession,
+  useCreateRestTime,
 } from './use-training-sessions';
 
 export {

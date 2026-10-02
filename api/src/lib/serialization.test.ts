@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { serializeTrainingSession, serializeTrainingSessionExercise, serializeTrainingSessionExerciseSet } from "./serialization.js";
+import { serializeRestTime, serializeTrainingSession, serializeTrainingSessionExercise, serializeTrainingSessionExerciseSet } from "./serialization.js";
 
 const BASE_DATE = new Date("2026-08-15T09:00:00.000Z");
 const BASE_ISO = "2026-08-15T09:00:00.000Z";
@@ -36,6 +36,7 @@ const trainingExerciseRow = {
   name: "Bench Press",
   bodyRegions: ["push", "chest"],
   sortOrder: 1,
+  supersetGroup: 1,
   notes: null,
   createdAt: BASE_DATE,
 };
@@ -55,12 +56,22 @@ const trainingExerciseSetRow = {
   createdAt: BASE_DATE,
 };
 
+const restTimeRow = {
+  id: "r-1",
+  setBeforeId: "s-1",
+  setAfterId: "s-2",
+  fromAt: BASE_DATE,
+  tillAt: new Date("2026-08-15T09:01:35.000Z"),
+  createdAt: BASE_DATE,
+};
+
 describe("serializeTrainingSessionExercise", () => {
   it("serializes exercise fields", () => {
     const result = serializeTrainingSessionExercise(trainingExerciseRow);
     assert.equal(result.trainingSessionId, "ts-1");
     assert.equal(result.name, "Bench Press");
     assert.deepEqual(result.bodyRegions, ["push", "chest"]);
+    assert.equal(result.supersetGroup, 1);
   });
 });
 
@@ -72,5 +83,16 @@ describe("serializeTrainingSessionExerciseSet", () => {
     assert.equal(result.rir, 2);
     assert.equal(result.rpe, 7);
     assert.equal(result.distance, null);
+  });
+});
+
+describe("serializeRestTime", () => {
+  it("serializes rest interval fields", () => {
+    const result = serializeRestTime(restTimeRow);
+    assert.equal(result.setBeforeId, "s-1");
+    assert.equal(result.setAfterId, "s-2");
+    assert.equal(result.fromAt, BASE_ISO);
+    assert.equal(result.tillAt, "2026-08-15T09:01:35.000Z");
+    assert.equal(result.createdAt, BASE_ISO);
   });
 });

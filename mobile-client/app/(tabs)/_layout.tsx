@@ -38,8 +38,10 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: '#9a9793',
         tabBarStyle: {
-          backgroundColor: 'transparent',
-          borderTopWidth: 0,
+          backgroundColor: Colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: Colors.border,
+          elevation: 0,
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter_600SemiBold',

@@ -12,6 +12,7 @@ export const trainingSessionExercise = pgTable(
     name: text("name").notNull(),
     bodyRegions: text("body_regions").array(),
     sortOrder: smallint("sort_order").notNull(),
+    supersetGroup: smallint("superset_group"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

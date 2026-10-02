@@ -20,7 +20,7 @@ jobs:
       contains(github.event.comment.body, ' /opencode') ||
       startsWith(github.event.comment.body, '/opencode')
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 200
     permissions:
       id-token: write
       contents: write
@@ -48,7 +48,7 @@ jobs:
         continue-on-error: true
         # opencode retries usage-limit 429s indefinitely — cap the step so a
         # stuck primary hands over to the fallback instead of burning the job.
-        timeout-minutes: 25
+        timeout-minutes: 60
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -59,7 +59,7 @@ jobs:
         id: fallback
         continue-on-error: true
         if: steps.primary.outcome != 'success'
-        timeout-minutes: 25
+        timeout-minutes: 60
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
@@ -72,7 +72,7 @@ jobs:
         id: fallbackkey
         continue-on-error: true
         if: steps.primary.outcome != 'success' && steps.fallback.outcome != 'success' && env.OPENCODE_API_KEY_FALLBACK != ''
-        timeout-minutes: 25
+        timeout-minutes: 60
         uses: anomalyco/opencode/github@latest
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY_FALLBACK }}

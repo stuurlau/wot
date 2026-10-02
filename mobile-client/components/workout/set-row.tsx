@@ -5,6 +5,8 @@ import * as Haptics from 'expo-haptics';
 export type SetInput = {
   weight: number | null;
   reps: number | null;
+  rir: number | null;
+  rpe: number | null;
   distance: number | null;
   duration: number | null;
 };
@@ -17,6 +19,11 @@ type SetRowProps = {
   values: SetInput | null; // null => empty "add next set" row
   lastReference: string | null;
   previousValues?: SetInput | null; // previous set of this exercise, for Copy
+  showIntensity: boolean;
+  /** Which effort scale the intensity input writes to. */
+  intensity: 'rir' | 'rpe';
+  onShowIntensity: () => void;
+  onFlipIntensity: () => void;
   busy: boolean;
   onCreate: (input: SetInput) => void;
   onUpdate: (input: SetInput) => void;
@@ -44,12 +51,22 @@ export function SetRow({
   values,
   lastReference,
   previousValues,
+  showIntensity,
+  intensity,
+  onShowIntensity,
+  onFlipIntensity,
   busy,
   onCreate,
   onUpdate,
   onDelete,
 }: SetRowProps) {
-  const fields = mode === 'strength' ? STRENGTH_FIELDS : CARDIO_FIELDS;
+  const intensityField: FieldDef = { key: intensity, label: intensity };
+  const fields =
+    mode === 'strength'
+      ? showIntensity
+        ? [...STRENGTH_FIELDS, intensityField]
+        : STRENGTH_FIELDS
+      : CARDIO_FIELDS;
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [editKey, setEditKey] = useState<keyof SetInput | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -68,6 +85,8 @@ export function SetRow({
     setDraft({
       weight: previousValues.weight?.toString() ?? '',
       reps: previousValues.reps?.toString() ?? '',
+      rir: previousValues.rir?.toString() ?? '',
+      rpe: previousValues.rpe?.toString() ?? '',
       distance: previousValues.distance?.toString() ?? '',
       duration: previousValues.duration?.toString() ?? '',
     });
@@ -81,12 +100,16 @@ export function SetRow({
         ? {
             weight: key === 'weight' ? toNumber(editValue) : values.weight,
             reps: key === 'reps' ? toNumber(editValue) : values.reps,
+            rir: key === 'rir' ? toNumber(editValue) : values.rir,
+            rpe: key === 'rpe' ? toNumber(editValue) : values.rpe,
             distance: null,
             duration: null,
           }
         : {
             weight: null,
             reps: null,
+            rir: null,
+            rpe: null,
             distance: key === 'distance' ? toNumber(editValue) : values.distance,
             duration: key === 'duration' ? toNumber(editValue) : values.duration,
           };
@@ -127,11 +150,12 @@ export function SetRow({
                   onSubmitEditing={() => commitEdit(f.key)}
                   keyboardType="numeric"
                   autoFocus
-                  className="min-w-[56px] border-b border-primary pb-0.5 text-right font-body-medium text-[16px] text-foreground"
+                  className="min-w-[56px] border-b border-primary pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
                   style={{ fontVariant: ['tabular-nums'] }}
                 />
               );
             }
+            const isIntensity = f.key === 'rir' || f.key === 'rpe';
             return (
               <Pressable
                 key={f.key}
@@ -147,9 +171,17 @@ export function SetRow({
                 >
                   {renderValue(f.key)}
                 </Text>
-                <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-                  {f.label}
-                </Text>
+                {isIntensity ? (
+                  <Pressable onPress={onFlipIntensity} hitSlop={8}>
+                    <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
+                      {f.label} ⇄
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
+                    {f.label}
+                  </Text>
+                )}
               </Pressable>
             );
           })}
@@ -178,18 +210,40 @@ export function SetRow({
       </Text>
 
       <View className="flex-1 flex-row items-center justify-end gap-2">
-        {fields.map((f) => (
-          <TextInput
-            key={f.key}
-            value={draft[f.key] ?? ''}
-            onChangeText={(t) => setDraft((p) => ({ ...p, [f.key]: t }))}
-            placeholder={f.label}
-            placeholderTextColor="rgba(0,0,0,0.3)"
-            keyboardType="numeric"
-            className="min-w-[56px] border-b border-border pb-0.5 text-right font-body-medium text-[16px] text-foreground"
-            style={{ fontVariant: ['tabular-nums'] }}
-          />
-        ))}
+        {fields.map((f) => {
+          const isIntensity = f.key === 'rir' || f.key === 'rpe';
+          const input = (
+            <TextInput
+              key={f.key}
+              value={draft[f.key] ?? ''}
+              onChangeText={(t) => setDraft((p) => ({ ...p, [f.key]: t }))}
+              placeholder={f.label}
+              placeholderTextColor="rgba(0,0,0,0.3)"
+              keyboardType="numeric"
+              className="min-w-[56px] border-b border-border pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
+              style={{ fontVariant: ['tabular-nums'] }}
+            />
+          );
+          if (!isIntensity) return input;
+          return (
+            <View key={f.key}>
+              {input}
+              <Pressable onPress={onFlipIntensity} hitSlop={8}>
+                <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
+                  {f.label} ⇄
+                </Text>
+              </Pressable>
+            </View>
+          );
+        })}
+
+        {mode === 'strength' && !showIntensity ? (
+          <Pressable onPress={onShowIntensity} hitSlop={8} className="ml-1 py-1">
+            <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
+              + RIR
+            </Text>
+          </Pressable>
+        ) : null}
 
         {lastReference ? (
           <Text className="ml-1 max-w-[120px] font-body text-[10px] text-muted-foreground">
@@ -214,12 +268,16 @@ export function SetRow({
                 ? {
                     weight: toNumber(draft.weight ?? ''),
                     reps: toNumber(draft.reps ?? ''),
+                    rir: showIntensity && intensity === 'rir' ? toNumber(draft.rir ?? '') : null,
+                    rpe: showIntensity && intensity === 'rpe' ? toNumber(draft.rpe ?? '') : null,
                     distance: null,
                     duration: null,
                   }
                 : {
                     weight: null,
                     reps: null,
+                    rir: null,
+                    rpe: null,
                     distance: toNumber(draft.distance ?? ''),
                     duration: toNumber(draft.duration ?? ''),
                   };

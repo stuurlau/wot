@@ -9,6 +9,7 @@ users
 training_sessions                 → FK users
 training_session_exercises        → FK training_sessions
 training_session_exercise_sets    → FK training_session_exercises
+rest_times                        → FK training_session_exercise_sets (before + after)
 daily_logs                        → FK users
 pain_logs                         → FK users
 ```
@@ -64,6 +65,7 @@ Child rows of a training session. Each row represents an exercise performed duri
 | `name` | `text` | free text: "Bench Press", "Back Squat" |
 | `body_regions` | `text[]` | e.g. `["push", "shoulders"]`, nullable |
 | `sort_order` | `smallint` | preserves ordering within a session |
+| `superset_group` | `smallint` | nullable; exercises sharing a number form one superset |
 | `notes` | `text` | optional free text |
 | `created_at` | `timestamptz` | defaults to now |
 
@@ -97,6 +99,23 @@ Child rows of a training session exercise. Each row represents a single set, int
 - exposure gaps: days since any exercise tagged with a given region
 - push:pull ratio from `body_regions` tags
 - "recents" for the UI: most recently used exercise names and their last set values for a user
+
+---
+
+### rest_times
+
+One row per rest interval. A rest always sits **between two sets**, so the row links both of them and stores the interval as timestamps rather than a derived duration.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `uuid` | primary key |
+| `set_before_id` | `uuid` | FK → `training_session_exercise_sets.id` (CASCADE) |
+| `set_after_id` | `uuid` | FK → `training_session_exercise_sets.id` (CASCADE) |
+| `from_at` | `timestamptz` | when the rest began (previous set saved) |
+| `till_at` | `timestamptz` | when the rest ended (next set saved) |
+| `created_at` | `timestamptz` | defaults to now |
+
+Rest duration is derived as `till_at - from_at` at query time. Sets may belong to different exercises, which is how rests inside supersets are captured.
 
 ---
 
@@ -184,6 +203,8 @@ All of these are computed at query time or in the frontend domain layer — no s
 **No exercise library.** Exercise names are free text. Recents and reuse are handled at the application layer by querying the most recently used `name` values for a user. This keeps the model flexible and avoids the friction of maintaining a managed catalogue.
 
 **Hierarchical exercises and sets.** `training_sessions -> training_session_exercises -> training_session_exercise_sets`. An exercise holds grouping metadata (`name`, `body_regions`, `notes`), while sets hold individual performance and measurement metrics (`weight`, `reps`, `rir`, `distance`, `duration`, `pace`, `rpe`).
+
+**Rests are intervals between sets, not set attributes.** A rest is meaningless without the two sets it separates, so `rest_times` links `set_before_id` and `set_after_id` and stores the `from_at`/`till_at` timestamps; duration is derived at query time. This also covers rests across exercises (supersets), which a per-set column cannot express.
 
 **`body_regions` is a free-text array on `training_session_exercises`.** No region lookup table. The UI offers a fixed list of suggestions (push, pull, legs, core, shoulders, hinge, carry, etc.) but the DB stores plain text. This keeps the regional model flexible without a join table.
 
