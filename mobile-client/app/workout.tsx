@@ -186,7 +186,6 @@ export default function WorkoutScreen() {
         visible={finishVisible}
         onClose={() => setFinishVisible(false)}
         sessionId={sessionId}
-        startedAtMs={startedAtMs}
         onLogPain={() => setPainVisible(true)}
       />
       <PainSheet visible={painVisible} onClose={() => setPainVisible(false)} />
