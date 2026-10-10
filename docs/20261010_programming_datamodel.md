@@ -87,7 +87,10 @@ Exercises inside one planned session — the distribution step edits these.
 - `target_sets` integer — sets to prefill on materialization; initialized
   from the blueprint's set count or split from `plan_exercise_sets` during
   distribution
-- `notes` text nullable (e.g. "top set @8 RPE")
+- `target_rpe` numeric(3,1) nullable — optional RPE target (1–10, decimals
+  allowed, same convention as wellness RPE); weight/reps prescription stays
+  out deliberately
+- `notes` text nullable
 
 ## Flows
 
@@ -109,6 +112,11 @@ prefilled (same prefill path as repeating an exercise), links it via
 `realized_session_id`, and marks the planned session `done`. Skipping just
 sets `status`; the calendar view distinguishes both from `planned`.
 
+**Flexibility.** A planned slot is intent, never a gate: a session planned
+for a given pattern day (or weekday hint) can be done days later — starting
+it is always allowed regardless of when the slot was. The plan never blocks
+training.
+
 ## Staging
 
 1. Tables + Plan tab pattern view with CRUD on planned sessions (no
@@ -117,13 +125,19 @@ sets `status`; the calendar view distinguishes both from `planned`.
 3. Compose flow with targets + distribution.
 4. Materialization into the workout screen.
 
-## Open questions
+## Decisions from review
 
-- Multi-week cycles (progression, deload weeks) — deliberately out of scope;
-  a repeating single week covers the Plan tab's calendar. Cycles would add
-  `week_index` on top of `weekday` later without breaking this model.
-- Whether `planned_sessions` needs absolute-date overrides (holiday weeks).
-  Deferred — `skipped` covers the common case.
-- Does materializing prefill set *values* from the blueprint (weight/reps)
-  or only set *count*? Proposal: count only — the point of a plan is
-  intent, and last-session prefill already exists in the workout screen.
+- **Training blocks & 2-week patterns** — in scope via
+  `program_training_block`: `pattern_weeks` (1 or 2) repeated for
+  `duration_weeks`. Longer cycles fit later by raising the `pattern_weeks`
+  cap without breaking this model.
+- **No absolute dates** — pattern days plus an optional weekday hint cover
+  the calendar; doing a session days later than planned is explicitly fine
+  (see Flexibility), and `skipped` covers missed intent.
+- **Materialization prefills set count only** — no weight/reps
+  prescription; an optional `target_rpe` per exercise instead. The point of
+  a plan is intent, and last-session prefill already exists in the workout
+  screen.
+- **Progression** (planned load/RPE progression across the weeks of a
+  block) — deliberately deferred; it layers a week index and per-week
+  target overrides on top of this model later.
