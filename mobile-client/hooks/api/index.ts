@@ -20,7 +20,13 @@ export {
   useCreateExerciseSet,
   useUpdateExerciseSet,
   useDeleteExerciseSet,
+  useExerciseTags,
+  useSetExerciseTags,
+  usePrefillExerciseSets,
+  useReorderExercises,
 } from './use-exercises';
+
+export { settingsKeys, useSettings, useUpdateSettings } from './use-settings';
 
 export { dailyLogKeys, useDailyLogs, useUpsertDailyLog, useDeleteDailyLog } from './use-daily-logs';
 

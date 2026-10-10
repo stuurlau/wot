@@ -90,6 +90,19 @@ export const renameExercisesInputSchema = z.object({
   to: z.string().min(1),
 });
 
+// Reorder: the array is the full ordered exercise list of the session; the
+// server assigns sortOrder by array index. Duplicates are rejected — the
+// route additionally checks the list matches the session's exercises exactly.
+export const reorderExercisesInputSchema = z.object({
+  exerciseIds: z
+    .array(identifierSchema)
+    .min(1)
+    .max(200)
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: 'Exercise ids must be unique.',
+    }),
+});
+
 // A rest interval always sits between two sets of the same session.
 export const restTimeSchema = z.object({
   id: identifierSchema,
@@ -115,5 +128,6 @@ export type TrainingSessionExerciseSet = z.infer<typeof trainingSessionExerciseS
 export type CreateTrainingSessionExerciseSetInput = z.infer<typeof createTrainingSessionExerciseSetInputSchema>;
 export type UpdateTrainingSessionExerciseSetInput = z.infer<typeof updateTrainingSessionExerciseSetInputSchema>;
 export type RenameExercisesInput = z.infer<typeof renameExercisesInputSchema>;
+export type ReorderExercisesInput = z.infer<typeof reorderExercisesInputSchema>;
 export type RestTime = z.infer<typeof restTimeSchema>;
 export type CreateRestTimeInput = z.infer<typeof createRestTimeInputSchema>;

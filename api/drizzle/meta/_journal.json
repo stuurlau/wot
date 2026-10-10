@@ -36,6 +36,13 @@
       "when": 1790884260404,
       "tag": "0004_jittery_hitman",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791623444737,
+      "tag": "0005_pink_mauler",
+      "breakpoints": true
     }
   ]
 }

@@ -9,11 +9,20 @@ const AUTHENTICATED_ROUTES = [
   { method: "POST" as const, url: "/api/v1/sessions" },
   { method: "PATCH" as const, url: "/api/v1/sessions/00000000-0000-0000-0000-000000000000" },
   { method: "DELETE" as const, url: "/api/v1/sessions/00000000-0000-0000-0000-000000000000" },
+  {
+    method: "PATCH" as const,
+    url: "/api/v1/sessions/00000000-0000-0000-0000-000000000000/exercises/reorder",
+  },
   { method: "GET" as const, url: "/api/v1/daily-logs" },
   { method: "GET" as const, url: "/api/v1/pain-logs" },
   { method: "GET" as const, url: "/api/v1/exercises/recents" },
   { method: "GET" as const, url: "/api/v1/exercises/history?from=2026-08-01&to=2026-09-01" },
+  { method: "GET" as const, url: "/api/v1/exercises/last?name=Squat" },
+  { method: "GET" as const, url: "/api/v1/exercises/tags" },
+  { method: "PUT" as const, url: "/api/v1/exercises/tags" },
   { method: "PATCH" as const, url: "/api/v1/exercises/rename" },
+  { method: "GET" as const, url: "/api/v1/settings" },
+  { method: "PUT" as const, url: "/api/v1/settings" },
 ];
 
 describe("training-session routes", () => {

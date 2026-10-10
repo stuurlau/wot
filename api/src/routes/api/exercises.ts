@@ -3,16 +3,21 @@ import type { FastifyInstance } from "fastify";
 
 import { db } from "../../db/client.js";
 import {
+  exerciseTag,
   trainingSessionExerciseSet,
   trainingSessionExercise,
   trainingSession,
 } from "../../db/schema/index.js";
 import { authenticatedUserId, requireAuthentication } from "../../lib/authentication.js";
+import { notFoundError } from "../../lib/api-error.js";
 import { parseRequest, rejectUnknownQuery } from "../../lib/api-validation.js";
+import { serializeTrainingSessionExerciseSet } from "../../lib/serialization.js";
 import {
   exerciseHistoryQuerySchema,
+  lastExerciseQuerySchema,
   recentsQuerySchema,
   renameExercisesBodySchema,
+  setExerciseTagsBodySchema,
 } from "./schemas.js";
 
 const utcMidnight = (date: string) => new Date(`${date}T00:00:00.000Z`);
@@ -97,6 +102,108 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
               rpe: row.rpe === null ? null : Number(row.rpe),
             },
           })),
+      };
+    },
+  );
+
+  // Tags let users group free-text exercise names (e.g. "prehab",
+  // "flexibility"). GET returns every (exercise name -> tags) pair for the
+  // user; PUT replaces the tag set of one exercise name.
+  app.get(
+    "/exercises/tags",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request) => {
+      const rows = await db
+        .select({ exerciseName: exerciseTag.exerciseName, tag: exerciseTag.tag })
+        .from(exerciseTag)
+        .where(eq(exerciseTag.userId, authenticatedUserId(request)))
+        .orderBy(asc(exerciseTag.exerciseName), asc(exerciseTag.tag));
+
+      const byExercise = new Map<string, string[]>();
+      for (const row of rows) {
+        const tags = byExercise.get(row.exerciseName) ?? [];
+        tags.push(row.tag);
+        byExercise.set(row.exerciseName, tags);
+      }
+
+      return {
+        data: [...byExercise.entries()].map(([exerciseName, tags]) => ({ exerciseName, tags })),
+      };
+    },
+  );
+
+  app.put(
+    "/exercises/tags",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request) => {
+      const input = parseRequest(setExerciseTagsBodySchema, request.body);
+      const userId = authenticatedUserId(request);
+      const tags = [...new Set(input.tags)];
+
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(exerciseTag)
+          .where(
+            and(eq(exerciseTag.userId, userId), eq(exerciseTag.exerciseName, input.exerciseName)),
+          );
+        if (tags.length > 0) {
+          await tx.insert(exerciseTag).values(
+            tags.map((tag) => ({ userId, exerciseName: input.exerciseName, tag })),
+          );
+        }
+      });
+
+      return { exerciseName: input.exerciseName, tags };
+    },
+  );
+
+  // The most recent occurrence of an exercise name, with its sets — the
+  // client uses this to prefill sets when repeating an exercise.
+  app.get(
+    "/exercises/last",
+    { preHandler: requireAuthentication },
+    async (request) => {
+      const query = parseRequest(lastExerciseQuerySchema, request.query, true);
+      const rows = await db
+        .select({
+          exerciseId: trainingSessionExercise.id,
+          name: trainingSessionExercise.name,
+          bodyRegions: trainingSessionExercise.bodyRegions,
+          lastUsedAt: trainingSession.startedAt,
+          set: trainingSessionExerciseSet,
+        })
+        .from(trainingSessionExercise)
+        .innerJoin(
+          trainingSession,
+          eq(trainingSessionExercise.trainingSessionId, trainingSession.id),
+        )
+        .leftJoin(
+          trainingSessionExerciseSet,
+          eq(trainingSessionExerciseSet.trainingSessionExerciseId, trainingSessionExercise.id),
+        )
+        .where(
+          and(
+            eq(trainingSession.userId, authenticatedUserId(request)),
+            eq(trainingSessionExercise.name, query.name),
+          ),
+        )
+        .orderBy(
+          desc(trainingSession.startedAt),
+          desc(trainingSessionExercise.createdAt),
+          asc(trainingSessionExerciseSet.sortOrder),
+        );
+
+      const first = rows[0];
+      if (!first) throw notFoundError();
+      const sets = rows
+        .filter((row) => row.exerciseId === first.exerciseId && row.set !== null)
+        .map((row) => serializeTrainingSessionExerciseSet(row.set!));
+
+      return {
+        name: first.name,
+        bodyRegions: first.bodyRegions ?? [],
+        lastUsedAt: first.lastUsedAt.toISOString(),
+        sets,
       };
     },
   );

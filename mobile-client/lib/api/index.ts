@@ -13,8 +13,12 @@ export { exercises } from './exercises';
 export type {
   ExerciseHistoryParams,
   ExerciseHistoryRow,
+  ExerciseTagsRow,
+  LastExercise,
   RecentExercise,
 } from './exercises';
+
+export { settings } from './settings';
 
 export { dailyLogs } from './daily-logs';
 export type { DailyLogListParams } from './daily-logs';
