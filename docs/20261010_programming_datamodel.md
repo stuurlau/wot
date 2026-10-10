@@ -26,7 +26,7 @@ datamodel".
 
 Container for one weekly program.
 
-- `id` text PK, `user_id` text FK → `user` (CASCADE)
+- `id` uuid PK, `user_id` text FK → `users` (CASCADE)
 - `name` text (e.g. "Push/pull/legs", defaults to something derived like the
   creation week)
 - `status` text: `active` | `archived`. At most one active plan per user,
@@ -40,7 +40,7 @@ Weekly set targets — the input of the compose flow. Lives on the plan, not
 on a day: distribution over days is derived from these plus the planned
 sessions' exercises.
 
-- `id` text PK, `plan_id` text FK → `training_plans` (CASCADE)
+- `id` uuid PK, `plan_id` uuid FK → `training_plans` (CASCADE)
 - `exercise_name` text — free text, no exercise library (same convention as
   `training_session_exercises.name`)
 - `target_sets` integer (weekly total across all days)
@@ -49,19 +49,19 @@ sessions' exercises.
 
 One slot on the week calendar.
 
-- `id` text PK
-- `plan_id` text FK → `training_plans` (CASCADE)
-- `user_id` text FK → `user` (CASCADE) — all app tables scope by user
+- `id` uuid PK
+- `plan_id` uuid FK → `training_plans` (CASCADE)
+- `user_id` text FK → `users` (CASCADE) — all app tables scope by user
   directly for the standard query pattern
 - `weekday` smallint 0–6 — recurring weekly slot (a week calendar has no
   absolute dates; surfacing "what's planned today" is a weekday lookup)
 - `title` text nullable, `type` text — same session-type set as
   `training_sessions` (`strength`, `cardio`, `mobility`, …)
-- `sort_order` integer — multiple sessions per weekday stay ordered
-- `source_session_id` text FK → `training_sessions` nullable — blueprint
+- `sort_order` smallint — multiple sessions per weekday stay ordered
+- `source_session_id` uuid FK → `training_sessions` nullable — blueprint
   provenance; the copy is a snapshot, edits don't back-sync
 - `status` text: `planned` | `done` | `skipped`
-- `realized_session_id` text FK → `training_sessions` nullable — set when
+- `realized_session_id` uuid FK → `training_sessions` nullable — set when
   the planned session is started for real (see materialization)
 - `created_at` timestamp
 
@@ -69,11 +69,11 @@ One slot on the week calendar.
 
 Exercises inside one planned session — the distribution step edits these.
 
-- `id` text PK, `planned_session_id` text FK → `planned_sessions` (CASCADE)
+- `id` uuid PK, `planned_session_id` uuid FK → `planned_sessions` (CASCADE)
 - `name` text, `body_regions` text[] (same conventions as
   `training_session_exercises`)
-- `superset_group` integer nullable
-- `sort_order` integer
+- `superset_group` smallint nullable
+- `sort_order` smallint
 - `target_sets` integer — sets to prefill on materialization; initialized
   from the blueprint's set count or split from `plan_exercise_targets`
   during distribution
