@@ -49,7 +49,7 @@ the planned sessions' exercises.
 - `id` uuid PK, `block_id` uuid FK → `program_training_block` (CASCADE)
 - `exercise_name` text — free text, no exercise library (same convention as
   `training_session_exercises.name`)
-- `target_sets` integer (weekly total across all days)
+- `target_sets` integer (total per pattern period across all days)
 
 ### `planned_sessions`
 
