@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { NestableDraggableFlatList, NestableScrollContainer } from 'react-native-draggable-flatlist';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Screen } from '@/components/screen';
 
@@ -10,7 +12,7 @@ import { PainSheet } from '@/components/home/pain-sheet';
 import { ExerciseBlock } from '@/components/workout/exercise-block';
 import { ExercisePickerSheet } from '@/components/workout/exercise-picker-sheet';
 import { FinishSheet } from '@/components/workout/finish-sheet';
-import { useRecentExercises, useTrainingSession, useUpdateTrainingSession } from '@/hooks/api';
+import { useRecentExercises, useReorderExercises, useTrainingSession, useUpdateTrainingSession } from '@/hooks/api';
 import { nextSupersetGroup } from '@/lib/superset';
 import { useActiveSessionStore } from '@/stores/active-session-store';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
@@ -35,6 +37,7 @@ export default function WorkoutScreen() {
   const { data: session } = useTrainingSession(sessionId ?? '');
   const { data: recents = [] } = useRecentExercises(20);
   const updateSession = useUpdateTrainingSession(sessionId ?? '');
+  const reorderExercises = useReorderExercises(sessionId ?? '');
 
   const [now, setNow] = useState(Date.now());
   const [title, setTitle] = useState('');
@@ -135,41 +138,59 @@ export default function WorkoutScreen() {
       </View>
 
       {session ? (
-        <KeyboardAwareScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          {session.exercises.length === 0 ? (
-            <Pressable onPress={() => setPickerVisible(true)} className="mb-4 self-start py-1">
-              <Text className="font-body text-[13px] leading-5 text-muted-foreground">
-                Add your first exercise →
+        // KeyboardAvoidingView + the nestable pair replaces KeyboardAwareScrollView
+        // here: draggable lists need the outer scroller to be the library's
+        // container (see docs/20260926_keyboard_handling.md). Trade-off: focused
+        // inputs are lifted above the keyboard but no longer auto-scrolled into
+        // view — the user scrolls manually while dragging is not in progress.
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+          <NestableScrollContainer
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {session.exercises.length === 0 ? (
+              <Pressable onPress={() => setPickerVisible(true)} className="mb-4 self-start py-1">
+                <Text className="font-body text-[13px] leading-5 text-muted-foreground">
+                  Add your first exercise →
+                </Text>
+              </Pressable>
+            ) : (
+              <NestableDraggableFlatList
+                data={session.exercises}
+                keyExtractor={(exercise) => exercise.id}
+                onDragBegin={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                onDragEnd={({ data, from, to }) => {
+                  if (from !== to) {
+                    reorderExercises.mutate(data.map((exercise) => exercise.id));
+                  }
+                }}
+                renderItem={({ item, drag, isActive }) => (
+                  <ExerciseBlock
+                    sessionId={sessionId}
+                    exercise={item}
+                    recent={recentByName.get(item.name) ?? null}
+                    nextSupersetGroup={nextSupersetGroup(session.exercises, item.id)}
+                    onNameLongPress={drag}
+                    isDragging={isActive}
+                  />
+                )}
+              />
+            )}
+
+            <Pressable onPress={() => setPickerVisible(true)} className="py-4">
+              <Text className="font-body text-[11px] uppercase tracking-[3px] text-primary">
+                + Add exercise
               </Text>
             </Pressable>
-          ) : (
-            session.exercises.map((exercise) => (
-              <ExerciseBlock
-                key={exercise.id}
-                sessionId={sessionId}
-                exercise={exercise}
-                recent={recentByName.get(exercise.name) ?? null}
-                nextSupersetGroup={nextSupersetGroup(session.exercises, exercise.id)}
-              />
-            ))
-          )}
 
-          <Pressable onPress={() => setPickerVisible(true)} className="py-4">
-            <Text className="font-body text-[11px] uppercase tracking-[3px] text-primary">
-              + Add exercise
-            </Text>
-          </Pressable>
-
-          <Pressable onPress={() => setPainVisible(true)} className="py-2">
-            <Text className="font-body text-[10px] uppercase tracking-[3px] text-muted-foreground">
-              + Pain
-            </Text>
-          </Pressable>
-        </KeyboardAwareScrollView>
+            <Pressable onPress={() => setPainVisible(true)} className="py-2">
+              <Text className="font-body text-[10px] uppercase tracking-[3px] text-muted-foreground">
+                + Pain
+              </Text>
+            </Pressable>
+          </NestableScrollContainer>
+        </KeyboardAvoidingView>
       ) : (
         <View className="flex-1 px-6 pt-6">
           <DataState message="Loading workout…" />
