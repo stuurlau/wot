@@ -6,7 +6,14 @@ export type Signal = {
   title: string;
   body: string;
   priority: number;
+  // "The why": underlying numbers behind the statement, shown on expand.
+  details?: string[];
 };
+
+// Data-maturity ladder (docs/20261003_insights_dashboard_defaults.md): the
+// dashboard renders the most meaningful thing the available data honestly
+// supports — never a degenerate chart or a baseline-less verdict.
+export type DataMaturity = 'empty' | 'warming-up' | 'trending' | 'full';
 
 export type LoadVerdict = {
   direction: 'building' | 'holding' | 'spiking' | 'dipping';
@@ -22,7 +29,13 @@ export type ExerciseTrend = {
   direction: 'up' | 'flat' | 'down';
 };
 
-export type RegionShare = { region: string; sharePct: number };
+export type RegionShare = {
+  region: string;
+  sharePct: number;
+  // The user's own historical share (history older than the recent window);
+  // null when there is no older data to compare against.
+  usualPct: number | null;
+};
 
 const LOAD_SPIKE_FACTOR = 1.3;
 const EXPOSURE_GAP_DAYS = 10;
@@ -31,6 +44,10 @@ const RECOVERY_DIP_THRESHOLD = 7;
 const PLATEAU_WEEKS = 4;
 const WIN_WEEKS = 2;
 const TREND_WINDOW_WEEKS = 8;
+const BALANCE_RECENT_DAYS = 28;
+// A load-spike verdict only means something against a real baseline:
+// 1 acute week + 4 baseline weeks with actual load.
+const SPIKE_BASELINE_WEEKS = 4;
 
 function weekStartKey(date: Date): string {
   const d = new Date(date);
@@ -64,6 +81,21 @@ function daysBetween(a: string, b: string): number {
 
 export function sessionLoad(s: { duration: number; srpe: number }): number {
   return s.duration * s.srpe;
+}
+
+// Maturity stages (see the proposal doc): empty → motivational state;
+// warming-up → quiet summary, no charts; trending → charts without
+// baseline comparisons; full → verdict vs 4-week average and "usual" shares.
+export function dataMaturity(
+  sessions: { startedAt: string }[],
+  todayKey: string,
+): DataMaturity {
+  if (sessions.length === 0) return 'empty';
+  const firstDay = sessions.map((s) => s.startedAt.slice(0, 10)).sort()[0];
+  const days = daysBetween(firstDay, todayKey);
+  if (sessions.length <= 2 || days < 7) return 'warming-up';
+  if (days < BALANCE_RECENT_DAYS) return 'trending';
+  return 'full';
 }
 
 export function buildWeeklyLoads(
@@ -141,7 +173,7 @@ export function strengthProgression(
   });
 }
 
-export function regionBalance(history: ExerciseHistoryRow[]): RegionShare[] {
+function regionShares(history: ExerciseHistoryRow[]): Map<string, number> {
   const totals = new Map<string, number>();
   let sum = 0;
   for (const row of history) {
@@ -153,9 +185,26 @@ export function regionBalance(history: ExerciseHistoryRow[]): RegionShare[] {
       sum += split;
     }
   }
-  if (sum === 0) return [];
-  return Array.from(totals.entries())
-    .map(([region, v]) => ({ region, sharePct: Math.round((v / sum) * 100) }))
+  const shares = new Map<string, number>();
+  if (sum === 0) return shares;
+  for (const [region, v] of totals) shares.set(region, Math.round((v / sum) * 100));
+  return shares;
+}
+
+// Shares over the recent window, framed against the user's own usual share
+// (everything older than the window). A region with no older history gets
+// usualPct null — never a comparison against a normative ratio.
+export function regionBalance(history: ExerciseHistoryRow[], todayKey: string): RegionShare[] {
+  const recent = history.filter((r) => daysBetween(r.date, todayKey) < BALANCE_RECENT_DAYS);
+  const older = history.filter((r) => daysBetween(r.date, todayKey) >= BALANCE_RECENT_DAYS);
+  const recentShares = regionShares(recent);
+  const usualShares = regionShares(older);
+  return Array.from(recentShares.entries())
+    .map(([region, sharePct]) => ({
+      region,
+      sharePct,
+      usualPct: usualShares.get(region) ?? null,
+    }))
     .sort((a, b) => b.sharePct - a.sharePct);
 }
 
@@ -171,13 +220,22 @@ export function deriveSignals(input: {
   const weeklyLoads = buildWeeklyLoads(input.sessions);
   const verdict = loadVerdict(weeklyLoads);
 
-  // Load spike
-  if (verdict.direction === 'spiking') {
+  // Load spike — only with a real baseline (a false alarm costs more trust
+  // than a missed one): the 4 baseline weeks must all have load.
+  const baselineWeeks = weeklyLoads.slice(0, -1).slice(-SPIKE_BASELINE_WEEKS);
+  const hasSpikeBaseline =
+    baselineWeeks.length === SPIKE_BASELINE_WEEKS && baselineWeeks.every((w) => w.load > 0);
+  if (verdict.direction === 'spiking' && hasSpikeBaseline) {
+    const current = weeklyLoads.at(-1)?.load ?? 0;
     signals.push({
       kind: 'load-spike',
       title: 'Load rising fast',
       body: `This week is ${verdict.deltaPct}% above your usual. Consider keeping the next session easy.`,
       priority: 60,
+      details: [
+        `This week so far: ${Math.round(current)}`,
+        `Your 4-week average: ${Math.round(mean(baselineWeeks.map((w) => w.load)))}`,
+      ],
     });
   }
 
@@ -192,26 +250,34 @@ export function deriveSignals(input: {
   }
   for (const [region, count] of regionCounts) {
     if (count >= 2) {
+      const dates = recentPain
+        .filter((p) => p.bodyRegion === region)
+        .map((p) => p.date)
+        .sort();
       signals.push({
         kind: 'pain-recurring',
         title: `${region[0]?.toUpperCase() ?? ''}${region.slice(1)} pain recurring`,
         body: `${count} pain logs in the last 7 days. Worth watching.`,
         priority: 80,
+        details: dates.map((d) => `${d} · pain logged`),
       });
     }
   }
 
-  // Recovery dip
+  // Recovery dip — the last RECOVERY_DIP_DAYS logged days were all high.
   const sorted = [...dailyLogs].sort((a, b) => a.date.localeCompare(b.date));
-  const dipDays = sorted
-    .filter((d) => (d.fatigue ?? 0) >= RECOVERY_DIP_THRESHOLD || (d.soreness ?? 0) >= RECOVERY_DIP_THRESHOLD)
-    .slice(-RECOVERY_DIP_DAYS);
-  if (dipDays.length >= RECOVERY_DIP_DAYS) {
+  const recentLogged = sorted.slice(-RECOVERY_DIP_DAYS);
+  const isHigh = (d: DailyLog) =>
+    (d.fatigue ?? 0) >= RECOVERY_DIP_THRESHOLD || (d.soreness ?? 0) >= RECOVERY_DIP_THRESHOLD;
+  if (recentLogged.length >= RECOVERY_DIP_DAYS && recentLogged.every(isHigh)) {
     signals.push({
       kind: 'recovery-dip',
       title: 'Recovery markers dipping',
       body: `Fatigue or soreness have been high for ${RECOVERY_DIP_DAYS} days in a row. Load tolerance may be lower than usual.`,
       priority: 50,
+      details: recentLogged.map(
+        (d) => `${d.date} · fatigue ${d.fatigue ?? '–'} · soreness ${d.soreness ?? '–'}`,
+      ),
     });
   }
 
@@ -231,6 +297,7 @@ export function deriveSignals(input: {
         title: `No ${region} work in ${daysBetween(lastUse, todayKey)} days`,
         body: 'Your usual rhythm includes it. Worth getting a session in.',
         priority: 40,
+        details: [`Last ${region} session: ${lastUse}`],
       });
     }
   }
@@ -248,6 +315,7 @@ export function deriveSignals(input: {
           title: `${trend.name} flat for ${PLATEAU_WEEKS} weeks`,
           body: 'Normal — or a sign to vary the stimulus.',
           priority: 30,
+          details: [`Weekly best: ${lastNonNull.join(' → ')}`],
         });
         break;
       }
@@ -259,6 +327,7 @@ export function deriveSignals(input: {
         title: `${trend.name} is climbing`,
         body: `Up ${WIN_WEEKS} weeks running. Keep doing what you're doing.`,
         priority: 20,
+        details: [`Weekly best: ${lastTwo.join(' → ')}`],
       });
       break;
     }

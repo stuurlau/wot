@@ -18,7 +18,7 @@ export function BalanceBars({ shares }: { shares: RegionShare[] }) {
               className="font-body text-[11px] text-muted-foreground"
               style={{ fontVariant: ['tabular-nums'] }}
             >
-              {r.sharePct}%
+              {r.sharePct}%{r.usualPct !== null ? ` · usual ${r.usualPct}%` : ''}
             </Text>
           </View>
           <View className="h-2 overflow-hidden rounded-full bg-surface-container-low">

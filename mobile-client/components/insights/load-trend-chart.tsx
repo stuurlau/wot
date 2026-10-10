@@ -6,9 +6,12 @@ import type { LoadVerdict, WeeklyLoad } from '@/lib/insights';
 type LoadTrendChartProps = {
   weeklyLoads: WeeklyLoad[];
   verdict: LoadVerdict;
+  // False during the baseline-building period (< 4 weeks of history): the
+  // verdict is suppressed because a % vs a 1-week "average" is noise.
+  baselineReady?: boolean;
 };
 
-export function LoadTrendChart({ weeklyLoads, verdict }: LoadTrendChartProps) {
+export function LoadTrendChart({ weeklyLoads, verdict, baselineReady = true }: LoadTrendChartProps) {
   const max = Math.max(...weeklyLoads.map((w) => w.load), 1);
 
   return (
@@ -17,9 +20,11 @@ export function LoadTrendChart({ weeklyLoads, verdict }: LoadTrendChartProps) {
         <Text className="font-heading text-[24px] tracking-[-0.6px] text-foreground">
           Load · last {weeklyLoads.length} weeks
         </Text>
-        <Text className="font-body text-[10px] uppercase tracking-[2px] text-primary">
-          {verdict.direction}
-        </Text>
+        {baselineReady ? (
+          <Text className="font-body text-[10px] uppercase tracking-[2px] text-primary">
+            {verdict.direction}
+          </Text>
+        ) : null}
       </View>
 
       <View className="flex-row items-end gap-1.5" style={{ height: 120 }}>
@@ -51,15 +56,17 @@ export function LoadTrendChart({ weeklyLoads, verdict }: LoadTrendChartProps) {
       </View>
 
       <Text className="mt-3 font-body text-[12px] text-muted-foreground">
-        {verdict.direction === 'spiking'
-          ? `This week is ${verdict.deltaPct}% above your usual.`
-          : verdict.deltaPct === null
-            ? 'Building — first load logged.'
-            : verdict.direction === 'building'
-              ? `Building ${verdict.deltaPct >= 0 ? '+' : ''}${verdict.deltaPct}% vs your average.`
-              : verdict.direction === 'dipping'
-                ? `Light week vs your usual.`
-                : 'Steady — consistent training.'}
+        {!baselineReady
+          ? 'First weeks — building your baseline.'
+          : verdict.direction === 'spiking'
+            ? `This week is ${verdict.deltaPct}% above your usual.`
+            : verdict.deltaPct === null
+              ? 'Building — first load logged.'
+              : verdict.direction === 'building'
+                ? `Building ${verdict.deltaPct >= 0 ? '+' : ''}${verdict.deltaPct}% vs your average.`
+                : verdict.direction === 'dipping'
+                  ? `Light week vs your usual.`
+                  : 'Steady — consistent training.'}
       </Text>
     </View>
   );
