@@ -29,6 +29,7 @@ import {
   createRestTimeBodySchema,
   createTrainingSessionBodySchema,
   exercisePathSchema,
+  reorderExercisesBodySchema,
   setPathSchema,
   trainingSessionListQuerySchema,
   trainingSessionPathSchema,
@@ -378,6 +379,51 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
         .returning({ id: trainingSessionExercise.id });
       if (!exercise) throw notFoundError();
       return reply.code(204).send();
+    },
+  );
+
+  // Reorder: the body lists every exercise of the session in the desired
+  // order; sortOrder is rewritten to the array index in one transaction.
+  app.patch(
+    "/sessions/:trainingSessionId/exercises/reorder",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request) => {
+      const { trainingSessionId } = parseRequest(trainingSessionPathSchema, request.params);
+      const input = parseRequest(reorderExercisesBodySchema, request.body);
+      await requireOwnedTrainingSession(authenticatedUserId(request), trainingSessionId);
+
+      const existing = await db
+        .select({ id: trainingSessionExercise.id })
+        .from(trainingSessionExercise)
+        .where(eq(trainingSessionExercise.trainingSessionId, trainingSessionId));
+      const existingIds = new Set(existing.map((row) => row.id));
+      if (
+        existingIds.size !== input.exerciseIds.length ||
+        !input.exerciseIds.every((id) => existingIds.has(id))
+      ) {
+        throw new ApiError(422, "VALIDATION_ERROR", "Request body is invalid.", [
+          {
+            path: "exerciseIds",
+            message: "Must list every exercise of the session exactly once.",
+          },
+        ]);
+      }
+
+      const reordered = await db.transaction(async (tx) => {
+        for (const [index, id] of input.exerciseIds.entries()) {
+          await tx
+            .update(trainingSessionExercise)
+            .set({ sortOrder: index })
+            .where(eq(trainingSessionExercise.id, id));
+        }
+        return tx
+          .select()
+          .from(trainingSessionExercise)
+          .where(eq(trainingSessionExercise.trainingSessionId, trainingSessionId))
+          .orderBy(asc(trainingSessionExercise.sortOrder));
+      });
+
+      return { data: reordered.map(serializeTrainingSessionExercise) };
     },
   );
 

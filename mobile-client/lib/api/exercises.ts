@@ -2,6 +2,8 @@ import type {
   CreateTrainingSessionExerciseInput,
   CreateTrainingSessionExerciseSetInput,
   RenameExercisesInput,
+  ReorderExercisesInput,
+  SetExerciseTagsInput,
   TrainingSessionExercise,
   TrainingSessionExerciseSet,
   UpdateTrainingSessionExerciseInput,
@@ -33,6 +35,20 @@ export interface ExerciseHistoryRow {
 export interface ExerciseHistoryParams {
   from: string;
   to: string;
+}
+
+export interface ExerciseTagsRow {
+  exerciseName: string;
+  tags: string[];
+}
+
+// The most recent occurrence of an exercise name, with its sets — used to
+// prefill a freshly added repeat of that exercise.
+export interface LastExercise {
+  name: string;
+  bodyRegions: string[];
+  lastUsedAt: string;
+  sets: TrainingSessionExerciseSet[];
 }
 
 // The API routes reject the FK fields (they live in the URL path), so the
@@ -103,4 +119,23 @@ export const exercises = {
 
   rename: (body: RenameExercisesInput) =>
     apiClient.patch<{ updated: number }>('/exercises/rename', body).then((r) => r.data),
+
+  reorder: (trainingSessionId: string, exerciseIds: ReorderExercisesInput['exerciseIds']) =>
+    apiClient
+      .patch<{ data: TrainingSessionExercise[] }>(
+        `/sessions/${trainingSessionId}/exercises/reorder`,
+        { exerciseIds },
+      )
+      .then((r) => r.data.data),
+
+  last: (name: string) =>
+    apiClient.get<LastExercise>('/exercises/last', { params: { name } }).then((r) => r.data),
+
+  tags: () =>
+    apiClient.get<{ data: ExerciseTagsRow[] }>('/exercises/tags').then((r) => r.data.data),
+
+  setTags: (body: SetExerciseTagsInput) =>
+    apiClient
+      .put<{ exerciseName: string; tags: string[] }>('/exercises/tags', body)
+      .then((r) => r.data),
 };

@@ -15,6 +15,11 @@ export {
   updatePainLogInputSchema,
 } from './pain-log.js';
 export {
+  exerciseTagNameSchema,
+  setExerciseTagsInputSchema,
+  type SetExerciseTagsInput,
+} from './exercise-tag.js';
+export {
   decimalRatingSchema,
   hrvSchema,
   identifierSchema,
@@ -35,6 +40,7 @@ export {
   createTrainingSessionExerciseSetInputSchema,
   createTrainingSessionInputSchema,
   renameExercisesInputSchema,
+  reorderExercisesInputSchema,
   restTimeSchema,
   trainingSessionExerciseSchema,
   trainingSessionExerciseSetSchema,
@@ -44,6 +50,7 @@ export {
   type CreateTrainingSessionExerciseSetInput,
   type CreateTrainingSessionInput,
   type RenameExercisesInput,
+  type ReorderExercisesInput,
   type RestTime,
   type TrainingSession,
   type TrainingSessionExercise,
@@ -55,3 +62,12 @@ export {
   updateTrainingSessionExerciseSetInputSchema,
   updateTrainingSessionInputSchema,
 } from './training-session.js';
+export {
+  cardioSetFieldSchema,
+  defaultUserSettings,
+  strengthSetFieldSchema,
+  userSettingsSchema,
+  type CardioSetField,
+  type StrengthSetField,
+  type UserSettings,
+} from './user-settings.js';

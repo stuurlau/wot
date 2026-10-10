@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { exercises } from '@/lib/api';
-import type { ExerciseHistoryParams } from '@/lib/api';
-import type { RenameExercisesInput } from '@wot/types';
+import type { ExerciseHistoryParams, TrainingSessionDetail } from '@/lib/api';
+import type { RenameExercisesInput, SetExerciseTagsInput } from '@wot/types';
 
 export const exerciseKeys = {
   all: ['exercises'] as const,
   recents: (limit?: number) => [...exerciseKeys.all, 'recents', limit] as const,
   history: (params?: ExerciseHistoryParams) => [...exerciseKeys.all, 'history', params] as const,
+  tags: () => [...exerciseKeys.all, 'tags'] as const,
 };
 
 // Fetches all distinct names the user has ever logged (the recents endpoint
@@ -129,6 +130,82 @@ export function useDeleteExerciseSet(trainingSessionId: string, exerciseId: stri
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['training-sessions', 'detail', trainingSessionId] });
       queryClient.invalidateQueries({ queryKey: ['exercises', 'history'] });
+    },
+  });
+}
+
+export function useExerciseTags() {
+  return useQuery({
+    queryKey: exerciseKeys.tags(),
+    queryFn: exercises.tags,
+  });
+}
+
+export function useSetExerciseTags() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SetExerciseTagsInput) => exercises.setTags(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.tags() });
+    },
+  });
+}
+
+// Repeating an exercise from recents prefills the sets of its most recent
+// occurrence. The sets are real rows (auto-save), so a partial failure just
+// means fewer prefilled sets — the next invalidation reconciles.
+export function usePrefillExerciseSets(trainingSessionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ exerciseId, name }: { exerciseId: string; name: string }) => {
+      const last = await exercises.last(name);
+      await Promise.all(
+        last.sets.map((set, index) =>
+          exercises.createSet(trainingSessionId, exerciseId, {
+            sortOrder: index,
+            weight: set.weight,
+            reps: set.reps,
+            rir: set.rir,
+            rpe: set.rpe,
+            distance: set.distance,
+            duration: set.duration,
+          }),
+        ),
+      );
+      return last.sets.length;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['training-sessions', 'detail', trainingSessionId] });
+    },
+  });
+}
+
+export function useReorderExercises(trainingSessionId: string) {
+  const queryClient = useQueryClient();
+  const detailKey = ['training-sessions', 'detail', trainingSessionId] as const;
+  return useMutation({
+    mutationFn: (exerciseIds: string[]) => exercises.reorder(trainingSessionId, exerciseIds),
+    onMutate: async (exerciseIds) => {
+      await queryClient.cancelQueries({ queryKey: detailKey });
+      const previous = queryClient.getQueryData<TrainingSessionDetail>(detailKey);
+      if (previous) {
+        const order = new Map(exerciseIds.map((id, index) => [id, index]));
+        queryClient.setQueryData<TrainingSessionDetail>(detailKey, {
+          ...previous,
+          exercises: [...previous.exercises]
+            .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+            .map((exercise, index) => ({ ...exercise, sortOrder: index })),
+        });
+      }
+      return { previous };
+    },
+    onError: (_error, _ids, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(detailKey, context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: detailKey });
     },
   });
 }
