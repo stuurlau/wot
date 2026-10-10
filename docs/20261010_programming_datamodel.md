@@ -1,22 +1,25 @@
-# Programming datamodel — weekly planned sessions
+# Programming datamodel — training blocks & planned sessions
 
 **Date:** 2026-10-10
 **Status:** proposal
 
 ## Why
 
-Issue #13 asks for a programming feature: plan weekly workout sessions up
-front. Two entry flows must be supported:
+Issue #13 asks for a programming feature: plan workout sessions up front.
+Two entry flows must be supported:
 
 - **Blueprint** — pick a past session and reuse it as the template for a
   planned session.
-- **Compose** — select exercises with a weekly set target each, then
-  distribute them over training days; exercises can still be added, removed
-  or swapped during distribution.
+- **Compose** — select exercises with a set target each, then distribute
+  them over training days; exercises can still be added, removed or swapped
+  during distribution.
 
-The Plan tab (see `20260321_ui_ux_design.md`) is a lightweight week calendar
-with optional planned sessions, so the datamodel is built around a repeating
-week, not absolute dates. This doc covers the datamodel only — no
+The top-level concept is a **training block**: a repeating pattern of 1 or
+2 weeks (e.g. week 1 push/pull/push, week 2 pull/push/pull) repeated for
+the block's duration (e.g. 8 weeks). The Plan tab (see
+`20260321_ui_ux_design.md`) renders the current pattern as a lightweight
+calendar with optional planned sessions, so the datamodel is built around
+the pattern, not absolute dates. This doc covers the datamodel only — no
 implementation yet, matching the issue's "start with thinking out the
 datamodel".
 
@@ -27,9 +30,12 @@ datamodel".
 Container for one training block.
 
 - `id` uuid PK, `user_id` text FK → `users` (CASCADE)
-- `name` text (e.g. "Push/pull/legs", defaults to something derived like the
-  creation week)
-- `status` text: `active` | `archived`. At most one active plan per user,
+- `name` text (e.g. "Push/pull 8-week block", defaults to something derived
+  like the creation week)
+- `pattern_weeks` smallint — length of the repeating pattern: 1 or 2 weeks
+- `duration_weeks` smallint nullable — total block length (e.g. 8); null =
+  open-ended, the pattern repeats until the block is archived
+- `status` text: `active` | `archived`. At most one active block per user,
   enforced in app logic (not a partial unique index) so history stays
   inspectable.
 - `created_at` timestamp
@@ -47,17 +53,21 @@ the planned sessions' exercises.
 
 ### `planned_sessions`
 
-One slot on the week calendar.
+One slot in the block's pattern.
 
 - `id` uuid PK
 - `block_id` uuid FK → `program_training_block` (CASCADE)
 - `user_id` text FK → `users` (CASCADE) — all app tables scope by user
   directly for the standard query pattern
-- `weekday` smallint 0–6 — recurring weekly slot (a week calendar has no
-  absolute dates; surfacing "what's planned today" is a weekday lookup)
+- `pattern_day` smallint — ordinal training day within the pattern (day 1,
+  2, …, 7 × `pattern_weeks`); sessions are placed and ordered by this, not
+  pinned to a calendar date
+- `weekday` smallint 0–6 nullable — optional hint for users who think in
+  weekdays; the calendar view can render it, but the pattern day stays the
+  source of truth so a session can be done on any day
 - `title` text nullable, `type` text — same session-type set as
   `training_sessions` (`strength`, `cardio`, `mobility`, …)
-- `sort_order` smallint — multiple sessions per weekday stay ordered
+- `sort_order` smallint — multiple sessions per pattern day stay ordered
 - `source_session_id` uuid FK → `training_sessions` nullable — blueprint
   provenance; the copy is a snapshot, edits don't back-sync
 - `status` text: `planned` | `done` | `skipped`
@@ -83,8 +93,8 @@ Exercises inside one planned session — the distribution step edits these.
 
 **Blueprint.** User picks a past session; its exercises (name, body regions,
 superset group, order, set count) are copied into a new `planned_sessions`
-row with `source_session_id` set. Subsequent edits of either side never
-sync — the copy is the point.
+row on a pattern day with `source_session_id` set. Subsequent edits of
+either side never sync — the copy is the point.
 
 **Compose.** User fills `plan_exercise_sets` (exercise + sets per pattern
 period), then distributes: assign each target's sets across one or more
@@ -97,11 +107,11 @@ computed at query time (sum of `planned_exercises.target_sets` per name vs.
 `training_sessions` row with exercises and `target_sets` empty set rows
 prefilled (same prefill path as repeating an exercise), links it via
 `realized_session_id`, and marks the planned session `done`. Skipping just
-sets `status`; the week view distinguishes both from `planned`.
+sets `status`; the calendar view distinguishes both from `planned`.
 
 ## Staging
 
-1. Tables + Plan tab week view with CRUD on planned sessions (no
+1. Tables + Plan tab pattern view with CRUD on planned sessions (no
    materialization).
 2. Blueprint copy flow.
 3. Compose flow with targets + distribution.
