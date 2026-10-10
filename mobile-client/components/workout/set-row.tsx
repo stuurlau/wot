@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -8,14 +8,17 @@ export type SetInput = {
   rir: number | null;
   rpe: number | null;
   distance: number | null;
+  /** Whole seconds, matching the API column. */
   duration: number | null;
 };
+
+export type SetMode = 'strength' | 'cardio' | 'flexibility';
 
 type FieldDef = { key: keyof SetInput; label: string };
 
 type SetRowProps = {
   setNumber: number;
-  mode: 'strength' | 'cardio';
+  mode: SetMode;
   values: SetInput | null; // null => empty "add next set" row
   lastReference: string | null;
   previousValues?: SetInput | null; // previous set of this exercise, for Copy
@@ -45,6 +48,23 @@ const CARDIO_FIELDS: FieldDef[] = [
   { key: 'duration', label: 'min' },
 ];
 
+// Flexibility sets are holds: a duration, optionally weighted ("time ×
+// weight"). Leave the weight blank for a plain stretch.
+const FLEXIBILITY_FIELDS: FieldDef[] = [
+  { key: 'duration', label: 'sec' },
+  { key: 'weight', label: 'kg' },
+];
+
+// The API stores set duration in whole seconds; cardio enters it in minutes.
+const minToSec = (min: number | null) => (min == null ? null : Math.round(min * 60));
+const secToMin = (sec: number | null) => (sec == null ? null : Math.round(sec / 6) / 10);
+
+function formatClock(totalSec: number): string {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 export function SetRow({
   setNumber,
   mode,
@@ -66,18 +86,55 @@ export function SetRow({
       ? showIntensity
         ? [...STRENGTH_FIELDS, intensityField]
         : STRENGTH_FIELDS
-      : CARDIO_FIELDS;
+      : mode === 'cardio'
+        ? CARDIO_FIELDS
+        : FLEXIBILITY_FIELDS;
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [editKey, setEditKey] = useState<keyof SetInput | null>(null);
   const [editValue, setEditValue] = useState('');
   // Saved rows keep their ✓/✕ affordances hidden until the row is tapped.
   const [expanded, setExpanded] = useState(false);
 
+  // Hold/interval timer on the "add next set" row of time-based modes.
+  // Stopping it fills the duration input (sec for flexibility, min for
+  // cardio); pressing ✓ while it runs stops it and uses the elapsed time.
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [timerNow, setTimerNow] = useState(0);
+  useEffect(() => {
+    if (timerStartedAt === null) return;
+    const id = setInterval(() => setTimerNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [timerStartedAt]);
+  const timerSec =
+    timerStartedAt === null ? 0 : Math.max(0, Math.floor((timerNow - timerStartedAt) / 1000));
+
+  const startTimer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const now = Date.now();
+    setTimerStartedAt(now);
+    setTimerNow(now);
+  };
+
+  /** Stop the timer, fill the duration draft, and return the exact seconds. */
+  const stopTimer = (): number => {
+    if (timerStartedAt === null) return 0;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const sec = Math.max(1, Math.round((Date.now() - timerStartedAt) / 1000));
+    setTimerStartedAt(null);
+    setDraft((p) => ({
+      ...p,
+      duration: mode === 'cardio' ? String(secToMin(sec)) : String(sec),
+    }));
+    return sec;
+  };
+
   const copyable =
     previousValues != null &&
     (mode === 'strength'
       ? previousValues.weight != null || previousValues.reps != null
-      : previousValues.distance != null || previousValues.duration != null);
+      : mode === 'cardio'
+        ? previousValues.distance != null || previousValues.duration != null
+        : previousValues.duration != null || previousValues.weight != null);
 
   const copyPrevious = () => {
     if (!previousValues) return;
@@ -88,37 +145,54 @@ export function SetRow({
       rir: previousValues.rir?.toString() ?? '',
       rpe: previousValues.rpe?.toString() ?? '',
       distance: previousValues.distance?.toString() ?? '',
-      duration: previousValues.duration?.toString() ?? '',
+      duration:
+        previousValues.duration == null
+          ? ''
+          : String(mode === 'cardio' ? secToMin(previousValues.duration) : previousValues.duration),
     });
   };
 
   const commitEdit = (key: keyof SetInput) => {
     setEditKey(null);
     if (values === null) return;
+    const edited = toNumber(editValue);
     const input: SetInput =
       mode === 'strength'
         ? {
-            weight: key === 'weight' ? toNumber(editValue) : values.weight,
-            reps: key === 'reps' ? toNumber(editValue) : values.reps,
-            rir: key === 'rir' ? toNumber(editValue) : values.rir,
-            rpe: key === 'rpe' ? toNumber(editValue) : values.rpe,
+            weight: key === 'weight' ? edited : values.weight,
+            reps: key === 'reps' ? edited : values.reps,
+            rir: key === 'rir' ? edited : values.rir,
+            rpe: key === 'rpe' ? edited : values.rpe,
             distance: null,
             duration: null,
           }
-        : {
-            weight: null,
-            reps: null,
-            rir: null,
-            rpe: null,
-            distance: key === 'distance' ? toNumber(editValue) : values.distance,
-            duration: key === 'duration' ? toNumber(editValue) : values.duration,
-          };
+        : mode === 'cardio'
+          ? {
+              weight: null,
+              reps: null,
+              rir: null,
+              rpe: null,
+              distance: key === 'distance' ? edited : values.distance,
+              duration: key === 'duration' ? minToSec(edited) : values.duration,
+            }
+          : {
+              weight: key === 'weight' ? edited : values.weight,
+              reps: null,
+              rir: null,
+              rpe: null,
+              distance: null,
+              duration: key === 'duration' ? (edited == null ? null : Math.round(edited)) : values.duration,
+            };
     onUpdate(input);
   };
 
   const renderValue = (key: keyof SetInput): string => {
     if (values === null) return '';
-    return values[key]?.toString() ?? '';
+    const value = values[key];
+    if (value == null) return '';
+    // Cardio stores seconds but displays minutes.
+    if (key === 'duration' && mode === 'cardio') return String(secToMin(value));
+    return value.toString();
   };
 
   if (values !== null) {
@@ -259,10 +333,35 @@ export function SetRow({
           </Pressable>
         ) : null}
 
+        {mode !== 'strength' ? (
+          <Pressable
+            onPress={() => (timerStartedAt === null ? startTimer() : stopTimer())}
+            hitSlop={8}
+            className="ml-1 px-1 py-1"
+          >
+            {timerStartedAt !== null ? (
+              <Text
+                className="font-body text-[12px] text-primary"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                {formatClock(timerSec)} ■
+              </Text>
+            ) : (
+              <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
+                ▶
+              </Text>
+            )}
+          </Pressable>
+        ) : null}
+
         <Pressable
           onPress={() => {
             if (busy) return;
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            // A running timer wins over a typed duration — it was started to
+            // measure this set. Its exact seconds bypass the min round-trip.
+            const timedSec = timerStartedAt !== null ? stopTimer() : null;
+            const typedDuration = toNumber(draft.duration ?? '');
             const input: SetInput =
               mode === 'strength'
                 ? {
@@ -273,14 +372,24 @@ export function SetRow({
                     distance: null,
                     duration: null,
                   }
-                : {
-                    weight: null,
-                    reps: null,
-                    rir: null,
-                    rpe: null,
-                    distance: toNumber(draft.distance ?? ''),
-                    duration: toNumber(draft.duration ?? ''),
-                  };
+                : mode === 'cardio'
+                  ? {
+                      weight: null,
+                      reps: null,
+                      rir: null,
+                      rpe: null,
+                      distance: toNumber(draft.distance ?? ''),
+                      duration: timedSec ?? minToSec(typedDuration),
+                    }
+                  : {
+                      weight: toNumber(draft.weight ?? ''),
+                      reps: null,
+                      rir: null,
+                      rpe: null,
+                      distance: null,
+                      duration:
+                        timedSec ?? (typedDuration == null ? null : Math.round(typedDuration)),
+                    };
             setDraft({});
             onCreate(input);
           }}
