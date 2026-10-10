@@ -17,6 +17,7 @@ import { useLoadMetrics } from '@/hooks/use-load-metrics';
 import { recentDateRange } from '@/lib/date-range';
 import {
   buildWeeklyLoads,
+  dataMaturity,
   deriveSignals,
   loadVerdict,
   regionBalance,
@@ -52,18 +53,20 @@ export default function InsightsScreen() {
 
   const metrics = useLoadMetrics(sessions, dailyLogs);
 
+  const today = useMemo(() => todayKey(), []);
   const weeklyLoads = useMemo(() => buildWeeklyLoads(sessions), [sessions]);
   const verdict = useMemo(() => loadVerdict(weeklyLoads), [weeklyLoads]);
   const trends = useMemo(() => strengthProgression(history), [history]);
-  const balance = useMemo(() => regionBalance(history), [history]);
+  const balance = useMemo(() => regionBalance(history, today), [history, today]);
   const signals = useMemo(
-    () => deriveSignals({ sessions, exerciseHistory: history, painLogs, dailyLogs, todayKey: todayKey() }),
-    [sessions, history, painLogs, dailyLogs],
+    () => deriveSignals({ sessions, exerciseHistory: history, painLogs, dailyLogs, todayKey: today }),
+    [sessions, history, painLogs, dailyLogs, today],
   );
+  const maturity = useMemo(() => dataMaturity(sessions, today), [sessions, today]);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const hasLoad = weeklyLoads.some((w) => w.load > 0);
-  const empty = !hasLoad && history.length === 0;
+  const loading = sessionsQuery.isLoading && maturity === 'empty';
+  const showCharts = maturity === 'trending' || maturity === 'full';
 
   return (
     <Screen>
@@ -73,19 +76,32 @@ export default function InsightsScreen() {
             Insights
           </Text>
 
-          {sessionsQuery.isLoading && empty ? (
+          {loading ? (
             <Text className="font-body text-[12px] text-muted-foreground">Loading…</Text>
           ) : null}
 
-          {empty && !sessionsQuery.isLoading ? (
+          {maturity === 'empty' && !sessionsQuery.isLoading ? (
             <Text className="font-body text-[13px] leading-6 text-muted-foreground">
               Log a few sessions and patterns will start appearing here.
             </Text>
           ) : null}
 
-          {!empty ? (
+          {maturity === 'warming-up' ? (
+            <View className="mb-8">
+              <Text className="font-body text-[13px] leading-6 text-muted-foreground">
+                {sessions.length} {sessions.length === 1 ? 'session' : 'sessions'} logged — nice
+                start. Load trend and balance appear after a week of training.
+              </Text>
+            </View>
+          ) : null}
+
+          {showCharts ? (
             <>
-              <LoadTrendChart weeklyLoads={weeklyLoads} verdict={verdict} />
+              <LoadTrendChart
+                weeklyLoads={weeklyLoads}
+                verdict={verdict}
+                baselineReady={maturity === 'full'}
+              />
               <StrengthProgression trends={trends} />
               <BalanceBars shares={balance} />
 
