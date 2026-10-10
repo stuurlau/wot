@@ -22,9 +22,9 @@ datamodel".
 
 ## Proposed tables
 
-### `training_plans`
+### `program_training_block`
 
-Container for one weekly program.
+Container for one training block.
 
 - `id` uuid PK, `user_id` text FK → `users` (CASCADE)
 - `name` text (e.g. "Push/pull/legs", defaults to something derived like the
@@ -34,13 +34,13 @@ Container for one weekly program.
   inspectable.
 - `created_at` timestamp
 
-### `plan_exercise_targets`
+### `plan_exercise_sets`
 
-Weekly set targets — the input of the compose flow. Lives on the plan, not
-on a day: distribution over days is derived from these plus the planned
-sessions' exercises.
+Set targets per pattern period — the input of the compose flow. Lives on
+the block, not on a day: distribution over days is derived from these plus
+the planned sessions' exercises.
 
-- `id` uuid PK, `plan_id` uuid FK → `training_plans` (CASCADE)
+- `id` uuid PK, `block_id` uuid FK → `program_training_block` (CASCADE)
 - `exercise_name` text — free text, no exercise library (same convention as
   `training_session_exercises.name`)
 - `target_sets` integer (weekly total across all days)
@@ -50,7 +50,7 @@ sessions' exercises.
 One slot on the week calendar.
 
 - `id` uuid PK
-- `plan_id` uuid FK → `training_plans` (CASCADE)
+- `block_id` uuid FK → `program_training_block` (CASCADE)
 - `user_id` text FK → `users` (CASCADE) — all app tables scope by user
   directly for the standard query pattern
 - `weekday` smallint 0–6 — recurring weekly slot (a week calendar has no
@@ -75,8 +75,8 @@ Exercises inside one planned session — the distribution step edits these.
 - `superset_group` smallint nullable
 - `sort_order` smallint
 - `target_sets` integer — sets to prefill on materialization; initialized
-  from the blueprint's set count or split from `plan_exercise_targets`
-  during distribution
+  from the blueprint's set count or split from `plan_exercise_sets` during
+  distribution
 - `notes` text nullable (e.g. "top set @8 RPE")
 
 ## Flows
@@ -86,12 +86,12 @@ superset group, order, set count) are copied into a new `planned_sessions`
 row with `source_session_id` set. Subsequent edits of either side never
 sync — the copy is the point.
 
-**Compose.** User fills `plan_exercise_targets` (exercise + weekly sets),
-then distributes: assign each target's sets across one or more weekdays,
-which creates `planned_exercises` rows. Targets stay on the plan so the Plan
-tab can show "Squat: 6/10 sets placed" — coverage is computed at query time
-(sum of `planned_exercises.target_sets` per name vs.
-`plan_exercise_targets.target_sets`); nothing derived is stored.
+**Compose.** User fills `plan_exercise_sets` (exercise + sets per pattern
+period), then distributes: assign each target's sets across one or more
+pattern days, which creates `planned_exercises` rows. Targets stay on the
+block so the Plan tab can show "Squat: 6/10 sets placed" — coverage is
+computed at query time (sum of `planned_exercises.target_sets` per name vs.
+`plan_exercise_sets.target_sets`); nothing derived is stored.
 
 **Materialization.** Starting a planned session creates a real
 `training_sessions` row with exercises and `target_sets` empty set rows
