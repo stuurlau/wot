@@ -16,7 +16,7 @@ import {
 } from '@/hooks/api';
 import { findSimilarNames } from '@/lib/similarity';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
-import { SetRow, type SetInput } from './set-row';
+import { SetRow, type SetInput, type SetMode } from './set-row';
 
 type ExerciseBlockProps = {
   sessionId: string;
@@ -39,7 +39,7 @@ function toSetBody(input: SetInput, sortOrder: number) {
 }
 
 export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }: ExerciseBlockProps) {
-  const [mode, setMode] = useState<'strength' | 'cardio'>('strength');
+  const [mode, setMode] = useState<SetMode>('strength');
   const createSet = useCreateExerciseSet(sessionId, exercise.id);
   const createRestTime = useCreateRestTime(sessionId);
   const updateSet = useUpdateExerciseSet(sessionId, exercise.id);
@@ -249,7 +249,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
       ) : null}
 
       <View className="mb-2 flex-row gap-2">
-        {(['strength', 'cardio'] as const).map((m) => (
+        {(['strength', 'cardio', 'flexibility'] as const).map((m) => (
           <Pressable
             key={m}
             onPress={() => setMode(m)}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import type { TrainingSessionExerciseSet } from '@wot/types';
 import { Screen } from '@/components/screen';
 
 import { AppHeader } from '@/components/app-header';
@@ -13,6 +14,27 @@ function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+}
+
+function formatClock(totalSec: number): string {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// A set is distance-based (cardio), duration-based (flexibility hold, with or
+// without weight), or weight×reps (strength).
+function formatSetLabel(set: TrainingSessionExerciseSet): string {
+  if (set.distance != null) {
+    return `${set.distance} km${set.duration != null ? ` · ${Math.round(set.duration / 60)} min` : ''}`;
+  }
+  if (set.duration != null) {
+    return `${formatClock(set.duration)}${set.weight != null ? ` · ${set.weight} kg` : ''}`;
+  }
+  if (set.weight != null || set.reps != null) {
+    return `${set.weight ?? '—'} × ${set.reps ?? '—'}`;
+  }
+  return '—';
 }
 
 export default function SessionDetailScreen() {
@@ -119,10 +141,7 @@ export default function SessionDetailScreen() {
                 <Text className="font-body text-[12px] text-muted-foreground">No sets logged.</Text>
               ) : (
                 ex.sets.map((set, i) => {
-                  const hasStrength = set.weight != null || set.reps != null;
-                  const label = hasStrength
-                    ? `${set.weight ?? '—'} × ${set.reps ?? '—'}`
-                    : `${set.distance ?? '—'} km${set.duration != null ? ` · ${Math.round(set.duration / 60)} min` : ''}`;
+                  const label = formatSetLabel(set);
                   return (
                     <View key={set.id} className="flex-row items-center justify-between py-1">
                       <Text className="w-8 font-body text-[11px] text-muted-foreground" style={{ fontVariant: ['tabular-nums'] }}>
