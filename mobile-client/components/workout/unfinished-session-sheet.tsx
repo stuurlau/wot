@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -36,6 +36,14 @@ export function UnfinishedSessionSheet({ visible, onClose, session }: Unfinished
     setError(null);
   }, [sessionId]);
 
+  // Delayed open of the finish sheet, cleared on unmount.
+  const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (finishTimer.current) clearTimeout(finishTimer.current);
+    };
+  }, []);
+
   if (!session) return null;
 
   const resume = () => {
@@ -57,7 +65,12 @@ export function UnfinishedSessionSheet({ visible, onClose, session }: Unfinished
       setError("Couldn't load the workout. Check your connection and try again.");
       return;
     }
-    setFinishVisible(true);
+    // Close this sheet before opening the finish sheet: two stacked Modals
+    // render unreliably on Android (the second can appear behind the first),
+    // which made "Finish workout" look like the prompt just reappeared. The
+    // delay lets the slide-out finish before the next sheet slides in.
+    onClose();
+    finishTimer.current = setTimeout(() => setFinishVisible(true), 300);
   };
 
   const discard = () => {
@@ -124,10 +137,7 @@ export function UnfinishedSessionSheet({ visible, onClose, session }: Unfinished
 
       <FinishSheet
         visible={finishVisible}
-        onClose={() => {
-          setFinishVisible(false);
-          onClose();
-        }}
+        onClose={() => setFinishVisible(false)}
         sessionId={session.id}
         backOnSave={false}
       />
