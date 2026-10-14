@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Sheet } from '@/components/ui/sheet';
 import { RatingScale } from '@/components/ui/rating-scale';
-import { useUpdateTrainingSession } from '@/hooks/api';
+import { useTrainingSession, useUpdateTrainingSession } from '@/hooks/api';
+import { lastActivityMs, suggestedDurationMinutes } from '@/lib/sessions';
 import { useActiveSessionStore } from '@/stores/active-session-store';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
 import { router } from 'expo-router';
@@ -12,15 +13,19 @@ type FinishSheetProps = {
   visible: boolean;
   onClose: () => void;
   sessionId: string;
-  startedAtMs: number;
-  onLogPain: () => void;
+  onLogPain?: () => void;
+  /** Navigate back after saving (default true). False when finishing from a tab. */
+  backOnSave?: boolean;
 };
 
 const SESSION_TYPES = ['strength', 'run', 'ride', 'mobility', 'other'] as const;
 
-export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPain }: FinishSheetProps) {
+export function FinishSheet({ visible, onClose, sessionId, onLogPain, backOnSave = true }: FinishSheetProps) {
   const updateSession = useUpdateTrainingSession(sessionId);
+  const { data: session } = useTrainingSession(sessionId);
+  const activeSessionId = useActiveSessionStore((s) => s.sessionId);
   const clear = useActiveSessionStore((s) => s.clear);
+  const restSessionId = useRestTimerStore((s) => s.sessionId);
   const stopRest = useRestTimerStore((s) => s.stop);
 
   const [durationMin, setDurationMin] = useState('0');
@@ -30,15 +35,30 @@ export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPai
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // Initialize once per open, from the session itself: the duration prefill
+  // stops at the last logged activity for stale (forgotten) workouts instead
+  // of running to "now". Waits for the detail query so the suggestion is
+  // based on real sets; later refetches must not clobber user edits.
+  const initialized = useRef(false);
   useEffect(() => {
-    if (!visible) return;
-    const minutes = Math.max(1, Math.round((Date.now() - startedAtMs) / 60000));
-    setDurationMin(String(minutes));
+    if (!visible) {
+      initialized.current = false;
+      return;
+    }
+    if (!session || initialized.current) return;
+    initialized.current = true;
+    const startedMs = new Date(session.startedAt).getTime();
+    setDurationMin(String(suggestedDurationMinutes(startedMs, lastActivityMs(session), Date.now())));
     setSrpe(null);
+    setType(
+      (SESSION_TYPES as readonly string[]).includes(session.type)
+        ? (session.type as (typeof SESSION_TYPES)[number])
+        : 'strength',
+    );
     setFeeling(null);
     setNote('');
     setError(null);
-  }, [visible, startedAtMs]);
+  }, [visible, session]);
 
   const canSave = srpe !== null;
 
@@ -61,10 +81,12 @@ export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPai
       setError("Couldn't save. Check your connection and try again — your sets are safe.");
       return;
     }
-    clear();
-    stopRest();
+    // Only tear down live state when the finished session is the active one —
+    // finishing an older unfinished session must not kill a workout in progress.
+    if (activeSessionId === sessionId) clear();
+    if (restSessionId === sessionId) stopRest();
     onClose();
-    router.back();
+    if (backOnSave) router.back();
   };
 
   return (
@@ -146,7 +168,7 @@ export function FinishSheet({ visible, onClose, sessionId, startedAtMs, onLogPai
               key={key}
               onPress={() => {
                 setFeeling(key);
-                if (key === 'pain') onLogPain();
+                if (key === 'pain') onLogPain?.();
               }}
               className={
                 feeling === key

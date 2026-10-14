@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/screen';
@@ -8,6 +8,7 @@ import { CheckInSheet } from '@/components/home/check-in-sheet';
 import { PainSheet } from '@/components/home/pain-sheet';
 import { SessionHistoryCard } from '@/components/home/session-history-card';
 import { AppHeader } from '@/components/app-header';
+import { UnfinishedSessionSheet } from '@/components/workout/unfinished-session-sheet';
 import { useLoadMetrics } from '@/hooks/use-load-metrics';
 import {
   useCreateTrainingSession,
@@ -45,12 +46,28 @@ export default function TodayScreen() {
   });
   const createSession = useCreateTrainingSession();
   const startActive = useActiveSessionStore((s) => s.start);
+  const activeSessionId = useActiveSessionStore((s) => s.sessionId);
 
   const [painVisible, setPainVisible] = useState(false);
   const [checkInVisible, setCheckInVisible] = useState(false);
+  const [orphanVisible, setOrphanVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sessions = finishedSessions(sessionsQuery.data?.data ?? []);
+  const allSessions = sessionsQuery.data?.data ?? [];
+  const sessions = finishedSessions(allSessions);
+  // A duration-0 session that isn't the in-store active workout is orphaned:
+  // the app was closed before it was finished. Surface it instead of letting
+  // it vanish, and prompt once per app run.
+  const orphan =
+    allSessions.find((s) => s.duration === 0 && s.id !== activeSessionId) ?? null;
+  const orphanPrompted = useRef(false);
+  useEffect(() => {
+    if (orphan && !orphanPrompted.current) {
+      orphanPrompted.current = true;
+      setOrphanVisible(true);
+    }
+  }, [orphan]);
+
   const metrics = useLoadMetrics(sessions, []);
   const recent = sessions.slice(0, 3);
   const last = sessions[0];
@@ -129,6 +146,28 @@ export default function TodayScreen() {
             </Text>
           </Pressable>
 
+          {orphan ? (
+            <Pressable
+              onPress={() => setOrphanVisible(true)}
+              className="mb-3 flex-row items-center justify-between rounded-2xl bg-white px-5 py-4"
+            >
+              <View>
+                <Text className="font-heading text-[20px] leading-[22px] tracking-[-0.4px] text-foreground">
+                  Unfinished workout
+                </Text>
+                <Text className="mt-1 font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
+                  {orphan.title ?? orphan.type} ·{' '}
+                  {new Date(orphan.startedAt).toLocaleDateString(undefined, {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </Text>
+              </View>
+              <Text className="font-body text-[14px] text-primary">→</Text>
+            </Pressable>
+          ) : null}
+
           {last ? (
             <Pressable onPress={() => void repeatLast()} className="mb-8 self-start py-1">
               <Text className="font-body text-[11px] uppercase tracking-[2px] text-muted-foreground">
@@ -195,6 +234,11 @@ export default function TodayScreen() {
 
         <PainSheet visible={painVisible} onClose={() => setPainVisible(false)} />
         <CheckInSheet visible={checkInVisible} onClose={() => setCheckInVisible(false)} />
+        <UnfinishedSessionSheet
+          visible={orphanVisible}
+          onClose={() => setOrphanVisible(false)}
+          session={orphan}
+        />
       </Screen>
   );
 }
