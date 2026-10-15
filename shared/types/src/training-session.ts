@@ -11,6 +11,7 @@ import {
   rirSchema,
   secondsSchema,
   smallIntSchema,
+  tempoSchema,
   userIdSchema,
 } from './primitives.js';
 
@@ -70,6 +71,7 @@ export const trainingSessionExerciseSetSchema = z.object({
   duration: secondsSchema.nullish(),
   pace: paceSecondsPerKmSchema.max(9_999.99).nullish(),
   rpe: decimalRatingSchema.nullish(),
+  tempo: tempoSchema.nullish(),
   notes: optionalTextSchema,
   createdAt: isoDateTimeSchema,
 });

@@ -81,6 +81,7 @@ function setUpdateValues(
   if (input.duration !== undefined) values.duration = input.duration;
   if (input.pace !== undefined) values.pace = input.pace?.toString() ?? null;
   if (input.rpe !== undefined) values.rpe = input.rpe?.toString() ?? null;
+  if (input.tempo !== undefined) values.tempo = input.tempo ?? null;
   if (input.notes !== undefined) values.notes = input.notes;
   return values;
 }
@@ -447,6 +448,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
           duration: input.duration ?? null,
           pace: input.pace?.toString() ?? null,
           rpe: input.rpe?.toString() ?? null,
+          tempo: input.tempo ?? null,
           notes: input.notes ?? null,
         })
         .returning();

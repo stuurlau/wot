@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 
 import { db } from "../../db/client.js";
 import {
+  exerciseConfig,
   exerciseTag,
   trainingSessionExerciseSet,
   trainingSessionExercise,
@@ -17,6 +18,7 @@ import {
   lastExerciseQuerySchema,
   recentsQuerySchema,
   renameExercisesBodySchema,
+  setExerciseConfigBodySchema,
   setExerciseTagsBodySchema,
 } from "./schemas.js";
 
@@ -28,24 +30,80 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     { preHandler: [requireAuthentication, rejectUnknownQuery] },
     async (request) => {
       const input = parseRequest(renameExercisesBodySchema, request.body);
+      const userId = authenticatedUserId(request);
       // `from` names are matched exactly: the fuzzy matching lives in the
       // client, which confirms the concrete list before calling this.
-      const updated = await db
-        .update(trainingSessionExercise)
-        .set({ name: input.to })
-        .where(
-          and(
-            inArray(trainingSessionExercise.name, input.from),
-            inArray(
-              trainingSessionExercise.trainingSessionId,
-              db
-                .select({ id: trainingSession.id })
-                .from(trainingSession)
-                .where(eq(trainingSession.userId, authenticatedUserId(request))),
+      // Tags and per-name config move along so a rename keeps the cog-menu
+      // settings; on collision the target name's own rows win.
+      const updated = await db.transaction(async (tx) => {
+        const renamed = await tx
+          .update(trainingSessionExercise)
+          .set({ name: input.to })
+          .where(
+            and(
+              inArray(trainingSessionExercise.name, input.from),
+              inArray(
+                trainingSessionExercise.trainingSessionId,
+                tx
+                  .select({ id: trainingSession.id })
+                  .from(trainingSession)
+                  .where(eq(trainingSession.userId, userId)),
+              ),
             ),
-          ),
-        )
-        .returning({ id: trainingSessionExercise.id });
+          )
+          .returning({ id: trainingSessionExercise.id });
+
+        const [targetConfig] = await tx
+          .select({ id: exerciseConfig.id })
+          .from(exerciseConfig)
+          .where(and(eq(exerciseConfig.userId, userId), eq(exerciseConfig.exerciseName, input.to)))
+          .limit(1);
+        if (targetConfig) {
+          await tx
+            .delete(exerciseConfig)
+            .where(
+              and(eq(exerciseConfig.userId, userId), inArray(exerciseConfig.exerciseName, input.from)),
+            );
+        } else {
+          await tx
+            .update(exerciseConfig)
+            .set({ exerciseName: input.to })
+            .where(
+              and(eq(exerciseConfig.userId, userId), inArray(exerciseConfig.exerciseName, input.from)),
+            );
+        }
+
+        const targetTags = await tx
+          .select({ tag: exerciseTag.tag })
+          .from(exerciseTag)
+          .where(and(eq(exerciseTag.userId, userId), eq(exerciseTag.exerciseName, input.to)));
+        const takenTags = new Set(targetTags.map((row) => row.tag));
+        const fromTags = await tx
+          .select({ id: exerciseTag.id, tag: exerciseTag.tag })
+          .from(exerciseTag)
+          .where(and(eq(exerciseTag.userId, userId), inArray(exerciseTag.exerciseName, input.from)));
+        const movableTagIds: string[] = [];
+        const duplicateTagIds: string[] = [];
+        for (const row of fromTags) {
+          if (takenTags.has(row.tag)) {
+            duplicateTagIds.push(row.id);
+          } else {
+            takenTags.add(row.tag);
+            movableTagIds.push(row.id);
+          }
+        }
+        if (duplicateTagIds.length > 0) {
+          await tx.delete(exerciseTag).where(inArray(exerciseTag.id, duplicateTagIds));
+        }
+        if (movableTagIds.length > 0) {
+          await tx
+            .update(exerciseTag)
+            .set({ exerciseName: input.to })
+            .where(inArray(exerciseTag.id, movableTagIds));
+        }
+
+        return renamed;
+      });
 
       return { updated: updated.length };
     },
@@ -154,6 +212,58 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       });
 
       return { exerciseName: input.exerciseName, tags };
+    },
+  );
+
+  // Per-exercise logging config (cog menu), keyed by exercise name like the
+  // tags above. GET returns every (exercise name -> config) pair for the
+  // user; PUT replaces the config of one exercise name — an all-null config
+  // resets to inheriting the global settings (the row is deleted).
+  app.get(
+    "/exercises/config",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request) => {
+      const rows = await db
+        .select({
+          exerciseName: exerciseConfig.exerciseName,
+          fields: exerciseConfig.fields,
+          tempo: exerciseConfig.tempo,
+          bodyRegions: exerciseConfig.bodyRegions,
+        })
+        .from(exerciseConfig)
+        .where(eq(exerciseConfig.userId, authenticatedUserId(request)))
+        .orderBy(asc(exerciseConfig.exerciseName));
+
+      return { data: rows };
+    },
+  );
+
+  app.put(
+    "/exercises/config",
+    { preHandler: [requireAuthentication, rejectUnknownQuery] },
+    async (request) => {
+      const input = parseRequest(setExerciseConfigBodySchema, request.body);
+      const userId = authenticatedUserId(request);
+      const { fields, tempo, bodyRegions } = input.config;
+
+      if (fields === null && tempo === null && bodyRegions === null) {
+        await db
+          .delete(exerciseConfig)
+          .where(
+            and(eq(exerciseConfig.userId, userId), eq(exerciseConfig.exerciseName, input.exerciseName)),
+          );
+        return { exerciseName: input.exerciseName, ...input.config };
+      }
+
+      await db
+        .insert(exerciseConfig)
+        .values({ userId, exerciseName: input.exerciseName, fields, tempo, bodyRegions })
+        .onConflictDoUpdate({
+          target: [exerciseConfig.userId, exerciseConfig.exerciseName],
+          set: { fields, tempo, bodyRegions },
+        });
+
+      return { exerciseName: input.exerciseName, ...input.config };
     },
   );
 

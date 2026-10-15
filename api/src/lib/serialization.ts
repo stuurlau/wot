@@ -72,6 +72,7 @@ export function serializeTrainingSessionExerciseSet(row: TrainingSessionExercise
     duration: row.duration,
     pace: numberOrNull(row.pace),
     rpe: numberOrNull(row.rpe),
+    tempo: row.tempo,
     notes: row.notes,
     createdAt: dateTime(row.createdAt),
   };
