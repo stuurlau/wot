@@ -208,6 +208,10 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     },
   );
 
+  // Full set-level history joined with its session: the Insights dashboard
+  // computes every metric client-side from these rows (see
+  // docs/20261015_insights_glance_explorer_redesign.md). Sessions without any
+  // sets never appear here — they carry no training stimulus.
   app.get(
     "/exercises/history",
     { preHandler: requireAuthentication },
@@ -215,11 +219,20 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       const query = parseRequest(exerciseHistoryQuerySchema, request.query, true);
       const rows = await db
         .select({
+          sessionId: trainingSession.id,
+          sessionType: trainingSession.type,
+          sessionDuration: trainingSession.duration,
+          sessionSrpe: trainingSession.srpe,
+          exerciseId: trainingSessionExercise.id,
           name: trainingSessionExercise.name,
           bodyRegions: trainingSessionExercise.bodyRegions,
           date: trainingSession.startedAt,
+          sortOrder: trainingSessionExerciseSet.sortOrder,
           weight: trainingSessionExerciseSet.weight,
           reps: trainingSessionExerciseSet.reps,
+          rir: trainingSessionExerciseSet.rir,
+          rpe: trainingSessionExerciseSet.rpe,
+          duration: trainingSessionExerciseSet.duration,
         })
         .from(trainingSessionExercise)
         .innerJoin(
@@ -237,15 +250,28 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
             lt(trainingSession.startedAt, utcMidnight(query.to)),
           ),
         )
-        .orderBy(asc(trainingSession.startedAt));
+        .orderBy(
+          asc(trainingSession.startedAt),
+          asc(trainingSessionExercise.id),
+          asc(trainingSessionExerciseSet.sortOrder),
+        );
 
       return {
         data: rows.map((row) => ({
+          sessionId: row.sessionId,
+          sessionType: row.sessionType,
+          sessionDuration: row.sessionDuration,
+          sessionSrpe: Number(row.sessionSrpe),
+          exerciseId: row.exerciseId,
           name: row.name,
           bodyRegions: row.bodyRegions ?? [],
           date: row.date.toISOString().slice(0, 10),
+          sortOrder: row.sortOrder,
           weight: row.weight === null ? null : Number(row.weight),
           reps: row.reps,
+          rir: row.rir === null ? null : Number(row.rir),
+          rpe: row.rpe === null ? null : Number(row.rpe),
+          duration: row.duration,
         })),
       };
     },

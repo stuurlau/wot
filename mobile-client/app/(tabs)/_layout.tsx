@@ -6,6 +6,7 @@ import { ActiveSessionBar } from '@/components/active-session-bar';
 import { VersionFooter } from '@/components/version-footer';
 import { IconSymbol, type IconSymbolName } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
+import { useInsightsStore } from '@/stores/insights-store';
 
 function TabIcon({
   name,
@@ -84,6 +85,10 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="chart.bar.fill" color={color} focused={focused} />
           ),
+        }}
+        listeners={{
+          // Tapping the Insights tab while in the explorer returns to the glance.
+          tabPress: () => useInsightsStore.getState().backToGlance(),
         }}
       />
     </Tabs>
