@@ -1013,7 +1013,8 @@ export function breakdown(D: InsightsData, m: MetricKey, scope: Scope, w: number
         .map((e) => ({
           label: dayLabel(s.day),
           sub: setsTxt(e.sets),
-          value: fval(m, exVal(m, e.sets)),
+          // One row per session; a "sessions" count adds nothing per row.
+          value: m === 'sessions' ? '' : fval(m, exVal(m, e.sets)),
           drill: null,
         })),
     );

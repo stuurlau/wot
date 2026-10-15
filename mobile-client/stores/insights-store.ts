@@ -60,8 +60,11 @@ export const useInsightsStore = create<InsightsViewState & InsightsViewActions>(
       sel: extra?.sel ?? null,
       sheetOpen: extra?.sheetOpen ?? false,
     }),
-  setScope: (scope, metric) => set({ scope, metric, sheetOpen: false, sel: null }),
-  setMetric: (metric) => set({ metric, sel: null }),
+  // Keep the selected week across scope/metric changes: drilling from a
+  // breakdown row stays on the same week (out-of-range weeks fall back to
+  // the current week at render time).
+  setScope: (scope, metric) => set({ scope, metric, sheetOpen: false }),
+  setMetric: (metric) => set({ metric }),
   setWin: (win) => set({ win }),
   setCmp: (cmp) => set({ cmp }),
   setSel: (sel) => set({ sel }),

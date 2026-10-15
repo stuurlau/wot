@@ -239,9 +239,9 @@ function GlanceCharts({
                 {b.tag}
               </Text>
               <View className="relative h-4 flex-1">
-                <View className="absolute inset-x-0 top-[7px] h-px bg-border" />
+                <View className="absolute inset-x-0 top-[8px] h-px bg-border" />
                 <View
-                  className="absolute top-[6px] h-[3px]"
+                  className="absolute top-[7px] h-[3px]"
                   style={{
                     left: `${b.loPct}%`,
                     width: `${b.spanPct}%`,
@@ -250,12 +250,12 @@ function GlanceCharts({
                 />
                 {b.usual != null ? (
                   <View
-                    className="absolute top-[2px] h-[11px] w-[11px] rounded-full border-primary bg-background"
+                    className="absolute top-[3px] h-[11px] w-[11px] rounded-full border-primary bg-background"
                     style={{ left: `${b.usualPct}%`, marginLeft: -5.5, borderWidth: 1.5 }}
                   />
                 ) : null}
                 <View
-                  className="absolute top-[2px] h-[11px] w-[11px] rounded-full bg-primary"
+                  className="absolute top-[3px] h-[11px] w-[11px] rounded-full bg-primary"
                   style={{ left: `${b.nowPct}%`, marginLeft: -5.5 }}
                 />
               </View>
