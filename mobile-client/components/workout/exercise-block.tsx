@@ -20,6 +20,7 @@ import {
   useUpdateExerciseSet,
 } from '@/hooks/api';
 import { findSimilarNames } from '@/lib/similarity';
+import { bodyPartsLabelText } from '@/lib/body-parts';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
 import { ExerciseConfigSheet } from './exercise-config-sheet';
 import { SetRow, type SetFieldKey, type SetInput, type SetMode } from './set-row';
@@ -241,9 +242,9 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
               {config.tempo}
             </Text>
           ) : null}
-          {exercise.bodyRegions && exercise.bodyRegions.length > 0 ? (
+          {exercise.bodyParts && exercise.bodyParts.length > 0 ? (
             <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-              {exercise.bodyRegions.join(' · ')}
+              {bodyPartsLabelText(exercise.bodyParts)}
             </Text>
           ) : null}
           <Pressable
@@ -370,7 +371,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
         exerciseId={exercise.id}
         exerciseName={exercise.name}
         resolvedFields={fields}
-        currentBodyRegions={exercise.bodyRegions ?? []}
+        currentBodyParts={exercise.bodyParts ?? []}
       />
     </View>
   );

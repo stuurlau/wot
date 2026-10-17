@@ -39,15 +39,15 @@ export function ExercisePickerSheet({
   const exactMatch = filtered.some((r) => r.name.toLowerCase() === query.trim().toLowerCase());
   const canCreate = query.trim().length > 0 && !exactMatch;
 
-  const pick = async (name: string, bodyRegions: string[]) => {
+  const pick = async (name: string, bodyParts: string[]) => {
     setError(null);
     // Configured body parts (cog menu) win over the recents carry-over.
-    const configured = configMap?.get(name)?.bodyRegions;
-    const regions = configured?.length ? configured : bodyRegions;
+    const configured = configMap?.get(name)?.bodyParts;
+    const regions = configured?.length ? configured : bodyParts;
     try {
       await createExercise.mutateAsync({
         name,
-        bodyRegions: regions.length > 0 ? regions : undefined,
+        bodyParts: regions.length > 0 ? regions : undefined,
         sortOrder: nextSortOrder,
       });
       setQuery('');
@@ -97,7 +97,7 @@ export function ExercisePickerSheet({
           {filtered.map((recent) => (
             <Pressable
               key={recent.name}
-              onPress={() => void pick(recent.name, recent.bodyRegions)}
+              onPress={() => void pick(recent.name, recent.bodyParts)}
               className="flex-row items-center justify-between py-3"
             >
               <Text className="font-body-medium text-[16px] text-foreground">{recent.name}</Text>
