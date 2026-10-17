@@ -50,6 +50,13 @@
       "when": 1792095507930,
       "tag": "0006_pink_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792095507931,
+      "tag": "0007_unusual_lightspeed",
+      "breakpoints": true
     }
   ]
 }

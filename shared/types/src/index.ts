@@ -1,4 +1,19 @@
 export {
+  bodyPartAncestors,
+  bodyPartChildren,
+  bodyPartDepth,
+  bodyPartIdSchema,
+  bodyPartIds,
+  bodyPartLabel,
+  bodyPartLevels,
+  bodyPartRoot,
+  bodyPartRoots,
+  bodyPartTree,
+  bodyPartsSchema,
+  type BodyPartId,
+  type BodyPartNode,
+} from './body-part.js';
+export {
   createDailyLogInputSchema,
   dailyLogSchema,
   type CreateDailyLogInput,

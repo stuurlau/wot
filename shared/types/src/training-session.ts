@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { bodyPartsSchema } from './body-part.js';
 import {
   decimalRatingSchema,
   identifierSchema,
@@ -14,8 +15,6 @@ import {
   tempoSchema,
   userIdSchema,
 } from './primitives.js';
-
-const bodyRegionSchema = z.string().min(1);
 
 export const trainingSessionSchema = z.object({
   id: identifierSchema,
@@ -43,7 +42,7 @@ export const trainingSessionExerciseSchema = z.object({
   id: identifierSchema,
   trainingSessionId: identifierSchema,
   name: z.string().min(1),
-  bodyRegions: z.array(bodyRegionSchema).nullish(),
+  bodyParts: bodyPartsSchema.nullish(),
   sortOrder: smallIntSchema,
   supersetGroup: smallIntSchema.nullish(),
   notes: optionalTextSchema,

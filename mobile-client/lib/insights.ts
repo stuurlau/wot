@@ -1,4 +1,5 @@
 import type { DailyLog, PainLog } from '@wot/types';
+import { bodyPartLabel, bodyPartRoots } from '@wot/types';
 import type { ExerciseHistoryRow } from '@/lib/api';
 
 export type Signal = {
@@ -178,7 +179,11 @@ function regionShares(history: ExerciseHistoryRow[]): Map<string, number> {
   let sum = 0;
   for (const row of history) {
     const volume = row.weight !== null && row.reps !== null ? row.weight * row.reps : 1;
-    const regions = row.bodyRegions.length > 0 ? row.bodyRegions : ['uncategorised'];
+    // Roll each selection up to its top-level region(s) so the balance chart
+    // stays at region granularity regardless of how specific the user was.
+    const roots = bodyPartRoots(row.bodyParts);
+    const regions =
+      roots.length > 0 ? roots.map((r) => bodyPartLabel(r) ?? r) : ['Uncategorised'];
     const split = volume / regions.length;
     for (const region of regions) {
       totals.set(region, (totals.get(region) ?? 0) + split);
@@ -283,18 +288,17 @@ export function deriveSignals(input: {
 
   // Exposure gap
   const regionsSeen = new Set<string>();
-  for (const row of exerciseHistory) row.bodyRegions.forEach((r) => regionsSeen.add(r));
-  const gapTargets = Array.from(new Set([...regionsSeen, 'legs', 'prehab', 'pull']));
-  for (const region of gapTargets) {
+  for (const row of exerciseHistory) bodyPartRoots(row.bodyParts).forEach((r) => regionsSeen.add(r));
+  for (const region of regionsSeen) {
     const lastUse = exerciseHistory
-      .filter((r) => r.bodyRegions.includes(region))
+      .filter((r) => bodyPartRoots(r.bodyParts).includes(region))
       .map((r) => r.date)
       .sort()
       .at(-1);
     if (lastUse && daysBetween(lastUse, todayKey) >= EXPOSURE_GAP_DAYS) {
       signals.push({
         kind: 'exposure-gap',
-        title: `No ${region} work in ${daysBetween(lastUse, todayKey)} days`,
+        title: `No ${(bodyPartLabel(region) ?? region).toLowerCase()} work in ${daysBetween(lastUse, todayKey)} days`,
         body: 'Your usual rhythm includes it. Worth getting a session in.',
         priority: 40,
         details: [`Last ${region} session: ${lastUse}`],

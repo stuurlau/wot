@@ -195,7 +195,7 @@ export function useSetExerciseConfig() {
         const isReset =
           body.config.fields === null &&
           body.config.tempo === null &&
-          body.config.bodyRegions === null;
+          body.config.bodyParts === null;
         const next = rows.filter((row) => row.exerciseName !== body.exerciseName);
         if (!isReset) next.push({ exerciseName: body.exerciseName, ...body.config });
         return next;

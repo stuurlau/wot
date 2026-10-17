@@ -62,7 +62,7 @@ function exerciseUpdateValues(
 ): Partial<typeof trainingSessionExercise.$inferInsert> {
   const values: Partial<typeof trainingSessionExercise.$inferInsert> = {};
   if (input.name !== undefined) values.name = input.name;
-  if (input.bodyRegions !== undefined) values.bodyRegions = input.bodyRegions;
+  if (input.bodyParts !== undefined) values.bodyParts = input.bodyParts;
   if (input.sortOrder !== undefined) values.sortOrder = input.sortOrder;
   if (input.supersetGroup !== undefined) values.supersetGroup = input.supersetGroup ?? null;
   if (input.notes !== undefined) values.notes = input.notes;
@@ -330,7 +330,7 @@ export async function registerTrainingSessionRoutes(app: FastifyInstance) {
         .values({
           trainingSessionId,
           name: input.name,
-          bodyRegions: input.bodyRegions ?? null,
+          bodyParts: input.bodyParts ?? null,
           sortOrder: input.sortOrder,
           supersetGroup: input.supersetGroup ?? null,
           notes: input.notes ?? null,

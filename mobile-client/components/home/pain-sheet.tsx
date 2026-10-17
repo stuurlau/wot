@@ -25,7 +25,7 @@ export function PainSheet({ visible, onClose }: PainSheetProps) {
   const createPainLog = useCreatePainLog();
 
   const suggestedRegions = useMemo(() => {
-    const fromRecents = recents.flatMap((r) => r.bodyRegions ?? []);
+    const fromRecents = recents.flatMap((r) => r.bodyParts ?? []);
     return Array.from(new Set([...fromRecents, ...FIXED_REGIONS]));
   }, [recents]);
 
