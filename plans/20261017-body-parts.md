@@ -5,46 +5,48 @@
 **Design:** `docs/ui-designs/body-part-selection/WOT Body Parts Picker.html` (proposal variant: drill-down list)
 **Stacks on:** #34/#36 (exercise config), #33 (insights explorer)
 
-## What the design specifies
+## What the design specifies (as adjusted in sparring)
 
 - A fixed 3-level tree: **Region** (upper / core / lower) → **Group** (chest,
   back, shoulders, arms, neck / abs, obliques, deep core / hips, thighs,
   lower legs) → **Muscle** (quads, lats, front delts, …). Full node list in
   the design file; the tree is static and lives in code, not the DB.
-- **Stop at any level**: selecting a node clears its ancestors and
-  descendants — a branch holds at most one selection ("Back squat: lower
-  body" is valid without picking muscles).
-- Every selection has a **role**: primary (✓) or secondary (½), with a
-  mode toggle while picking. Tap a selected node again to deselect.
-- Dose rule for insights: **1 set for primary, ½ set for secondary**, rolled
-  up through ancestors ("Counts in: Lower body").
-- Picker UX (proposal variant): drill-down list — tap the circle to
-  select, tap the name to go deeper, breadcrumbs back up. (Refining chips
-  and expandable tree were explored and rejected.)
+- **Multi-select across all levels** (user decision, overriding the design's
+  branch-exclusive rule): "lower body" *and* specific muscles (quads,
+  glutes) can all be selected at once. Parent+child is redundant for
+  rollups but harmless — it expresses "the whole region, and specifically
+  this muscle".
+- **No primary/secondary roles** (user decision — too complicated). A
+  selection is a plain set of node ids; a set counts 1 toward each selected
+  part and, for rollups, toward its ancestors.
+- Picker UX (design's proposal variant): drill-down list — tap the circle
+  to toggle, tap the name to go deeper, breadcrumbs back up. Parent rows
+  show a "some parts selected" dash indicator when a descendant is
+  selected. (Refining chips and expandable tree were explored and rejected
+  in the design.)
 
 ## Datamodel
 
 1. **Shared tree** in `@wot/types` (`body-part.ts`):
    - `bodyPartTree` constant (the tree above) + `bodyPartIdSchema` (zod enum
      over all node ids), plus helpers: `bodyPartAncestors(id)`,
-     `bodyPartIsValidSelection(ids)` (no two ids on the same branch),
-     `bodyPartLabel(id)`, `bodyPartRollup(ids)` → id + ancestors.
-2. **Columns** — replace `body_regions text[]` with two arrays of node ids:
-   - `training_session_exercises`: `body_parts_primary text[]`,
-     `body_parts_secondary text[]` (disjoint; branch-exclusive)
-   - `exercise_configs`: same two columns replacing `bodyRegions` (the
+     `bodyPartLabel(id)`, `bodyPartRollup(ids)` → each id + its ancestors,
+     deduped.
+2. **Columns** — `body_regions text[]` becomes a single array of node ids:
+   - `training_session_exercises.body_parts text[]`
+   - `exercise_configs.body_parts text[]` (replacing its `bodyRegions`; the
      cog-menu default that prefills new instances)
    Validation (shared zod, so API + client agree): ids exist in the tree,
-   primary ∩ secondary = ∅, no ancestor/descendant pairs across the union.
+   unique. Nothing else — multi-select across levels is allowed.
 3. **Migration**: map legacy free-text regions to node ids where
    unambiguous (`chest→chest`, `back→back`, `legs→lower`, `arms→arms`,
-   `core→core`, muscle names → same id, `shoulders→shoulders`), all as
-   primary; unmapped legacy strings (`push`, `pull`, `prehab`, …) are
-   dropped — they were informal labels, and the data is dev-stage.
+   `core→core`, muscle names → same id, `shoulders→shoulders`); unmapped
+   legacy strings (`push`, `pull`, `prehab`, …) are dropped — they were
+   informal labels, and the data is dev-stage.
 4. **Wire change** (breaking, coordinated): `bodyRegions` leaves the
-   exercise schema; `bodyPartsPrimary`/`bodyPartsSecondary` take its place
-   in session detail, history rows, and the config endpoints. App and API
-   deploy together; no version skew concern at this stage.
+   exercise schema; `bodyParts` takes its place in session detail, history
+   rows, and the config endpoints. App and API deploy together; no version
+   skew concern at this stage.
 
 ## API
 
@@ -53,31 +55,30 @@
 - `/exercises/config` GET/PUT carry the new shape.
 - History rows (`GET /exercises/history`) carry both arrays — the insights
   engine reads them client-side, no new endpoint needed.
-- Tests: selection-validation 422s (unknown id, same-branch pair,
-  primary=secondary), roundtrips, config roundtrip with the new shape,
-  legacy-rename cascade still intact.
+- Tests: selection-validation 422s (unknown id, duplicate ids),
+  roundtrips, config roundtrip with the new shape, legacy-rename cascade
+  still intact.
 
 ## Mobile
 
-- New `BodyPartPicker` (design's proposal variant): breadcrumbs, rows with
-  select-circle vs drill-in name, primary/secondary mode toggle, summary
-  line ("Primary · Secondary · Counts in"). Selection logic mirrors the
-  prototype: selecting clears the branch, tap-again deselects.
+- New `BodyPartPicker` (design's drill-down variant, minus the role toggle):
+  breadcrumbs, rows with a select-circle vs a drill-in name, free
+  multi-select across levels, parent rows show a "some parts selected"
+  marker when a descendant is picked, summary line with the resolved labels
+  ("lower body · quads · glutes") and the rollup ("Counts in: …").
 - `ExerciseConfigSheet`: the flat body-parts chips are replaced by an entry
   row opening the picker (inside the same sheet — it is a list section, not
   a stacked modal; see #30). Writes the new config shape and patches the
-  live instance (both arrays).
-- Picker prefill: config primary/secondary applied on add.
-- Exercise header shows resolved part labels (e.g. "quads · glutes").
+  live instance.
+- Picker prefill: configured parts applied on add.
+- Exercise header shows resolved part labels (e.g. "lower body · quads").
 
 ## Insights (stacks on #33)
 
 - New Explorer scope type **body part** (any node, any level), browsable
   region → group → muscle in the scope sheet.
 - Rollup: an exercise counts toward part P when any selected part is P or a
-  descendant of P; its sets weigh 1 (primary) or ½ (secondary) for
-  set-derived metrics (sets, volume load). Session-level sRPE load is not
-  split by part.
+  descendant of P; each of its sets counts once (no role weighting).
 - Glance unchanged — tags stay the balance unit per the redesign.
 - Deferred: region-gap signal variant, prefill library (see below).
 
@@ -99,5 +100,3 @@ Dated doc + `20260323_data_model.md` update land with PR 1.
   current convention. Park it; revisit once we see how much manual tagging
   actually happens.
 - Legacy drop of unmapped strings (push/pull/prehab) — OK?
-- Secondary ½-weighting applies to sets/volume only, not session sRPE load
-  — OK?
