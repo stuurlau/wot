@@ -224,7 +224,7 @@ export function SetRow({
                   onSubmitEditing={() => commitEdit(f.key)}
                   keyboardType="numeric"
                   autoFocus
-                  className="min-w-[56px] border-b border-primary pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
+                  className="w-[72px] border-b border-primary pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
                   style={{ fontVariant: ['tabular-nums'] }}
                 />
               );
@@ -294,7 +294,7 @@ export function SetRow({
               placeholder={f.label}
               placeholderTextColor="rgba(0,0,0,0.3)"
               keyboardType="numeric"
-              className="min-w-[56px] border-b border-border pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
+              className="w-[72px] border-b border-border pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
               style={{ fontVariant: ['tabular-nums'] }}
             />
           );
