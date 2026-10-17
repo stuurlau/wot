@@ -17,6 +17,9 @@ export const trainingSessionExerciseSet = pgTable(
     duration: integer("duration"),
     pace: numeric("pace", { precision: 6, scale: 2 }),
     rpe: numeric("rpe", { precision: 3, scale: 1 }),
+    // Tempo notation ("3-2-1"), stamped from the exercise's config when the
+    // set is logged (per-set so it can vary within a session).
+    tempo: text("tempo"),
     notes: text("notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

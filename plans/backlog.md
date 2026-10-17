@@ -14,3 +14,4 @@ status in place:
 ## Tasks
 
 - [ ]
+- [x] planned → plans/20261014-exercise-config-menu.md (set-row editing bug + per-exercise cog menu: fields/seconds/tempo, rir-rpe, tags, body parts; datamodel decision A vs B pending)

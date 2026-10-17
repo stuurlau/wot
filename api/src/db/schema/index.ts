@@ -1,5 +1,6 @@
 export * from "./auth.js";
 export * from "./daily-logs.js";
+export * from "./exercise-configs.js";
 export * from "./exercise-tags.js";
 export * from "./pain-logs.js";
 export * from "./relations.js";

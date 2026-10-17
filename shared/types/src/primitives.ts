@@ -16,3 +16,6 @@ export const kilogramsSchema = z.number().nonnegative();
 export const metersSchema = z.number().nonnegative();
 export const paceSecondsPerKmSchema = z.number().nonnegative();
 export const hrvSchema = z.number().nonnegative();
+// Tempo notation like "3-2-1" or "5-0-X" (eccentric-pause-concentric[-top]).
+// Stored per set, configured at exercise level (see exercise-config.ts).
+export const tempoSchema = z.string().trim().min(1).max(20);

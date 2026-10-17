@@ -52,6 +52,7 @@ const trainingExerciseSetRow = {
   duration: null,
   pace: null,
   rpe: "7.0",
+  tempo: "3-2-1",
   notes: null,
   createdAt: BASE_DATE,
 };
@@ -82,6 +83,7 @@ describe("serializeTrainingSessionExerciseSet", () => {
     assert.equal(result.weight, 80);
     assert.equal(result.rir, 2);
     assert.equal(result.rpe, 7);
+    assert.equal(result.tempo, "3-2-1");
     assert.equal(result.distance, null);
   });
 });

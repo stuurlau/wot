@@ -20,6 +20,16 @@ export {
   type SetExerciseTagsInput,
 } from './exercise-tag.js';
 export {
+  exerciseConfigEntrySchema,
+  exerciseConfigSchema,
+  exerciseSetFieldSchema,
+  setExerciseConfigInputSchema,
+  type ExerciseConfig,
+  type ExerciseConfigEntry,
+  type ExerciseSetField,
+  type SetExerciseConfigInput,
+} from './exercise-config.js';
+export {
   decimalRatingSchema,
   hrvSchema,
   identifierSchema,
@@ -32,6 +42,7 @@ export {
   rirSchema,
   secondsSchema,
   smallIntSchema,
+  tempoSchema,
   userIdSchema,
 } from './primitives.js';
 export {
