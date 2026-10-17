@@ -1,14 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { exercises } from '@/lib/api';
-import type { ExerciseHistoryParams, TrainingSessionDetail } from '@/lib/api';
-import type { RenameExercisesInput, SetExerciseTagsInput } from '@wot/types';
+import type {
+  ExerciseConfigRow,
+  ExerciseHistoryParams,
+  ExerciseTagsRow,
+  TrainingSessionDetail,
+} from '@/lib/api';
+import type { RenameExercisesInput, SetExerciseConfigInput, SetExerciseTagsInput } from '@wot/types';
 
 export const exerciseKeys = {
   all: ['exercises'] as const,
   recents: (limit?: number) => [...exerciseKeys.all, 'recents', limit] as const,
   history: (params?: ExerciseHistoryParams) => [...exerciseKeys.all, 'history', params] as const,
   tags: () => [...exerciseKeys.all, 'tags'] as const,
+  configs: () => [...exerciseKeys.all, 'configs'] as const,
 };
 
 // Fetches all distinct names the user has ever logged (the recents endpoint
@@ -145,8 +151,62 @@ export function useSetExerciseTags() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: SetExerciseTagsInput) => exercises.setTags(body),
-    onSuccess: () => {
+    onMutate: async (body) => {
+      await queryClient.cancelQueries({ queryKey: exerciseKeys.tags() });
+      const previous = queryClient.getQueryData<ExerciseTagsRow[]>(exerciseKeys.tags());
+      queryClient.setQueryData<ExerciseTagsRow[]>(exerciseKeys.tags(), (rows = []) => {
+        const next = rows.filter((row) => row.exerciseName !== body.exerciseName);
+        if (body.tags.length > 0) {
+          next.push({ exerciseName: body.exerciseName, tags: [...new Set(body.tags)] });
+        }
+        return next;
+      });
+      return { previous };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previous) queryClient.setQueryData(exerciseKeys.tags(), context.previous);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: exerciseKeys.tags() });
+    },
+  });
+}
+
+// Per-exercise logging config (cog menu), keyed by exercise name. Configs
+// change rarely and the map feeds every exercise block, so cache generously.
+export function useExerciseConfigMap() {
+  return useQuery({
+    queryKey: exerciseKeys.configs(),
+    queryFn: exercises.configs,
+    select: (rows) => new Map(rows.map((row) => [row.exerciseName, row])),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useSetExerciseConfig() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SetExerciseConfigInput) => exercises.setConfig(body),
+    onMutate: async (body) => {
+      await queryClient.cancelQueries({ queryKey: exerciseKeys.configs() });
+      const previous = queryClient.getQueryData<ExerciseConfigRow[]>(exerciseKeys.configs());
+      queryClient.setQueryData<ExerciseConfigRow[]>(exerciseKeys.configs(), (rows = []) => {
+        // Mirrors the API: an all-null config deletes the row (reset to inherit).
+        const isReset =
+          body.config.fields === null &&
+          body.config.tempo === null &&
+          body.config.bodyRegions === null;
+        const next = rows.filter((row) => row.exerciseName !== body.exerciseName);
+        if (!isReset) next.push({ exerciseName: body.exerciseName, ...body.config });
+        return next;
+      });
+      return { previous };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previous) queryClient.setQueryData(exerciseKeys.configs(), context.previous);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.configs() });
     },
   });
 }

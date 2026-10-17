@@ -13,20 +13,44 @@ export type SetInput = {
 };
 
 export type SetMode = 'strength' | 'cardio' | 'flexibility';
+export type SetFieldKey = keyof SetInput;
 
-type FieldDef = { key: keyof SetInput; label: string };
+const EMPTY_INPUT: SetInput = {
+  weight: null,
+  reps: null,
+  rir: null,
+  rpe: null,
+  distance: null,
+  duration: null,
+};
+
+// Duration is stored in whole seconds; cardio enters it in minutes.
+const FIELD_LABELS: Record<SetFieldKey, string> = {
+  weight: 'kg',
+  reps: 'reps',
+  rir: 'rir',
+  rpe: 'rpe',
+  distance: 'km',
+  duration: 'sec',
+};
+
+const fieldLabel = (key: SetFieldKey, mode: SetMode): string =>
+  key === 'duration' && mode === 'cardio' ? 'min' : FIELD_LABELS[key];
+
+const isIntensity = (key: SetFieldKey) => key === 'rir' || key === 'rpe';
 
 type SetRowProps = {
   setNumber: number;
   mode: SetMode;
+  /** Ordered set-input fields to render, resolved per exercise. */
+  fields: SetFieldKey[];
   values: SetInput | null; // null => empty "add next set" row
   lastReference: string | null;
   previousValues?: SetInput | null; // previous set of this exercise, for Copy
-  showIntensity: boolean;
-  /** Which effort scale the intensity input writes to. */
-  intensity: 'rir' | 'rpe';
-  onShowIntensity: () => void;
-  onFlipIntensity: () => void;
+  /** Quick "+ RIR" affordance on the add row (inherited fields only). */
+  onShowIntensity?: () => void;
+  /** Quick rir⇄rpe flip under the intensity input (inherited fields only). */
+  onFlipIntensity?: () => void;
   busy: boolean;
   onCreate: (input: SetInput) => void;
   onUpdate: (input: SetInput) => void;
@@ -38,24 +62,6 @@ function toNumber(raw: string): number | null {
   return raw.trim() === '' || Number.isNaN(n) ? null : n;
 }
 
-const STRENGTH_FIELDS: FieldDef[] = [
-  { key: 'weight', label: 'kg' },
-  { key: 'reps', label: 'reps' },
-];
-
-const CARDIO_FIELDS: FieldDef[] = [
-  { key: 'distance', label: 'km' },
-  { key: 'duration', label: 'min' },
-];
-
-// Flexibility sets are holds: a duration, optionally weighted ("time ×
-// weight"). Leave the weight blank for a plain stretch.
-const FLEXIBILITY_FIELDS: FieldDef[] = [
-  { key: 'duration', label: 'sec' },
-  { key: 'weight', label: 'kg' },
-];
-
-// The API stores set duration in whole seconds; cardio enters it in minutes.
 const minToSec = (min: number | null) => (min == null ? null : Math.round(min * 60));
 const secToMin = (sec: number | null) => (sec == null ? null : Math.round(sec / 6) / 10);
 
@@ -68,11 +74,10 @@ function formatClock(totalSec: number): string {
 export function SetRow({
   setNumber,
   mode,
+  fields,
   values,
   lastReference,
   previousValues,
-  showIntensity,
-  intensity,
   onShowIntensity,
   onFlipIntensity,
   busy,
@@ -80,24 +85,15 @@ export function SetRow({
   onUpdate,
   onDelete,
 }: SetRowProps) {
-  const intensityField: FieldDef = { key: intensity, label: intensity };
-  const fields =
-    mode === 'strength'
-      ? showIntensity
-        ? [...STRENGTH_FIELDS, intensityField]
-        : STRENGTH_FIELDS
-      : mode === 'cardio'
-        ? CARDIO_FIELDS
-        : FLEXIBILITY_FIELDS;
   const [draft, setDraft] = useState<Record<string, string>>({});
-  const [editKey, setEditKey] = useState<keyof SetInput | null>(null);
+  const [editKey, setEditKey] = useState<SetFieldKey | null>(null);
   const [editValue, setEditValue] = useState('');
   // Saved rows keep their ✓/✕ affordances hidden until the row is tapped.
   const [expanded, setExpanded] = useState(false);
 
-  // Hold/interval timer on the "add next set" row of time-based modes.
-  // Stopping it fills the duration input (sec for flexibility, min for
-  // cardio); pressing ✓ while it runs stops it and uses the elapsed time.
+  // Hold/interval timer on the "add next set" row, offered whenever the row
+  // has a duration field. Stopping it fills the duration input; pressing ✓
+  // while it runs stops it and uses the elapsed time.
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [timerNow, setTimerNow] = useState(0);
   useEffect(() => {
@@ -128,13 +124,11 @@ export function SetRow({
     return sec;
   };
 
-  const copyable =
-    previousValues != null &&
-    (mode === 'strength'
-      ? previousValues.weight != null || previousValues.reps != null
-      : mode === 'cardio'
-        ? previousValues.distance != null || previousValues.duration != null
-        : previousValues.duration != null || previousValues.weight != null);
+  /** Typed duration → stored seconds (cardio types minutes). */
+  const toSeconds = (v: number | null): number | null =>
+    v == null ? null : mode === 'cardio' ? minToSec(v) : Math.round(v);
+
+  const copyable = previousValues != null && fields.some((f) => previousValues[f] != null);
 
   const copyPrevious = () => {
     if (!previousValues) return;
@@ -152,47 +146,58 @@ export function SetRow({
     });
   };
 
-  const commitEdit = (key: keyof SetInput) => {
+  // Only the configured fields are written; everything else stays null.
+  const commitEdit = (key: SetFieldKey) => {
     setEditKey(null);
     if (values === null) return;
     const edited = toNumber(editValue);
-    const input: SetInput =
-      mode === 'strength'
-        ? {
-            weight: key === 'weight' ? edited : values.weight,
-            reps: key === 'reps' ? edited : values.reps,
-            rir: key === 'rir' ? edited : values.rir,
-            rpe: key === 'rpe' ? edited : values.rpe,
-            distance: null,
-            duration: null,
-          }
-        : mode === 'cardio'
-          ? {
-              weight: null,
-              reps: null,
-              rir: null,
-              rpe: null,
-              distance: key === 'distance' ? edited : values.distance,
-              duration: key === 'duration' ? minToSec(edited) : values.duration,
-            }
-          : {
-              weight: key === 'weight' ? edited : values.weight,
-              reps: null,
-              rir: null,
-              rpe: null,
-              distance: null,
-              duration: key === 'duration' ? (edited == null ? null : Math.round(edited)) : values.duration,
-            };
+    const input: SetInput = { ...EMPTY_INPUT };
+    for (const f of fields) {
+      if (f === key) {
+        input[f] = f === 'duration' ? toSeconds(edited) : edited;
+      } else {
+        input[f] = values[f];
+      }
+    }
     onUpdate(input);
   };
 
-  const renderValue = (key: keyof SetInput): string => {
+  const renderValue = (key: SetFieldKey): string => {
     if (values === null) return '';
     const value = values[key];
     if (value == null) return '';
-    // Cardio stores seconds but displays minutes.
     if (key === 'duration' && mode === 'cardio') return String(secToMin(value));
     return value.toString();
+  };
+
+  const renderField = (key: SetFieldKey, editing: boolean, inputValue: string, onChange: (t: string) => void, onCommit: () => void) => {
+    const input = (
+      <TextInput
+        value={inputValue}
+        onChangeText={onChange}
+        onBlur={editing ? onCommit : undefined}
+        onSubmitEditing={editing ? onCommit : undefined}
+        placeholder={editing ? undefined : fieldLabel(key, mode)}
+        placeholderTextColor="rgba(0,0,0,0.3)"
+        keyboardType="numeric"
+        autoFocus={editing}
+        className={`w-[72px] border-b pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground ${
+          editing ? 'border-primary' : 'border-border'
+        }`}
+        style={{ fontVariant: ['tabular-nums'] }}
+      />
+    );
+    if (!isIntensity(key) || !onFlipIntensity) return <View key={key}>{input}</View>;
+    return (
+      <View key={key}>
+        {input}
+        <Pressable onPress={onFlipIntensity} hitSlop={8}>
+          <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
+            {fieldLabel(key, mode)} ⇄
+          </Text>
+        </Pressable>
+      </View>
+    );
   };
 
   if (values !== null) {
@@ -213,29 +218,17 @@ export function SetRow({
         </Text>
 
         <View className="flex-1 flex-row items-center justify-end gap-2">
-          {fields.map((f) => {
-            if (editKey === f.key) {
-              return (
-                <TextInput
-                  key={f.key}
-                  value={editValue}
-                  onChangeText={setEditValue}
-                  onBlur={() => commitEdit(f.key)}
-                  onSubmitEditing={() => commitEdit(f.key)}
-                  keyboardType="numeric"
-                  autoFocus
-                  className="min-w-[56px] border-b border-primary pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                />
-              );
+          {fields.map((key) => {
+            if (editKey === key) {
+              return renderField(key, true, editValue, setEditValue, () => commitEdit(key));
             }
-            const isIntensity = f.key === 'rir' || f.key === 'rpe';
+            const valueText = renderValue(key);
             return (
               <Pressable
-                key={f.key}
+                key={key}
                 onPress={() => {
-                  setEditKey(f.key);
-                  setEditValue(renderValue(f.key));
+                  setEditKey(key);
+                  setEditValue(valueText);
                 }}
                 hitSlop={8}
               >
@@ -243,17 +236,17 @@ export function SetRow({
                   className="font-heading text-[22px] leading-[24px] text-foreground"
                   style={{ fontVariant: ['tabular-nums'] }}
                 >
-                  {renderValue(f.key)}
+                  {valueText}
                 </Text>
-                {isIntensity ? (
+                {isIntensity(key) && onFlipIntensity ? (
                   <Pressable onPress={onFlipIntensity} hitSlop={8}>
                     <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
-                      {f.label} ⇄
+                      {fieldLabel(key, mode)} ⇄
                     </Text>
                   </Pressable>
                 ) : (
                   <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-                    {f.label}
+                    {fieldLabel(key, mode)}
                   </Text>
                 )}
               </Pressable>
@@ -283,35 +276,12 @@ export function SetRow({
         {setNumber}
       </Text>
 
-      <View className="flex-1 flex-row items-center justify-end gap-2">
-        {fields.map((f) => {
-          const isIntensity = f.key === 'rir' || f.key === 'rpe';
-          const input = (
-            <TextInput
-              key={f.key}
-              value={draft[f.key] ?? ''}
-              onChangeText={(t) => setDraft((p) => ({ ...p, [f.key]: t }))}
-              placeholder={f.label}
-              placeholderTextColor="rgba(0,0,0,0.3)"
-              keyboardType="numeric"
-              className="min-w-[56px] border-b border-border pb-0.5 text-right font-heading text-[22px] leading-[24px] text-foreground"
-              style={{ fontVariant: ['tabular-nums'] }}
-            />
-          );
-          if (!isIntensity) return input;
-          return (
-            <View key={f.key}>
-              {input}
-              <Pressable onPress={onFlipIntensity} hitSlop={8}>
-                <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
-                  {f.label} ⇄
-                </Text>
-              </Pressable>
-            </View>
-          );
-        })}
+      <View className="flex-1 flex-row flex-wrap items-center justify-end gap-2">
+        {fields.map((key) =>
+          renderField(key, false, draft[key] ?? '', (t) => setDraft((p) => ({ ...p, [key]: t })), () => {}),
+        )}
 
-        {mode === 'strength' && !showIntensity ? (
+        {onShowIntensity ? (
           <Pressable onPress={onShowIntensity} hitSlop={8} className="ml-1 py-1">
             <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
               + RIR
@@ -333,7 +303,7 @@ export function SetRow({
           </Pressable>
         ) : null}
 
-        {mode !== 'strength' ? (
+        {fields.includes('duration') ? (
           <Pressable
             onPress={() => (timerStartedAt === null ? startTimer() : stopTimer())}
             hitSlop={8}
@@ -361,35 +331,13 @@ export function SetRow({
             // A running timer wins over a typed duration — it was started to
             // measure this set. Its exact seconds bypass the min round-trip.
             const timedSec = timerStartedAt !== null ? stopTimer() : null;
-            const typedDuration = toNumber(draft.duration ?? '');
-            const input: SetInput =
-              mode === 'strength'
-                ? {
-                    weight: toNumber(draft.weight ?? ''),
-                    reps: toNumber(draft.reps ?? ''),
-                    rir: showIntensity && intensity === 'rir' ? toNumber(draft.rir ?? '') : null,
-                    rpe: showIntensity && intensity === 'rpe' ? toNumber(draft.rpe ?? '') : null,
-                    distance: null,
-                    duration: null,
-                  }
-                : mode === 'cardio'
-                  ? {
-                      weight: null,
-                      reps: null,
-                      rir: null,
-                      rpe: null,
-                      distance: toNumber(draft.distance ?? ''),
-                      duration: timedSec ?? minToSec(typedDuration),
-                    }
-                  : {
-                      weight: toNumber(draft.weight ?? ''),
-                      reps: null,
-                      rir: null,
-                      rpe: null,
-                      distance: null,
-                      duration:
-                        timedSec ?? (typedDuration == null ? null : Math.round(typedDuration)),
-                    };
+            const input: SetInput = { ...EMPTY_INPUT };
+            for (const f of fields) {
+              input[f] =
+                f === 'duration'
+                  ? (timedSec ?? toSeconds(toNumber(draft.duration ?? '')))
+                  : toNumber(draft[f] ?? '');
+            }
             setDraft({});
             onCreate(input);
           }}
