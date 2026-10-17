@@ -1,8 +1,8 @@
 # Hierarchical body parts — picker + insights
 
 **Date:** 2026-10-17
-**Status:** proposed
-**Design:** `docs/ui-designs/body-part-selection/WOT Body Parts Picker.html` (proposal variant: drill-down list)
+**Status:** implemented (shared tree + migration + API + picker; insights Explorer scope deferred)
+**Design:** `docs/ui-designs/body-part-selection/WOT Body Parts Picker.html` (drill-down variant; implemented as refining chips — see Mobile)
 **Stacks on:** #34/#36 (exercise config), #33 (insights explorer)
 
 ## What the design specifies (as adjusted in sparring)
@@ -19,11 +19,10 @@
 - **No primary/secondary roles** (user decision — too complicated). A
   selection is a plain set of node ids; a set counts 1 toward each selected
   part and, for rollups, toward its ancestors.
-- Picker UX (design's proposal variant): drill-down list — tap the circle
-  to toggle, tap the name to go deeper, breadcrumbs back up. Parent rows
-  show a "some parts selected" dash indicator when a descendant is
-  selected. (Refining chips and expandable tree were explored and rejected
-  in the design.)
+- Picker UX: **implemented as the refining-chips variant** (design turn 2) rather
+  than the drill-down list above — chips toggle in place, selecting a branch
+  opens the next level inline below it, parent chips show a "some parts
+  selected" count. Single visible surface inside the config sheet, fewer taps.
 
 ## Datamodel
 
@@ -61,15 +60,13 @@
 
 ## Mobile
 
-- New `BodyPartPicker` (design's drill-down variant, minus the role toggle):
-  breadcrumbs, rows with a select-circle vs a drill-in name, free
-  multi-select across levels, parent rows show a "some parts selected"
-  marker when a descendant is picked, summary line with the resolved labels
-  ("lower body · quads · glutes") and the rollup ("Counts in: …").
-- `ExerciseConfigSheet`: the flat body-parts chips are replaced by an entry
-  row opening the picker (inside the same sheet — it is a list section, not
-  a stacked modal; see #30). Writes the new config shape and patches the
-  live instance.
+- New `BodyPartPicker` (refining chips, minus the role toggle): one chip row per
+  open level, free multi-select across levels, parent chips show a "some parts
+  selected" count, resolved labels plus the rollup ("Counts in: …") under the
+  picker.
+- `ExerciseConfigSheet`: the flat body-parts chips are replaced by the picker
+  (inside the same sheet — it is a list section, not a stacked modal; see #30).
+  Writes the new config shape and patches the live instance.
 - Picker prefill: configured parts applied on add.
 - Exercise header shows resolved part labels (e.g. "lower body · quads").
 
@@ -84,14 +81,12 @@
 
 ## Sequencing
 
-1. PR: shared tree + datamodel migration + API validation/serialization +
-   tests (stacks on #34).
-2. PR: `BodyPartPicker` + cog-menu integration + header display + picker
-   prefill (stacks on #36).
-3. PR: explorer body-part scope + rollup (stacks on #33).
-Merge order: #32/#34/#36 → (1) → (2), and #33 → (3).
-
-Dated doc + `20260323_data_model.md` update land with PR 1.
+1. PR (this one): shared tree + datamodel migration + API validation/serialization
+   + tests + `BodyPartPicker` + cog-menu integration + header display + picker
+   prefill, plus dated doc + `20260323_data_model.md` update (stacks on #36).
+   The wire change is breaking, so the picker ships in the same PR as the schema.
+2. PR: explorer body-part scope + rollup (stacks on #33).
+Merge order: #32/#34/#36 → (1), and #33 → (2).
 
 ## Open questions
 
@@ -99,4 +94,5 @@ Dated doc + `20260323_data_model.md` update land with PR 1.
   exercise→parts map would be a de-facto exercise catalogue — against the
   current convention. Park it; revisit once we see how much manual tagging
   actually happens.
-- Legacy drop of unmapped strings (push/pull/prehab) — OK?
+- Legacy drop of unmapped strings (push/pull/prehab) — resolved: they map to
+  `NULL` and live on as `exercise_tags` (dev-stage data).

@@ -63,7 +63,7 @@ Child rows of a training session. Each row represents an exercise performed duri
 | `id` | `uuid` | primary key |
 | `training_session_id` | `uuid` | FK → `training_sessions.id` (CASCADE) |
 | `name` | `text` | free text: "Bench Press", "Back Squat" |
-| `body_regions` | `text[]` | e.g. `["push", "shoulders"]`, nullable |
+| `body_parts` | `text[]` | ids from the fixed body-part tree (Region → Group → Muscle), e.g. `["lower", "quads"]`, nullable |
 | `sort_order` | `smallint` | preserves ordering within a session |
 | `superset_group` | `smallint` | nullable; exercises sharing a number form one superset |
 | `notes` | `text` | optional free text |
@@ -95,9 +95,9 @@ Child rows of a training session exercise. Each row represents a single set, int
 - per-exercise RPE trends over time (matched on `name`)
 - volume trends: `weight × reps` per exercise name per week
 - effort-adjusted volume: `weight × reps × effort_factor(rir)` where RIR 0–1 → 1.00, RIR 2 → 0.95, RIR 3 → 0.90, RIR 4+ → 0.80
-- regional weekly load, regional monotony, regional strain (from `body_regions`)
+- regional weekly load, regional monotony, regional strain (from `body_parts`, rolled up to region)
 - exposure gaps: days since any exercise tagged with a given region
-- push:pull ratio from `body_regions` tags
+- push:pull ratio from free-text `exercise_tags` (not `body_parts`)
 - "recents" for the UI: most recently used exercise names and their last set values for a user
 
 ---
@@ -202,11 +202,11 @@ All of these are computed at query time or in the frontend domain layer — no s
 
 **No exercise library.** Exercise names are free text. Recents and reuse are handled at the application layer by querying the most recently used `name` values for a user. This keeps the model flexible and avoids the friction of maintaining a managed catalogue.
 
-**Hierarchical exercises and sets.** `training_sessions -> training_session_exercises -> training_session_exercise_sets`. An exercise holds grouping metadata (`name`, `body_regions`, `notes`), while sets hold individual performance and measurement metrics (`weight`, `reps`, `rir`, `distance`, `duration`, `pace`, `rpe`).
+**Hierarchical exercises and sets.** `training_sessions -> training_session_exercises -> training_session_exercise_sets`. An exercise holds grouping metadata (`name`, `body_parts`, `notes`), while sets hold individual performance and measurement metrics (`weight`, `reps`, `rir`, `distance`, `duration`, `pace`, `rpe`).
 
 **Rests are intervals between sets, not set attributes.** A rest is meaningless without the two sets it separates, so `rest_times` links `set_before_id` and `set_after_id` and stores the `from_at`/`till_at` timestamps; duration is derived at query time. This also covers rests across exercises (supersets), which a per-set column cannot express.
 
-**`body_regions` is a free-text array on `training_session_exercises`.** No region lookup table. The UI offers a fixed list of suggestions (push, pull, legs, core, shoulders, hinge, carry, etc.) but the DB stores plain text. This keeps the regional model flexible without a join table.
+**`body_parts` is a `text[]` of ids from a fixed tree on `training_session_exercises` and `exercise_configs`.** No join table: the tree (Region → Group → Muscle) is static in code (`shared/types/src/body-part.ts`) and shared by the API and client for validation and rollups. Selections are free across levels (a coarse "Lower body" can sit alongside "Quads"); a stored id counts toward itself and all its ancestors. Free-text `exercise_tags` (push, pull, prehab) stay separate. See `20261017_body_parts.md`.
 
 **`pain_logs` is decoupled from training sessions.** Pain can exist on rest days, can persist after the session that caused it, and should be tracked independently from workout data.
 
