@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { Sheet } from '@/components/ui/sheet';
-import { useCreateExercise, useRecentExercises } from '@/hooks/api';
+import { useCreateExercise, useExerciseConfigMap, useRecentExercises } from '@/hooks/api';
 import type { RecentExercise } from '@/lib/api';
 
 type ExercisePickerSheetProps = {
@@ -25,6 +25,7 @@ export function ExercisePickerSheet({
   nextSortOrder,
 }: ExercisePickerSheetProps) {
   const { data: recents = [], isLoading } = useRecentExercises(20);
+  const { data: configMap } = useExerciseConfigMap();
   const createExercise = useCreateExercise(sessionId);
   const [query, setQuery] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +41,13 @@ export function ExercisePickerSheet({
 
   const pick = async (name: string, bodyRegions: string[]) => {
     setError(null);
+    // Configured body parts (cog menu) win over the recents carry-over.
+    const configured = configMap?.get(name)?.bodyRegions;
+    const regions = configured?.length ? configured : bodyRegions;
     try {
       await createExercise.mutateAsync({
         name,
-        bodyRegions: bodyRegions.length > 0 ? bodyRegions : undefined,
+        bodyRegions: regions.length > 0 ? regions : undefined,
         sortOrder: nextSortOrder,
       });
       setQuery('');

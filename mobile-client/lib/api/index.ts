@@ -11,6 +11,7 @@ export type {
 
 export { exercises } from './exercises';
 export type {
+  ExerciseConfigRow,
   ExerciseHistoryParams,
   ExerciseHistoryRow,
   ExerciseTagsRow,

@@ -4,19 +4,25 @@ import * as Haptics from 'expo-haptics';
 
 import type { RecentExercise } from '@/lib/api';
 import type { TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
+import { defaultUserSettings } from '@wot/types';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors } from '@/constants/theme';
 import {
   useCreateExerciseSet,
   useCreateRestTime,
   useDeleteExercise,
   useDeleteExerciseSet,
+  useExerciseConfigMap,
   useExerciseNames,
   useRenameExercises,
+  useSettings,
   useUpdateExercise,
   useUpdateExerciseSet,
 } from '@/hooks/api';
 import { findSimilarNames } from '@/lib/similarity';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
-import { SetRow, type SetInput, type SetMode } from './set-row';
+import { ExerciseConfigSheet } from './exercise-config-sheet';
+import { SetRow, type SetFieldKey, type SetInput, type SetMode } from './set-row';
 
 type ExerciseBlockProps = {
   sessionId: string;
@@ -48,8 +54,19 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
   const deleteExercise = useDeleteExercise(sessionId);
   const renameExercises = useRenameExercises();
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [configVisible, setConfigVisible] = useState(false);
   const [intensityToggled, setIntensityToggled] = useState(false);
   const [intensityOverride, setIntensityOverride] = useState<'rir' | 'rpe' | null>(null);
+
+  // Per-exercise config (cog menu) -> global per-mode settings -> built-in
+  // defaults. A custom config renders exactly its field list (flat,
+  // unrestricted); only the inherited path keeps the legacy intensity
+  // reveal/flip quick toggles.
+  const { data: configMap } = useExerciseConfigMap();
+  const { data: userSettings } = useSettings();
+  const config = configMap?.get(exercise.name) ?? null;
+  const customFields = config?.fields ?? null;
+  const hasCustomFields = customFields !== null;
 
   // The intensity input stays visible once it has been used on this exercise
   // (this session or via the recents of an earlier one), or once the user
@@ -59,13 +76,39 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
   const showIntensity = intensityToggled || hasRir || hasRpe;
   const intensity = intensityOverride ?? (hasRpe && !hasRir ? 'rpe' : 'rir');
 
+  const baseFields: SetFieldKey[] =
+    customFields ??
+    (mode === 'strength'
+      ? [...(userSettings?.strengthFields ?? defaultUserSettings.strengthFields)]
+      : mode === 'cardio'
+        ? [...(userSettings?.cardioFields ?? defaultUserSettings.cardioFields)]
+        : ['duration', 'weight']); // flexibility: holds, optionally weighted
+  const fields: SetFieldKey[] =
+    !hasCustomFields && mode === 'strength' && showIntensity && !baseFields.includes(intensity)
+      ? [...baseFields, intensity]
+      : baseFields;
+  const setRowToggles = hasCustomFields
+    ? {}
+    : mode === 'strength'
+      ? {
+          onShowIntensity: showIntensity ? undefined : () => setIntensityToggled(true),
+          onFlipIntensity: showIntensity
+            ? () => setIntensityOverride(intensity === 'rir' ? 'rpe' : 'rir')
+            : undefined,
+        }
+      : {};
+
   const logSet = async (input: SetInput) => {
     const rest = useRestTimerStore.getState();
     const restFromMs = rest.sessionId === sessionId ? rest.startedAtMs : null;
     const setBeforeId = rest.sessionId === sessionId ? rest.previousSetId : null;
     let created: TrainingSessionExerciseSet;
     try {
-      created = await createSet.mutateAsync(toSetBody(input, exercise.sets.length));
+      created = await createSet.mutateAsync({
+        ...toSetBody(input, exercise.sets.length),
+        // Tempo is configured at exercise level and stamped onto new sets.
+        tempo: config?.tempo ?? undefined,
+      });
     } catch {
       return; // react-query exposes the error; keep the rest clock running
     }
@@ -190,6 +233,14 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
               {exercise.supersetGroup != null ? `SS${exercise.supersetGroup}` : 'SS'}
             </Text>
           </Pressable>
+          <Pressable hitSlop={8} onPress={() => setConfigVisible(true)} className="self-center">
+            <IconSymbol name="gearshape.fill" size={15} color={Colors.onSurfaceVariant} />
+          </Pressable>
+          {config?.tempo ? (
+            <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
+              {config.tempo}
+            </Text>
+          ) : null}
           {exercise.bodyRegions && exercise.bodyRegions.length > 0 ? (
             <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
               {exercise.bodyRegions.join(' · ')}
@@ -287,10 +338,8 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
               duration: set.duration ?? null,
             }}
             lastReference={null}
-            showIntensity={showIntensity}
-            intensity={intensity}
-            onShowIntensity={() => setIntensityToggled(true)}
-            onFlipIntensity={() => setIntensityOverride(intensity === 'rir' ? 'rpe' : 'rir')}
+            fields={fields}
+            {...setRowToggles}
             busy={updateSet.isPending || deleteSet.isPending}
             onCreate={() => {}}
             onUpdate={(input) => updateSet.mutate({ setId: set.id, body: toSetBody(input, i) })}
@@ -305,16 +354,24 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
           values={null}
           lastReference={mode === 'strength' ? strengthReference : null}
           previousValues={previousValues}
-          showIntensity={mode === 'strength' && showIntensity}
-          intensity={intensity}
-          onShowIntensity={() => setIntensityToggled(true)}
-          onFlipIntensity={() => setIntensityOverride(intensity === 'rir' ? 'rpe' : 'rir')}
+          fields={fields}
+          {...setRowToggles}
           busy={createSet.isPending}
           onCreate={logSet}
           onUpdate={() => {}}
           onDelete={() => {}}
         />
       </View>
+
+      <ExerciseConfigSheet
+        visible={configVisible}
+        onClose={() => setConfigVisible(false)}
+        sessionId={sessionId}
+        exerciseId={exercise.id}
+        exerciseName={exercise.name}
+        resolvedFields={fields}
+        currentBodyRegions={exercise.bodyRegions ?? []}
+      />
     </View>
   );
 }
