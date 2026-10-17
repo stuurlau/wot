@@ -21,7 +21,7 @@ export const exerciseConfig = pgTable(
     // Tempo notation ("3-2-1"); stamped onto new sets of this exercise.
     tempo: text("tempo"),
     // Prefill when the exercise is added to a session.
-    bodyRegions: text("body_regions").array(),
+    bodyParts: text("body_parts").array(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

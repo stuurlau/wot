@@ -3,7 +3,7 @@ import { index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/
 import { users } from "./auth.js";
 
 // Tags group free-text exercise names per user (e.g. "prehab",
-// "flexibility"). Like body_regions there is no lookup table for the tag
+// "flexibility"). Like body parts there is no lookup table for the tag
 // itself — plain strings, one row per (user, exercise name, tag).
 export const exerciseTag = pgTable(
   "exercise_tags",

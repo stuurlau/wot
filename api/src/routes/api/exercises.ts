@@ -117,7 +117,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       const rows = await db
         .selectDistinctOn([trainingSessionExercise.name], {
           name: trainingSessionExercise.name,
-          bodyRegions: trainingSessionExercise.bodyRegions,
+          bodyParts: trainingSessionExercise.bodyParts,
           lastUsedAt: trainingSession.startedAt,
           weight: trainingSessionExerciseSet.weight,
           reps: trainingSessionExerciseSet.reps,
@@ -151,7 +151,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
           .slice(0, query.limit)
           .map((row) => ({
             name: row.name,
-            bodyRegions: row.bodyRegions ?? [],
+            bodyParts: row.bodyParts ?? [],
             lastUsedAt: row.lastUsedAt.toISOString(),
             lastSet: {
               weight: row.weight === null ? null : Number(row.weight),
@@ -228,7 +228,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
           exerciseName: exerciseConfig.exerciseName,
           fields: exerciseConfig.fields,
           tempo: exerciseConfig.tempo,
-          bodyRegions: exerciseConfig.bodyRegions,
+          bodyParts: exerciseConfig.bodyParts,
         })
         .from(exerciseConfig)
         .where(eq(exerciseConfig.userId, authenticatedUserId(request)))
@@ -244,9 +244,9 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     async (request) => {
       const input = parseRequest(setExerciseConfigBodySchema, request.body);
       const userId = authenticatedUserId(request);
-      const { fields, tempo, bodyRegions } = input.config;
+      const { fields, tempo, bodyParts } = input.config;
 
-      if (fields === null && tempo === null && bodyRegions === null) {
+      if (fields === null && tempo === null && bodyParts === null) {
         await db
           .delete(exerciseConfig)
           .where(
@@ -257,10 +257,10 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
 
       await db
         .insert(exerciseConfig)
-        .values({ userId, exerciseName: input.exerciseName, fields, tempo, bodyRegions })
+        .values({ userId, exerciseName: input.exerciseName, fields, tempo, bodyParts })
         .onConflictDoUpdate({
           target: [exerciseConfig.userId, exerciseConfig.exerciseName],
-          set: { fields, tempo, bodyRegions },
+          set: { fields, tempo, bodyParts },
         });
 
       return { exerciseName: input.exerciseName, ...input.config };
@@ -278,7 +278,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
         .select({
           exerciseId: trainingSessionExercise.id,
           name: trainingSessionExercise.name,
-          bodyRegions: trainingSessionExercise.bodyRegions,
+          bodyParts: trainingSessionExercise.bodyParts,
           lastUsedAt: trainingSession.startedAt,
           set: trainingSessionExerciseSet,
         })
@@ -311,7 +311,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
 
       return {
         name: first.name,
-        bodyRegions: first.bodyRegions ?? [],
+        bodyParts: first.bodyParts ?? [],
         lastUsedAt: first.lastUsedAt.toISOString(),
         sets,
       };
@@ -326,7 +326,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       const rows = await db
         .select({
           name: trainingSessionExercise.name,
-          bodyRegions: trainingSessionExercise.bodyRegions,
+          bodyParts: trainingSessionExercise.bodyParts,
           date: trainingSession.startedAt,
           weight: trainingSessionExerciseSet.weight,
           reps: trainingSessionExerciseSet.reps,
@@ -352,7 +352,7 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
       return {
         data: rows.map((row) => ({
           name: row.name,
-          bodyRegions: row.bodyRegions ?? [],
+          bodyParts: row.bodyParts ?? [],
           date: row.date.toISOString().slice(0, 10),
           weight: row.weight === null ? null : Number(row.weight),
           reps: row.reps,

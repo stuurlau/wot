@@ -107,7 +107,7 @@ describe("training sessions", () => {
         url: `/api/v1/sessions/${sessionId}/exercises`,
         payload: {
           name: "Bench Press",
-          bodyRegions: ["push", "chest"],
+          bodyParts: ["chest", "triceps"],
           sortOrder: 0,
         },
         headers: auth(testUser.token),
@@ -124,6 +124,22 @@ describe("training sessions", () => {
       assert.equal(body.trainingSessionId, sessionId);
       assert.equal(body.supersetGroup, null);
       exerciseId = body.id;
+    });
+
+    it("rejects unknown or duplicate body parts with 422", async () => {
+      for (const bodyParts of [["push"], ["chest", "chest"]]) {
+        const res = await app.inject({
+          method: "POST",
+          url: `/api/v1/sessions/${sessionId}/exercises`,
+          payload: { name: "Bad Exercise", bodyParts, sortOrder: 99 },
+          headers: auth(testUser.token),
+        });
+        assert.equal(
+          res.statusCode,
+          422,
+          `expected 422 for ${JSON.stringify(bodyParts)}, got ${res.statusCode}`,
+        );
+      }
     });
 
     it("patches the exercise superset group", async () => {
