@@ -26,12 +26,25 @@ export interface RecentExercise {
   };
 }
 
+// One row per logged set, joined with its session. The Insights dashboard
+// derives sessions, exercises and every metric from these rows.
 export interface ExerciseHistoryRow {
+  sessionId: string;
+  sessionType: string;
+  // Session duration in seconds (data-model convention).
+  sessionDuration: number;
+  sessionSrpe: number;
+  exerciseId: string;
   name: string;
   bodyRegions: string[];
   date: string;
+  sortOrder: number;
   weight: number | null;
   reps: number | null;
+  rir: number | null;
+  rpe: number | null;
+  // Hold time in seconds (flexibility/timed sets).
+  duration: number | null;
 }
 
 export interface ExerciseHistoryParams {

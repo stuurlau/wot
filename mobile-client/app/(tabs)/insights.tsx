@@ -1,153 +1,124 @@
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { ScrollView } from 'react-native';
 import { Screen } from '@/components/screen';
 
-import { BalanceBars } from '@/components/insights/balance-bars';
-import { LoadTrendChart } from '@/components/insights/load-trend-chart';
-import { SignalCard } from '@/components/insights/signal-card';
-import { StrengthProgression } from '@/components/insights/strength-progression';
 import { AppHeader } from '@/components/app-header';
+import { InsightsExplore } from '@/components/insights/explore';
+import { InsightsGlance } from '@/components/insights/glance';
+import { InsightsScopeSheet } from '@/components/insights/scope-sheet';
 import {
   useDailyLogs,
   useExerciseHistory,
+  useExerciseTags,
   usePainLogs,
-  useTrainingSessions,
 } from '@/hooks/api';
-import { useLoadMetrics } from '@/hooks/use-load-metrics';
 import { recentDateRange } from '@/lib/date-range';
 import {
-  buildWeeklyLoads,
+  availableMetrics,
+  buildInsightsData,
   dataMaturity,
-  deriveSignals,
-  loadVerdict,
-  regionBalance,
-  strengthProgression,
+  defaultMetric,
+  parseScopeKey,
+  scopeKey,
+  todayDayNumber,
+  type MetricKey,
+  type Scope,
 } from '@/lib/insights';
-import { finishedSessions } from '@/lib/sessions';
+import { useInsightsStore } from '@/stores/insights-store';
 
-function todayKey(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+// Insights needs deep history: the explorer compares up to a 1-year range
+// against the previous period, and "your usual" baselines use everything
+// older than the recent window.
+const HISTORY_DAYS = 730;
 
 export default function InsightsScreen() {
-  const sessionsRange = useMemo(() => recentDateRange(90), []);
-  const historyRange = useMemo(() => recentDateRange(90), []);
-  const logsRange = useMemo(() => recentDateRange(28), []);
+  const range = useMemo(() => recentDateRange(HISTORY_DAYS), []);
+  const historyQuery = useExerciseHistory(range);
+  const tagsQuery = useExerciseTags();
+  const dailyLogsQuery = useDailyLogs(range);
+  const painQuery = usePainLogs({ from: range.from, to: range.to, limit: 100 });
 
-  const sessionsQuery = useTrainingSessions({ ...sessionsRange, limit: 100 });
-  const historyQuery = useExerciseHistory(historyRange);
-  const dailyLogsQuery = useDailyLogs(logsRange);
-  const painQuery = usePainLogs({ from: recentDateRange(30).from, limit: 100 });
+  const store = useInsightsStore();
+  const { view, scope, metric, win, cmp, sel, sheetOpen, advOpen } = store;
 
-  const sessions = useMemo(
-    () => finishedSessions(sessionsQuery.data?.data ?? []),
-    [sessionsQuery.data?.data],
+  const D = useMemo(
+    () =>
+      buildInsightsData(
+        historyQuery.data ?? [],
+        tagsQuery.data ?? [],
+        dailyLogsQuery.data ?? [],
+        painQuery.data?.data ?? [],
+        todayDayNumber(),
+      ),
+    [historyQuery.data, tagsQuery.data, dailyLogsQuery.data, painQuery.data?.data],
   );
-  const history = useMemo(() => historyQuery.data ?? [], [historyQuery.data]);
-  const dailyLogs = useMemo(() => dailyLogsQuery.data ?? [], [dailyLogsQuery.data]);
-  const painLogs = useMemo(() => painQuery.data?.data ?? [], [painQuery.data?.data]);
+  const stage = useMemo(() => dataMaturity(D), [D]);
 
-  const metrics = useLoadMetrics(sessions, dailyLogs);
+  // The scroll resets to the top whenever the view or scope changes.
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [view, scope]);
 
-  const today = useMemo(() => todayKey(), []);
-  const weeklyLoads = useMemo(() => buildWeeklyLoads(sessions), [sessions]);
-  const verdict = useMemo(() => loadVerdict(weeklyLoads), [weeklyLoads]);
-  const trends = useMemo(() => strengthProgression(history), [history]);
-  const balance = useMemo(() => regionBalance(history, today), [history, today]);
-  const signals = useMemo(
-    () => deriveSignals({ sessions, exerciseHistory: history, painLogs, dailyLogs, todayKey: today }),
-    [sessions, history, painLogs, dailyLogs, today],
-  );
-  const maturity = useMemo(() => dataMaturity(sessions, today), [sessions, today]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const openExplore = (
+    nextScope: Scope,
+    nextMetric: MetricKey,
+    extra?: { win?: 4 | 8 | 12 | 26 | 52; sel?: number | null },
+  ) => store.openExplore(nextScope, nextMetric, extra);
 
-  const loading = sessionsQuery.isLoading && maturity === 'empty';
-  const showCharts = maturity === 'trending' || maturity === 'full';
+  const setScope = (nextScope: Scope) => {
+    const ok = availableMetrics(D, nextScope);
+    store.setScope(nextScope, ok.includes(metric) ? metric : defaultMetric(D, nextScope));
+  };
+
+  const pickScope = (key: string) => setScope(parseScopeKey(key));
+
+  const loading = historyQuery.isLoading && stage === 'empty';
 
   return (
     <Screen>
       <AppHeader />
-      <ScrollView className="flex-1 px-6" contentContainerStyle={{ paddingTop: 20, paddingBottom: 32 }}>
-          <Text className="mb-6 font-heading text-[40px] leading-[38px] tracking-[-1.6px] text-foreground">
-            Insights
-          </Text>
-
-          {loading ? (
-            <Text className="font-body text-[12px] text-muted-foreground">Loading…</Text>
-          ) : null}
-
-          {maturity === 'empty' && !sessionsQuery.isLoading ? (
-            <Text className="font-body text-[13px] leading-6 text-muted-foreground">
-              Log a few sessions and patterns will start appearing here.
-            </Text>
-          ) : null}
-
-          {maturity === 'warming-up' ? (
-            <View className="mb-8">
-              <Text className="font-body text-[13px] leading-6 text-muted-foreground">
-                {sessions.length} {sessions.length === 1 ? 'session' : 'sessions'} logged — nice
-                start. Load trend and balance appear after a week of training.
-              </Text>
-            </View>
-          ) : null}
-
-          {showCharts ? (
-            <>
-              <LoadTrendChart
-                weeklyLoads={weeklyLoads}
-                verdict={verdict}
-                baselineReady={maturity === 'full'}
-              />
-              <StrengthProgression trends={trends} />
-              <BalanceBars shares={balance} />
-
-              {signals.length > 0 ? (
-                <View className="mb-8">
-                  <Text className="mb-3 font-heading text-[24px] tracking-[-0.6px] text-foreground">
-                    Needs attention
-                  </Text>
-                  {signals.map((signal) => (
-                    <SignalCard key={signal.kind} signal={signal} />
-                  ))}
-                </View>
-              ) : null}
-
-              <Pressable onPress={() => setShowAdvanced((s) => !s)} className="mb-2 self-start">
-                <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
-                  Advanced metrics ▾
-                </Text>
-              </Pressable>
-              {showAdvanced ? (
-                <View className="mb-8">
-                  <MetricRow label="Weekly load" value={String(Math.round(metrics.weeklyLoad))} />
-                  <MetricRow label="Monotony" value={metrics.monotony.toFixed(2)} />
-                  <MetricRow label="Strain" value={String(Math.round(metrics.strain))} />
-                  <MetricRow label="ACWR" value={metrics.acwr.toFixed(2)} />
-                </View>
-              ) : null}
-            </>
-          ) : null}
-        </ScrollView>
-    </Screen>
-  );
-}
-
-function MetricRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row items-center justify-between border-b border-border py-3">
-      <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
-        {label}
-      </Text>
-      <Text
-        className="font-heading text-[20px] text-foreground"
-        style={{ fontVariant: ['tabular-nums'] }}
+      <ScrollView
+        ref={scrollRef}
+        className="flex-1 px-6"
+        contentContainerStyle={{ paddingTop: 20, paddingBottom: 32 }}
       >
-        {value}
-      </Text>
-    </View>
+        {view === 'glance' ? (
+          <InsightsGlance
+            D={D}
+            stage={stage}
+            loading={loading}
+            sessionCount={D.sessions.length}
+            advOpen={advOpen}
+            onToggleAdv={store.toggleAdv}
+            onOpenExplore={openExplore}
+            onOpenPicker={store.openPicker}
+          />
+        ) : (
+          <InsightsExplore
+            D={D}
+            scope={scope}
+            metric={metric}
+            win={win}
+            cmp={cmp}
+            sel={sel}
+            onBack={store.backToGlance}
+            onSetScope={setScope}
+            onSetMetric={store.setMetric}
+            onSetWin={store.setWin}
+            onSetCmp={store.setCmp}
+            onSetSel={store.setSel}
+            onOpenSheet={() => store.setSheetOpen(true)}
+          />
+        )}
+      </ScrollView>
+      <InsightsScopeSheet
+        visible={sheetOpen}
+        onClose={() => store.setSheetOpen(false)}
+        D={D}
+        scopeKey={scopeKey(scope)}
+        onPick={pickScope}
+      />
+    </Screen>
   );
 }
