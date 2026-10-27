@@ -10,6 +10,7 @@ import {
   isoDateSchema,
   renameExercisesInputSchema,
   reorderExercisesInputSchema,
+  setExerciseConfigInputSchema,
   setExerciseTagsInputSchema,
   userSettingsSchema,
 } from "@wot/types";
@@ -104,6 +105,8 @@ export const renameExercisesBodySchema = renameExercisesInputSchema.strict();
 export const reorderExercisesBodySchema = reorderExercisesInputSchema.strict();
 
 export const setExerciseTagsBodySchema = setExerciseTagsInputSchema.strict();
+
+export const setExerciseConfigBodySchema = setExerciseConfigInputSchema.strict();
 
 export const lastExerciseQuerySchema = z
   .object({

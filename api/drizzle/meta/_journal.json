@@ -43,6 +43,13 @@
       "when": 1791623444737,
       "tag": "0005_pink_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792095507930,
+      "tag": "0006_pink_big_bertha",
+      "breakpoints": true
     }
   ]
 }
