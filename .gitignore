@@ -1,3 +1,6 @@
 .env
 node_modules/
 dist/
+
+# Local design-attachment downloads (issue work)
+.design-ref/

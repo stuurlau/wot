@@ -11,6 +11,7 @@ export const Colors = {
   // Text
   onSurface: '#1A1A1A',
   onSurfaceVariant: '#6b6966',
+  faint: '#a3a09c',
 
   // Brand
   primary: '#673F8A',

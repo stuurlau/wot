@@ -68,7 +68,22 @@ describe("exercise history", () => {
 
     assert.equal(res.statusCode, 200, res.body);
     const body = res.json<{
-      data: { name: string; bodyParts: string[]; date: string; weight: number | null; reps: number | null }[];
+      data: {
+        sessionId: string;
+        sessionType: string;
+        sessionDuration: number;
+        sessionSrpe: number;
+        exerciseId: string;
+        name: string;
+        bodyParts: string[];
+        date: string;
+        sortOrder: number;
+        weight: number | null;
+        reps: number | null;
+        rir: number | null;
+        rpe: number | null;
+        duration: number | null;
+      }[];
     }>();
     assert.equal(body.data.length, 2);
     const row = body.data[0];
@@ -77,6 +92,18 @@ describe("exercise history", () => {
     assert.equal(row.date, "2026-08-20");
     assert.equal(row.weight, 80);
     assert.equal(row.reps, 8);
+    // Insights dashboard fields: the row carries its session linkage and the
+    // full set shape (RPE/RIR/hold seconds).
+    assert.equal(row.sessionId, sessionId);
+    assert.equal(row.sessionType, "strength");
+    assert.equal(row.sessionDuration, 3600);
+    assert.equal(row.sessionSrpe, 7);
+    assert.equal(row.exerciseId, exerciseId);
+    assert.equal(row.sortOrder, 0);
+    assert.equal(row.rir, null);
+    assert.equal(row.rpe, null);
+    assert.equal(row.duration, null);
+    assert.equal(body.data[1].weight, 82.5);
   });
 
   it("respects the from/to range", async () => {

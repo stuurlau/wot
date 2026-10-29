@@ -106,7 +106,7 @@ These constrain implementation decisions:
 | Log | Start/continue workout; dominant `Start workout` CTA |
 | History | Reverse-chronological session list; "Use as template" action |
 | Plan | Lightweight week calendar; optional planned sessions |
-| Insights | Load trend, body region distribution, stacked warning signals |
+| Insights | Glance (verdict, key lifts, tag balance, signals) + explorer for any metric × scope × range |
 
 ## Coding rules
 
