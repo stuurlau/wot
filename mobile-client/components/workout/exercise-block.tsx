@@ -23,7 +23,7 @@ import { findSimilarNames } from '@/lib/similarity';
 import { bodyPartsLabelText } from '@/lib/body-parts';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
 import { ExerciseConfigSheet } from './exercise-config-sheet';
-import { SetRow, type SetFieldKey, type SetInput, type SetMode } from './set-row';
+import { SetRow, type DurationUnit, type SetFieldKey, type SetInput, type SetMode } from './set-row';
 
 type ExerciseBlockProps = {
   sessionId: string;
@@ -70,8 +70,13 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
   const { data: configMap } = useExerciseConfigMap();
   const { data: userSettings } = useSettings();
   const config = configMap?.get(exercise.name) ?? null;
-  const customFields = config?.fields ?? null;
+  // Config 'durationMin' is the duration column typed in minutes.
+  const customFields: SetFieldKey[] | null =
+    config?.fields?.map((f) => (f === 'durationMin' ? 'duration' : f)) ?? null;
   const hasCustomFields = customFields !== null;
+  const durationUnit: DurationUnit = config?.fields
+    ? config.fields.includes('durationMin') ? 'min' : 'sec'
+    : mode === 'cardio' ? 'min' : 'sec';
 
   // The intensity input stays visible once it has been used on this exercise
   // (this session or via the recents of an earlier one), or once the user
@@ -187,7 +192,9 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
 
   return (
     <View className="mb-8" style={isDragging ? { opacity: 0.85 } : undefined}>
-      <View className="mb-1 flex-row items-baseline justify-between">
+      {/* Name + quick actions; meta (tempo · body parts) and Remove wrap below
+          so long names and many parts never push the block off-screen. */}
+      <View className="flex-row items-center gap-3">
         {editingName ? (
           <TextInput
             value={nameDraft}
@@ -196,11 +203,11 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
             onSubmitEditing={() => void commitName()}
             autoFocus
             autoCapitalize="words"
-            className="flex-1 border-b border-primary font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground"
+            className="min-w-0 flex-1 border-b border-primary font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground"
           />
         ) : (
           <Pressable
-            className="flex-1"
+            className="min-w-0 flex-1"
             hitSlop={4}
             onPress={() => {
               setNameDraft(exercise.name);
@@ -214,67 +221,66 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
             </Text>
           </Pressable>
         )}
-        <View className="flex-row items-baseline gap-3">
-          <Pressable
-            hitSlop={8}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              updateExercise.mutate({
-                exerciseId: exercise.id,
-                body: { supersetGroup: nextSupersetGroup },
-              });
-            }}
+        <Pressable
+          hitSlop={8}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            updateExercise.mutate({
+              exerciseId: exercise.id,
+              body: { supersetGroup: nextSupersetGroup },
+            });
+          }}
+          className={
+            exercise.supersetGroup != null
+              ? 'rounded-full bg-primary px-2 py-0.5'
+              : 'rounded-full bg-surface-container-low px-2 py-0.5'
+          }
+        >
+          <Text
             className={
               exercise.supersetGroup != null
-                ? 'self-center rounded-full bg-primary px-2 py-0.5'
-                : 'self-center rounded-full bg-surface-container-low px-2 py-0.5'
+                ? 'font-body text-[9px] uppercase tracking-[2px] text-primary-foreground'
+                : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
             }
           >
-            <Text
-              className={
-                exercise.supersetGroup != null
-                  ? 'font-body text-[9px] uppercase tracking-[2px] text-primary-foreground'
-                  : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
-              }
-            >
-              {exercise.supersetGroup != null ? `SS${exercise.supersetGroup}` : 'SS'}
-            </Text>
-          </Pressable>
-          <Pressable hitSlop={8} onPress={() => setConfigVisible(true)} className="self-center">
-            <IconSymbol name="gearshape.fill" size={15} color={Colors.onSurfaceVariant} />
-          </Pressable>
-          {config?.tempo ? (
-            <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-              {config.tempo}
-            </Text>
-          ) : null}
-          {exercise.bodyParts && exercise.bodyParts.length > 0 ? (
-            <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-              {bodyPartsLabelText(exercise.bodyParts)}
-            </Text>
-          ) : null}
-          <Pressable
-            hitSlop={8}
-            onPress={() => {
-              if (confirmRemove) {
-                deleteExercise.mutate(exercise.id);
-              } else {
-                setConfirmRemove(true);
-                setTimeout(() => setConfirmRemove(false), 3000);
-              }
-            }}
+            {exercise.supersetGroup != null ? `SS${exercise.supersetGroup}` : 'SS'}
+          </Text>
+        </Pressable>
+        <Pressable hitSlop={8} onPress={() => setConfigVisible(true)}>
+          <IconSymbol name="gearshape.fill" size={15} color={Colors.onSurfaceVariant} />
+        </Pressable>
+      </View>
+
+      <View className="mb-2 mt-1 flex-row items-baseline gap-3">
+        <Text
+          className="min-w-0 flex-1 font-body text-[9px] uppercase tracking-[2px] text-muted-foreground"
+          numberOfLines={2}
+        >
+          {[config?.tempo, exercise.bodyParts?.length ? bodyPartsLabelText(exercise.bodyParts) : null]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+        <Pressable
+          hitSlop={8}
+          onPress={() => {
+            if (confirmRemove) {
+              deleteExercise.mutate(exercise.id);
+            } else {
+              setConfirmRemove(true);
+              setTimeout(() => setConfirmRemove(false), 3000);
+            }
+          }}
+        >
+          <Text
+            className={
+              confirmRemove
+                ? 'font-body text-[9px] uppercase tracking-[2px] text-destructive'
+                : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
+            }
           >
-            <Text
-              className={
-                confirmRemove
-                  ? 'font-body text-[9px] uppercase tracking-[2px] text-destructive'
-                  : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
-              }
-            >
-              {confirmRemove ? 'Tap again to remove' : 'Remove'}
-            </Text>
-          </Pressable>
-        </View>
+            {confirmRemove ? 'Tap again to remove' : 'Remove'}
+          </Text>
+        </Pressable>
       </View>
 
       {error ? (
@@ -306,7 +312,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
         </View>
       ) : null}
 
-      <View className="mb-2 flex-row gap-2">
+      <View className="mb-2 flex-row flex-wrap gap-2">
         {(['strength', 'cardio', 'flexibility'] as const).map((m) => (
           <Pressable
             key={m}
@@ -335,7 +341,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
           <SetRow
             key={set.id}
             setNumber={i + 1}
-            mode={mode}
+            durationUnit={durationUnit}
             values={{
               weight: set.weight ?? null,
               reps: set.reps ?? null,
@@ -357,7 +363,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
         <SetRow
           key={`new-${exercise.sets.length}`}
           setNumber={exercise.sets.length + 1}
-          mode={mode}
+          durationUnit={durationUnit}
           values={null}
           lastReference={mode === 'strength' ? strengthReference : null}
           previousValues={previousValues}
@@ -376,7 +382,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
         sessionId={sessionId}
         exerciseId={exercise.id}
         exerciseName={exercise.name}
-        resolvedFields={fields}
+        resolvedFields={fields.map((f) => (f === 'duration' && durationUnit === 'min' ? 'durationMin' : f))}
         currentBodyParts={exercise.bodyParts ?? []}
       />
     </View>

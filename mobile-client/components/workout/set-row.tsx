@@ -13,6 +13,7 @@ export type SetInput = {
 };
 
 export type SetMode = 'strength' | 'cardio' | 'flexibility';
+export type DurationUnit = 'sec' | 'min';
 export type SetFieldKey = keyof SetInput;
 
 const EMPTY_INPUT: SetInput = {
@@ -24,7 +25,7 @@ const EMPTY_INPUT: SetInput = {
   duration: null,
 };
 
-// Duration is stored in whole seconds; cardio enters it in minutes.
+// Duration is stored in whole seconds; `durationUnit` picks how it is typed.
 const FIELD_LABELS: Record<SetFieldKey, string> = {
   weight: 'kg',
   reps: 'reps',
@@ -34,14 +35,15 @@ const FIELD_LABELS: Record<SetFieldKey, string> = {
   duration: 'sec',
 };
 
-const fieldLabel = (key: SetFieldKey, mode: SetMode): string =>
-  key === 'duration' && mode === 'cardio' ? 'min' : FIELD_LABELS[key];
+const fieldLabel = (key: SetFieldKey, unit: DurationUnit): string =>
+  key === 'duration' ? unit : FIELD_LABELS[key];
 
 const isIntensity = (key: SetFieldKey) => key === 'rir' || key === 'rpe';
 
 type SetRowProps = {
   setNumber: number;
-  mode: SetMode;
+  /** How duration is typed and shown; stored in seconds either way. */
+  durationUnit: DurationUnit;
   /** Ordered set-input fields to render, resolved per exercise. */
   fields: SetFieldKey[];
   values: SetInput | null; // null => empty "add next set" row
@@ -73,7 +75,7 @@ function formatClock(totalSec: number): string {
 
 export function SetRow({
   setNumber,
-  mode,
+  durationUnit,
   fields,
   values,
   lastReference,
@@ -119,14 +121,14 @@ export function SetRow({
     setTimerStartedAt(null);
     setDraft((p) => ({
       ...p,
-      duration: mode === 'cardio' ? String(secToMin(sec)) : String(sec),
+      duration: durationUnit === 'min' ? String(secToMin(sec)) : String(sec),
     }));
     return sec;
   };
 
-  /** Typed duration → stored seconds (cardio types minutes). */
+  /** Typed duration → stored seconds. */
   const toSeconds = (v: number | null): number | null =>
-    v == null ? null : mode === 'cardio' ? minToSec(v) : Math.round(v);
+    v == null ? null : durationUnit === 'min' ? minToSec(v) : Math.round(v);
 
   const copyable = previousValues != null && fields.some((f) => previousValues[f] != null);
 
@@ -142,7 +144,7 @@ export function SetRow({
       duration:
         previousValues.duration == null
           ? ''
-          : String(mode === 'cardio' ? secToMin(previousValues.duration) : previousValues.duration),
+          : String(durationUnit === 'min' ? secToMin(previousValues.duration) : previousValues.duration),
     });
   };
 
@@ -166,7 +168,7 @@ export function SetRow({
     if (values === null) return '';
     const value = values[key];
     if (value == null) return '';
-    if (key === 'duration' && mode === 'cardio') return String(secToMin(value));
+    if (key === 'duration' && durationUnit === 'min') return String(secToMin(value));
     return value.toString();
   };
 
@@ -177,7 +179,7 @@ export function SetRow({
         onChangeText={onChange}
         onBlur={editing ? onCommit : undefined}
         onSubmitEditing={editing ? onCommit : undefined}
-        placeholder={editing ? undefined : fieldLabel(key, mode)}
+        placeholder={editing ? undefined : fieldLabel(key, durationUnit)}
         placeholderTextColor="rgba(0,0,0,0.3)"
         keyboardType="numeric"
         autoFocus={editing}
@@ -193,7 +195,7 @@ export function SetRow({
         {input}
         <Pressable onPress={onFlipIntensity} hitSlop={8}>
           <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
-            {fieldLabel(key, mode)} ⇄
+            {fieldLabel(key, durationUnit)} ⇄
           </Text>
         </Pressable>
       </View>
@@ -241,12 +243,12 @@ export function SetRow({
                 {isIntensity(key) && onFlipIntensity ? (
                   <Pressable onPress={onFlipIntensity} hitSlop={8}>
                     <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-primary">
-                      {fieldLabel(key, mode)} ⇄
+                      {fieldLabel(key, durationUnit)} ⇄
                     </Text>
                   </Pressable>
                 ) : (
                   <Text className="text-center font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-                    {fieldLabel(key, mode)}
+                    {fieldLabel(key, durationUnit)}
                   </Text>
                 )}
               </Pressable>

@@ -79,7 +79,7 @@ describe("exercise config", () => {
       url: "/api/v1/exercises/config",
       payload: {
         exerciseName: "Config Bench",
-        config: { fields: ["reps"], tempo: null, bodyParts: null },
+        config: { fields: ["reps", "durationMin"], tempo: null, bodyParts: null },
       },
       headers: auth(testUser.token),
     });
@@ -93,7 +93,7 @@ describe("exercise config", () => {
     assert.equal(listRes.statusCode, 200, listRes.body);
     const data = listRes.json<{ data: ConfigEntry[] }>().data;
     assert.deepEqual(data, [
-      { exerciseName: "Config Bench", fields: ["reps"], tempo: null, bodyParts: null },
+      { exerciseName: "Config Bench", fields: ["reps", "durationMin"], tempo: null, bodyParts: null },
     ]);
 
     // Configs are per user.
@@ -129,6 +129,7 @@ describe("exercise config", () => {
       { exerciseName: "X", config: { fields: [], tempo: null, bodyParts: null } },
       { exerciseName: "X", config: { fields: ["weight", "weight"], tempo: null, bodyParts: null } },
       { exerciseName: "X", config: { fields: ["volume"], tempo: null, bodyParts: null } },
+      { exerciseName: "X", config: { fields: ["duration", "durationMin"], tempo: null, bodyParts: null } },
       { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: ["push"] } },
       { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: ["chest", "chest"] } },
       { exerciseName: "X", config: { fields: null, tempo: "3-2-1", bodyParts: null }, extra: true },

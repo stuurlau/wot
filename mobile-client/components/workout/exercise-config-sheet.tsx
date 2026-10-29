@@ -19,7 +19,14 @@ const FIELD_OPTIONS: { key: ExerciseSetField; label: string }[] = [
   { key: 'rpe', label: 'rpe' },
   { key: 'distance', label: 'km' },
   { key: 'duration', label: 'sec' },
+  { key: 'durationMin', label: 'min' },
 ];
+
+// sec and min write the same duration column — picking one drops the other.
+const EXCLUSIVE: Partial<Record<ExerciseSetField, ExerciseSetField>> = {
+  duration: 'durationMin',
+  durationMin: 'duration',
+};
 
 type ExerciseConfigSheetProps = {
   visible: boolean;
@@ -78,7 +85,9 @@ export function ExerciseConfigSheet({
 
   const toggleField = (key: ExerciseSetField) => {
     const current = config?.fields ?? resolvedFields;
-    const next = current.includes(key) ? current.filter((f) => f !== key) : [...current, key];
+    const next = current.includes(key)
+      ? current.filter((f) => f !== key)
+      : [...current.filter((f) => f !== EXCLUSIVE[key]), key];
     const ordered = FIELD_OPTIONS.filter((o) => next.includes(o.key)).map((o) => o.key);
     if (ordered.length === 0) return; // keep at least one input
     writeConfig({ fields: ordered });

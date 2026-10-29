@@ -16,6 +16,8 @@ export const exerciseSetFieldSchema = z.enum([
   'rpe',
   'distance',
   'duration',
+  // Same duration column (stored in seconds), entered in minutes.
+  'durationMin',
 ]);
 
 export const exerciseConfigSchema = z.object({
@@ -25,6 +27,9 @@ export const exerciseConfigSchema = z.object({
     .min(1)
     .refine((fields) => new Set(fields).size === fields.length, {
       message: 'Fields must be unique.',
+    })
+    .refine((fields) => !(fields.includes('duration') && fields.includes('durationMin')), {
+      message: 'Duration is either seconds or minutes.',
     })
     .nullable(),
   // Tempo is configured at exercise level and stamped onto new sets.
