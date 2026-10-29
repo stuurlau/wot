@@ -52,7 +52,7 @@ export function serializeTrainingSessionExercise(row: TrainingSessionExerciseRow
     id: row.id,
     trainingSessionId: row.trainingSessionId,
     name: row.name,
-    bodyRegions: row.bodyRegions,
+    bodyParts: row.bodyParts,
     sortOrder: row.sortOrder,
     supersetGroup: row.supersetGroup,
     notes: row.notes,

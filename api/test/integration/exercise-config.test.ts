@@ -10,7 +10,7 @@ type ConfigEntry = {
   exerciseName: string;
   fields: string[] | null;
   tempo: string | null;
-  bodyRegions: string[] | null;
+  bodyParts: string[] | null;
 };
 
 async function createSessionWithExercise(
@@ -61,7 +61,7 @@ describe("exercise config", () => {
       url: "/api/v1/exercises/config",
       payload: {
         exerciseName: "Config Bench",
-        config: { fields: ["weight", "reps", "duration"], tempo: "3-2-1", bodyRegions: ["chest"] },
+        config: { fields: ["weight", "reps", "duration"], tempo: "3-2-1", bodyParts: ["chest"] },
       },
       headers: auth(testUser.token),
     });
@@ -70,7 +70,7 @@ describe("exercise config", () => {
       exerciseName: "Config Bench",
       fields: ["weight", "reps", "duration"],
       tempo: "3-2-1",
-      bodyRegions: ["chest"],
+      bodyParts: ["chest"],
     });
 
     // Upsert: replacing the same name must not violate the unique index.
@@ -79,7 +79,7 @@ describe("exercise config", () => {
       url: "/api/v1/exercises/config",
       payload: {
         exerciseName: "Config Bench",
-        config: { fields: ["reps"], tempo: null, bodyRegions: null },
+        config: { fields: ["reps"], tempo: null, bodyParts: null },
       },
       headers: auth(testUser.token),
     });
@@ -93,7 +93,7 @@ describe("exercise config", () => {
     assert.equal(listRes.statusCode, 200, listRes.body);
     const data = listRes.json<{ data: ConfigEntry[] }>().data;
     assert.deepEqual(data, [
-      { exerciseName: "Config Bench", fields: ["reps"], tempo: null, bodyRegions: null },
+      { exerciseName: "Config Bench", fields: ["reps"], tempo: null, bodyParts: null },
     ]);
 
     // Configs are per user.
@@ -110,7 +110,7 @@ describe("exercise config", () => {
       url: "/api/v1/exercises/config",
       payload: {
         exerciseName: "Config Bench",
-        config: { fields: null, tempo: null, bodyRegions: null },
+        config: { fields: null, tempo: null, bodyParts: null },
       },
       headers: auth(testUser.token),
     });
@@ -125,11 +125,13 @@ describe("exercise config", () => {
 
   it("rejects invalid bodies with 422", async () => {
     for (const payload of [
-      { exerciseName: "", config: { fields: null, tempo: null, bodyRegions: null } },
-      { exerciseName: "X", config: { fields: [], tempo: null, bodyRegions: null } },
-      { exerciseName: "X", config: { fields: ["weight", "weight"], tempo: null, bodyRegions: null } },
-      { exerciseName: "X", config: { fields: ["volume"], tempo: null, bodyRegions: null } },
-      { exerciseName: "X", config: { fields: null, tempo: "3-2-1", bodyRegions: null }, extra: true },
+      { exerciseName: "", config: { fields: null, tempo: null, bodyParts: null } },
+      { exerciseName: "X", config: { fields: [], tempo: null, bodyParts: null } },
+      { exerciseName: "X", config: { fields: ["weight", "weight"], tempo: null, bodyParts: null } },
+      { exerciseName: "X", config: { fields: ["volume"], tempo: null, bodyParts: null } },
+      { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: ["push"] } },
+      { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: ["chest", "chest"] } },
+      { exerciseName: "X", config: { fields: null, tempo: "3-2-1", bodyParts: null }, extra: true },
       { exerciseName: "X" },
     ]) {
       const res = await app.inject({
@@ -180,7 +182,7 @@ describe("exercise config", () => {
       url: "/api/v1/exercises/config",
       payload: {
         exerciseName: "Cfg Benchpress",
-        config: { fields: ["weight", "reps"], tempo: "2-0-2", bodyRegions: null },
+        config: { fields: ["weight", "reps"], tempo: "2-0-2", bodyParts: null },
       },
       headers: auth(testUser.token),
     });
@@ -207,7 +209,7 @@ describe("exercise config", () => {
     const configs = configAfter.json<{ data: ConfigEntry[] }>().data;
     assert.deepEqual(
       configs.find((c) => c.exerciseName === "Cfg Bench Press"),
-      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyRegions: null },
+      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyParts: null },
     );
     assert.equal(configs.find((c) => c.exerciseName === "Cfg Benchpress"), undefined);
 
@@ -227,7 +229,7 @@ describe("exercise config", () => {
       url: "/api/v1/exercises/config",
       payload: {
         exerciseName: "Cfg Benchpress2",
-        config: { fields: ["duration"], tempo: null, bodyRegions: null },
+        config: { fields: ["duration"], tempo: null, bodyParts: null },
       },
       headers: auth(testUser.token),
     });
@@ -255,7 +257,7 @@ describe("exercise config", () => {
     // Target config untouched, source config dropped.
     assert.deepEqual(
       finalConfigs.find((c) => c.exerciseName === "Cfg Bench Press"),
-      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyRegions: null },
+      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyParts: null },
     );
     assert.equal(finalConfigs.find((c) => c.exerciseName === "Cfg Benchpress2"), undefined);
 

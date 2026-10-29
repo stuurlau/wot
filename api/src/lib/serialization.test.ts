@@ -34,7 +34,7 @@ const trainingExerciseRow = {
   id: "e-1",
   trainingSessionId: "ts-1",
   name: "Bench Press",
-  bodyRegions: ["push", "chest"],
+  bodyParts: ["chest", "triceps"],
   sortOrder: 1,
   supersetGroup: 1,
   notes: null,
@@ -71,7 +71,7 @@ describe("serializeTrainingSessionExercise", () => {
     const result = serializeTrainingSessionExercise(trainingExerciseRow);
     assert.equal(result.trainingSessionId, "ts-1");
     assert.equal(result.name, "Bench Press");
-    assert.deepEqual(result.bodyRegions, ["push", "chest"]);
+    assert.deepEqual(result.bodyParts, ["chest", "triceps"]);
     assert.equal(result.supersetGroup, 1);
   });
 });

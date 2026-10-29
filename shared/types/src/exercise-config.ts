@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { bodyPartsSchema } from './body-part.js';
 import { tempoSchema } from './primitives.js';
 
 // Per-exercise logging configuration, keyed by (user, exercise name) — the
@@ -28,8 +29,8 @@ export const exerciseConfigSchema = z.object({
     .nullable(),
   // Tempo is configured at exercise level and stamped onto new sets.
   tempo: tempoSchema.nullable(),
-  // Prefill for body regions when the exercise is added to a session.
-  bodyRegions: z.array(z.string().trim().min(1)).max(20).nullable(),
+  // Prefill for body parts when the exercise is added to a session.
+  bodyParts: bodyPartsSchema.nullable(),
 });
 
 export type ExerciseSetField = z.infer<typeof exerciseSetFieldSchema>;

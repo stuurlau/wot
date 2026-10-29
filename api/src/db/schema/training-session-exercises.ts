@@ -10,7 +10,7 @@ export const trainingSessionExercise = pgTable(
       .notNull()
       .references(() => trainingSession.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    bodyRegions: text("body_regions").array(),
+    bodyParts: text("body_parts").array(),
     sortOrder: smallint("sort_order").notNull(),
     supersetGroup: smallint("superset_group"),
     notes: text("notes"),

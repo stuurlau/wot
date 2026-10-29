@@ -34,7 +34,7 @@ describe("exercise history", () => {
     const exerciseRes = await app.inject({
       method: "POST",
       url: `/api/v1/sessions/${sessionId}/exercises`,
-      payload: { name: "Bench Press", bodyRegions: ["push", "chest"], sortOrder: 0, notes: null },
+      payload: { name: "Bench Press", bodyParts: ["chest", "triceps"], sortOrder: 0, notes: null },
       headers: auth(testUser.token),
     });
     exerciseId = exerciseRes.json<{ id: string }>().id;
@@ -75,7 +75,7 @@ describe("exercise history", () => {
         sessionSrpe: number;
         exerciseId: string;
         name: string;
-        bodyRegions: string[];
+        bodyParts: string[];
         date: string;
         sortOrder: number;
         weight: number | null;
@@ -88,7 +88,7 @@ describe("exercise history", () => {
     assert.equal(body.data.length, 2);
     const row = body.data[0];
     assert.equal(row.name, "Bench Press");
-    assert.deepEqual(row.bodyRegions, ["push", "chest"]);
+    assert.deepEqual(row.bodyParts, ["chest", "triceps"]);
     assert.equal(row.date, "2026-08-20");
     assert.equal(row.weight, 80);
     assert.equal(row.reps, 8);

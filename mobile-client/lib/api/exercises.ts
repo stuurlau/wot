@@ -16,7 +16,7 @@ import { apiClient } from './client';
 
 export interface RecentExercise {
   name: string;
-  bodyRegions: string[];
+  bodyParts: string[];
   lastUsedAt: string;
   lastSet: {
     weight: number | null;
@@ -36,7 +36,7 @@ export interface ExerciseHistoryRow {
   sessionSrpe: number;
   exerciseId: string;
   name: string;
-  bodyRegions: string[];
+  bodyParts: string[];
   date: string;
   sortOrder: number;
   weight: number | null;
@@ -64,7 +64,7 @@ export type ExerciseConfigRow = ExerciseConfig & { exerciseName: string };
 // prefill a freshly added repeat of that exercise.
 export interface LastExercise {
   name: string;
-  bodyRegions: string[];
+  bodyParts: string[];
   lastUsedAt: string;
   sets: TrainingSessionExerciseSet[];
 }

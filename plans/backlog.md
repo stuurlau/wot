@@ -15,3 +15,4 @@ status in place:
 
 - [ ]
 - [x] planned → plans/20261014-exercise-config-menu.md (set-row editing bug + per-exercise cog menu: fields/seconds/tempo, rir-rpe, tags, body parts; datamodel decision A vs B pending)
+- [x] planned → plans/20261017-body-parts.md (hierarchical body parts: 3-level tree, free multi-select across levels, drill-down picker, explorer body-part scope; stacks on #34/#36/#33)

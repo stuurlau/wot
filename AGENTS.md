@@ -85,7 +85,8 @@ Use `.ios.tsx` for iOS-specific implementations and `.web.ts` for web-specific o
 
 ### Data model
 - **No exercise library**. Component names are free text. Surface recents via query, not a managed catalogue.
-- **`body_regions`** on `session_components` is a `text[]` — no join table. The UI offers a fixed suggestion list but the DB stores plain strings.
+- **`body_parts`** on `training_session_exercises` and `exercise_configs` is a `text[]` of ids from the fixed body-part tree in `shared/types/src/body-part.ts` (Region → Group → Muscle) — no join table. Selections are free across levels; a stored id counts toward itself and all its ancestors.
+- **Body-part tags** (`push`, `pull`, `legs`, `prehab`) remain free text on `exercise_tags` — separate from the structural tree above.
 - **`pain_logs` and `daily_logs` are decoupled from sessions** — they reference `user_id` directly, not `session_id`.
 - **All derived metrics are computed at query/domain time** — no stored derived columns.
 

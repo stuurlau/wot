@@ -106,7 +106,7 @@ export default function TodayScreen() {
       for (const [i, ex] of detail.exercises.entries()) {
         await exercises.create(s.id, {
           name: ex.name,
-          bodyRegions: ex.bodyRegions,
+          bodyParts: ex.bodyParts,
           sortOrder: i,
         });
       }

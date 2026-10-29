@@ -9,7 +9,8 @@ import {
   useSetExerciseTags,
   useUpdateExercise,
 } from '@/hooks/api';
-import type { ExerciseConfig, ExerciseSetField } from '@wot/types';
+import { bodyPartLabel, bodyPartRoots, type ExerciseConfig, type ExerciseSetField } from '@wot/types';
+import { BodyPartPicker } from './body-part-picker';
 
 const FIELD_OPTIONS: { key: ExerciseSetField; label: string }[] = [
   { key: 'weight', label: 'kg' },
@@ -20,22 +21,6 @@ const FIELD_OPTIONS: { key: ExerciseSetField; label: string }[] = [
   { key: 'duration', label: 'sec' },
 ];
 
-// Fixed suggestion list; stored as plain strings (see AGENTS.md data model).
-const BODY_REGION_SUGGESTIONS = [
-  'chest',
-  'back',
-  'shoulders',
-  'biceps',
-  'triceps',
-  'core',
-  'glutes',
-  'quads',
-  'hamstrings',
-  'calves',
-  'hips',
-  'forearms',
-];
-
 type ExerciseConfigSheetProps = {
   visible: boolean;
   onClose: () => void;
@@ -44,8 +29,8 @@ type ExerciseConfigSheetProps = {
   exerciseName: string;
   /** The set-input fields the exercise currently resolves to (for display). */
   resolvedFields: ExerciseSetField[];
-  /** Body regions of this session's exercise instance. */
-  currentBodyRegions: string[];
+  /** Body parts of this session's exercise instance. */
+  currentBodyParts: string[];
 };
 
 /**
@@ -60,7 +45,7 @@ export function ExerciseConfigSheet({
   exerciseId,
   exerciseName,
   resolvedFields,
-  currentBodyRegions,
+  currentBodyParts,
 }: ExerciseConfigSheetProps) {
   const { data: configMap } = useExerciseConfigMap();
   const { data: tagsRows = [] } = useExerciseTags();
@@ -84,7 +69,7 @@ export function ExerciseConfigSheet({
   const tempo = tempoDraft ?? config?.tempo ?? '';
 
   const writeConfig = (patch: Partial<ExerciseConfig>) => {
-    const current: ExerciseConfig = config ?? { fields: null, tempo: null, bodyRegions: null };
+    const current: ExerciseConfig = config ?? { fields: null, tempo: null, bodyParts: null };
     setConfig.mutate(
       { exerciseName, config: { ...current, ...patch } },
       { onError: () => setError("Couldn't save. Check your connection and try again.") },
@@ -121,20 +106,20 @@ export function ExerciseConfigSheet({
 
   // Chips reflect the session instance (what the header shows); an empty
   // instance falls back to the stored default so nothing looks lost.
-  const activeRegions =
-    currentBodyRegions.length > 0 ? currentBodyRegions : (config?.bodyRegions ?? []);
-  const toggleRegion = (region: string) => {
-    const next = activeRegions.includes(region)
-      ? activeRegions.filter((r) => r !== region)
-      : [...activeRegions, region];
-    writeConfig({ bodyRegions: next.length > 0 ? next : null });
+  const activeParts =
+    currentBodyParts.length > 0 ? currentBodyParts : (config?.bodyParts ?? []);
+  const togglePart = (part: string) => {
+    const next = activeParts.includes(part)
+      ? activeParts.filter((p) => p !== part)
+      : [...activeParts, part];
+    writeConfig({ bodyParts: next.length > 0 ? next : null });
     updateExercise.mutate(
-      { exerciseId, body: { bodyRegions: next } },
+      { exerciseId, body: { bodyParts: next } },
       { onError: () => setError("Couldn't update body parts. Try again.") },
     );
   };
 
-  const regionChips = [...new Set([...BODY_REGION_SUGGESTIONS, ...activeRegions])];
+  const countedIn = bodyPartRoots(activeParts).map((r) => bodyPartLabel(r) ?? r);
   const fieldsAreCustom = config?.fields != null;
 
   return (
@@ -234,32 +219,12 @@ export function ExerciseConfigSheet({
       <Text className="mb-2 mt-3 font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
         Body parts
       </Text>
-      <View className="mb-2 flex-row flex-wrap gap-2">
-        {regionChips.map((region) => {
-          const active = activeRegions.includes(region);
-          return (
-            <Pressable
-              key={region}
-              onPress={() => toggleRegion(region)}
-              className={
-                active
-                  ? 'rounded-full bg-primary px-3 py-1.5'
-                  : 'rounded-full bg-surface-container-low px-3 py-1.5'
-              }
-            >
-              <Text
-                className={
-                  active
-                    ? 'font-body text-[11px] uppercase tracking-[2px] text-primary-foreground'
-                    : 'font-body text-[11px] uppercase tracking-[2px] text-muted-foreground'
-                }
-              >
-                {region}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <BodyPartPicker selected={activeParts} onToggle={togglePart} />
+      {countedIn.length > 0 ? (
+        <Text className="mb-2 font-body text-[11px] text-muted-foreground">
+          Counts in: <Text className="text-foreground">{countedIn.join(' · ')}</Text>
+        </Text>
+      ) : null}
 
       {error ? (
         <Text className="mt-2 font-body text-[12px] text-destructive">{error}</Text>

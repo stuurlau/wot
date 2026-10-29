@@ -8,6 +8,7 @@ import { AppHeader } from '@/components/app-header';
 import { VersionFooter } from '@/components/version-footer';
 import { useCreateTrainingSession, useDeleteTrainingSession, useTrainingSession } from '@/hooks/api';
 import { exercises } from '@/lib/api';
+import { bodyPartsLabelText } from '@/lib/body-parts';
 import { useActiveSessionStore } from '@/stores/active-session-store';
 
 function formatDuration(seconds: number): string {
@@ -68,7 +69,7 @@ export default function SessionDetailScreen() {
       for (const [i, ex] of session.exercises.entries()) {
         await exercises.create(s.id, {
           name: ex.name,
-          bodyRegions: ex.bodyRegions,
+          bodyParts: ex.bodyParts,
           sortOrder: i,
         });
       }
@@ -131,9 +132,9 @@ export default function SessionDetailScreen() {
                 <Text className="font-heading text-[22px] tracking-[-0.4px] text-foreground">
                   {ex.name}
                 </Text>
-                {ex.bodyRegions && ex.bodyRegions.length > 0 ? (
+                {ex.bodyParts && ex.bodyParts.length > 0 ? (
                   <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-                    {ex.bodyRegions.join(' · ')}
+                    {bodyPartsLabelText(ex.bodyParts)}
                   </Text>
                 ) : null}
               </View>
