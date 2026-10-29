@@ -1,8 +1,10 @@
 import type {
   CreateTrainingSessionExerciseInput,
   CreateTrainingSessionExerciseSetInput,
+  ExerciseConfig,
   RenameExercisesInput,
   ReorderExercisesInput,
+  SetExerciseConfigInput,
   SetExerciseTagsInput,
   TrainingSessionExercise,
   TrainingSessionExerciseSet,
@@ -54,6 +56,9 @@ export interface ExerciseTagsRow {
   exerciseName: string;
   tags: string[];
 }
+
+// One user's per-exercise config row (cog menu), keyed by exercise name.
+export type ExerciseConfigRow = ExerciseConfig & { exerciseName: string };
 
 // The most recent occurrence of an exercise name, with its sets — used to
 // prefill a freshly added repeat of that exercise.
@@ -151,4 +156,10 @@ export const exercises = {
     apiClient
       .put<{ exerciseName: string; tags: string[] }>('/exercises/tags', body)
       .then((r) => r.data),
+
+  configs: () =>
+    apiClient.get<{ data: ExerciseConfigRow[] }>('/exercises/config').then((r) => r.data.data),
+
+  setConfig: (body: SetExerciseConfigInput) =>
+    apiClient.put<ExerciseConfigRow>('/exercises/config', body).then((r) => r.data),
 };

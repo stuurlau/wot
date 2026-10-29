@@ -22,6 +22,8 @@ export {
   useDeleteExerciseSet,
   useExerciseTags,
   useSetExerciseTags,
+  useExerciseConfigMap,
+  useSetExerciseConfig,
   usePrefillExerciseSets,
   useReorderExercises,
 } from './use-exercises';
