@@ -46,6 +46,14 @@ mechanism:
   from `react-native-keyboard-controller` instead.
 - Any new screen with text input: wrap in `KeyboardAwareScrollView`; any new
   bottom sheet: render inside `Sheet`.
+- Exception: the workout screen (`app/workout.tsx`) uses the library's
+  `KeyboardAvoidingView` (`behavior="padding"`) instead, because the
+  drag-reorder list (`react-native-draggable-flatlist`) requires its own
+  `NestableScrollContainer` as the outer scroller — the two scroll
+  containers cannot be combined. Trade-off: focused inputs are lifted above
+  the keyboard but no longer auto-scrolled into view; the user scrolls
+  manually. If a draggable FlatList ever becomes compatible with
+  `KeyboardAwareScrollView`, switch back.
 - The library's components are not wired into NativeWind — pass `style`
   objects, not `className`.
 - Keep `softwareKeyboardLayoutMode: "resize"` in `app.json`.

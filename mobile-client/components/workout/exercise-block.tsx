@@ -31,6 +31,10 @@ type ExerciseBlockProps = {
   recent?: RecentExercise | null;
   /** Group the exercise moves to when its superset badge is pressed. */
   nextSupersetGroup: number | null;
+  /** Long-press on the exercise name starts dragging (reorder). */
+  onNameLongPress?: () => void;
+  /** True while this block is being dragged. */
+  isDragging?: boolean;
 };
 
 function toSetBody(input: SetInput, sortOrder: number) {
@@ -45,7 +49,7 @@ function toSetBody(input: SetInput, sortOrder: number) {
   };
 }
 
-export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }: ExerciseBlockProps) {
+export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, onNameLongPress, isDragging }: ExerciseBlockProps) {
   const [mode, setMode] = useState<SetMode>('strength');
   const createSet = useCreateExerciseSet(sessionId, exercise.id);
   const createRestTime = useCreateRestTime(sessionId);
@@ -182,7 +186,7 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
     : null;
 
   return (
-    <View className="mb-8">
+    <View className="mb-8" style={isDragging ? { opacity: 0.85 } : undefined}>
       <View className="mb-1 flex-row items-baseline justify-between">
         {editingName ? (
           <TextInput
@@ -202,6 +206,8 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup }
               setNameDraft(exercise.name);
               setEditingName(true);
             }}
+            onLongPress={onNameLongPress}
+            delayLongPress={1000}
           >
             <Text className="font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground">
               {exercise.name}
