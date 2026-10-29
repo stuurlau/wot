@@ -171,6 +171,10 @@ curl https://api.wot-app.org/health
 - **CORS_ORIGIN** — also used as better-auth's `trustedOrigins`. Native app
   requests carry no Origin header anyway; keep it at the api URL.
 - **BETTER_AUTH_SECRET** — session-signing key; generate once per environment.
+- **RESEND_API_KEY** / **MAIL_FROM** — password-reset mail via Resend (see
+  `20261029_password_reset.md`). `wot-app.org` must be verified in Resend (DNS
+  records in Cloudflare) for the default `WOT <noreply@wot-app.org>` sender.
+  Unset key = codes are only logged, so users cannot reset.
 - **TUNNEL_TOKEN** — cloudflared only needs this.
 
 ## Mobile test builds

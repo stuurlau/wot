@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { createAuthClient } from 'better-auth/react';
+import { emailOTPClient } from 'better-auth/client/plugins';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000';
 
@@ -13,6 +14,7 @@ export const authClient = createAuthClient({
   fetchOptions: {
     credentials: 'include',
   },
+  plugins: [emailOTPClient()],
 });
 
 export type AuthUser = NonNullable<typeof authClient.$Infer.Session>['user'];
