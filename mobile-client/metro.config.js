@@ -9,6 +9,12 @@ const config = getDefaultConfig(projectRoot);
 
 config.watchFolders = [workspaceRoot];
 
+// @wot/types (../shared/types) imports runtime deps like zod. EAS builds copy
+// the repo and only install mobile-client's node_modules, so shared/types has
+// none: resolve its imports from the app's node_modules (also guarantees one
+// zod instance). zod must stay a mobile-client dependency.
+config.resolver.nodeModulesPaths = [path.resolve(projectRoot, "node_modules")];
+
 // @wot/types ships TypeScript source whose relative imports use NodeNext
 // `.js` specifiers (required by the API's `tsc`). Metro does not perform
 // TypeScript's `.js` → `.ts` extension substitution, so rewrite those
