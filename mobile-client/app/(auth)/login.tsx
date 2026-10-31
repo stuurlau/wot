@@ -110,6 +110,13 @@ export default function LoginScreen() {
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit}
                 />
+                <Link href={{ pathname: '/(auth)/forgot-password', params: { email } } as never} asChild>
+                  <Pressable hitSlop={8} className="mt-3 self-end">
+                    <Text className="font-body text-[10px] tracking-[2px] uppercase text-muted-foreground">
+                      Forgot password?
+                    </Text>
+                  </Pressable>
+                </Link>
               </View>
 
               {/* Error */}

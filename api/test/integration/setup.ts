@@ -5,3 +5,5 @@ process.env.DATABASE_URL ??= "postgresql://wot:wot_dev_password@localhost:5433/w
 process.env.API_URL ??= "http://localhost:3000";
 process.env.CORS_ORIGIN ??= "http://localhost:8081";
 process.env.BETTER_AUTH_SECRET ??= "0".repeat(64);
+// Never send real mail from tests, even with a RESEND_API_KEY in .env.
+process.env.RESEND_API_KEY = "";

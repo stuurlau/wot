@@ -25,6 +25,7 @@
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.8.5",
     "pg": "^8.20.0",
+    "resend": "^6.33.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

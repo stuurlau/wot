@@ -8,6 +8,10 @@ const envSchema = z.object({
   API_URL: z.url(),
   CORS_ORIGIN: z.string(),
   BETTER_AUTH_SECRET: z.string().min(32),
+  // Transactional mail (password-reset codes) via Resend. Unset: mails are
+  // logged instead of sent (local dev, tests).
+  RESEND_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().default("WOT <noreply@wot-app.org>"),
 });
 
 export type Env = z.infer<typeof envSchema>;
