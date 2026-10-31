@@ -56,7 +56,7 @@ The api imports `@wot/types` at runtime, so `shared/types` deps must be installe
 - **State**: Zustand for client state.
 - **Validation**: Zod for all schema validation (including wellness fields like RPE, which use `numeric(3,1)` — decimals allowed in 1–10 range).
 - **Theming**: semantic color tokens from `constants/theme.ts` (`Colors.light` / `Colors.dark`). Always use `useThemeColor` or the `ThemedText` / `ThemedView` wrappers — never hardcode colors.
-- **Keyboard**: `react-native-keyboard-controller` (provider in `app/_layout.tsx`; `softwareKeyboardLayoutMode: "resize"` in `app.json` is required). Screens with inputs use `KeyboardAwareScrollView` (exception: the workout screen uses the library's `KeyboardAvoidingView` because its drag-reorder list needs `NestableScrollContainer`); bottom sheets render inside `Sheet` (which already lifts above the keyboard). Never use RN core `KeyboardAvoidingView`. Library components take `style`, not `className`. See `docs/20260926_keyboard_handling.md`.
+- **Keyboard**: `react-native-keyboard-controller` (provider in `app/_layout.tsx`; `softwareKeyboardLayoutMode: "resize"` in `app.json` is required). Screens with inputs use `KeyboardAwareScrollView` (exception: the workout screen's native exercise list, `components/workout/exercise-list.tsx`, uses the library's `KeyboardAvoidingView` because its drag-reorder list needs `NestableScrollContainer`; web has no drag reorder); bottom sheets render inside `Sheet` (which already lifts above the keyboard). Never use RN core `KeyboardAvoidingView`. Library components take `style`, not `className`. See `docs/20260926_keyboard_handling.md`.
 
 ### Backend (`api/`)
 

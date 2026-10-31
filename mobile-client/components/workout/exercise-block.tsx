@@ -1,16 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 
 import type { RecentExercise } from '@/lib/api';
-import type { TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
+import type { ExerciseMode, TrainingSessionExercise, TrainingSessionExerciseSet } from '@wot/types';
 import { defaultUserSettings } from '@wot/types';
+import { PillChip } from '@/components/ui/pill-chip';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import {
   useCreateExerciseSet,
   useCreateRestTime,
-  useDeleteExercise,
   useDeleteExerciseSet,
   useExerciseConfigMap,
   useExerciseNames,
@@ -22,20 +21,46 @@ import {
 import { findSimilarNames } from '@/lib/similarity';
 import { bodyPartsLabelText } from '@/lib/body-parts';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
-import { ExerciseConfigSheet } from './exercise-config-sheet';
-import { SetRow, type SetFieldKey, type SetInput, type SetMode } from './set-row';
+import { ExerciseConfigSheet, useWriteExerciseConfig } from './exercise-config-sheet';
+import {
+  LoggedSetRow,
+  NextSetCard,
+  formatClock,
+  isIntensity,
+  type DurationUnit,
+  type SetFieldKey,
+  type SetInput,
+} from './set-row';
+
+const MODES: ExerciseMode[] = ['strength', 'cardio', 'flexibility'];
+const MAX_INPUTS = 4;
+const UNDO_MS = 5000;
 
 type ExerciseBlockProps = {
   sessionId: string;
   exercise: TrainingSessionExercise & { sets: TrainingSessionExerciseSet[] };
   recent?: RecentExercise | null;
-  /** Group the exercise moves to when its superset badge is pressed. */
-  nextSupersetGroup: number | null;
-  /** Long-press on the exercise name starts dragging (reorder). */
+  /** Names of the other exercises in this one's superset. */
+  supersetPartners: string[];
+  /** Superset groups offered in the cog sheet. */
+  supersetOptions: number[];
+  /** The exercise being worked on: its next set gets the card surface. */
+  active: boolean;
+  onActivate: () => void;
+  /** Long-press on the exercise name starts dragging (reorder, native only). */
   onNameLongPress?: () => void;
   /** True while this block is being dragged. */
   isDragging?: boolean;
 };
+
+const setValues = (set: TrainingSessionExerciseSet): SetInput => ({
+  weight: set.weight ?? null,
+  reps: set.reps ?? null,
+  rir: set.rir ?? null,
+  rpe: set.rpe ?? null,
+  distance: set.distance ?? null,
+  duration: set.duration ?? null,
+});
 
 function toSetBody(input: SetInput, sortOrder: number) {
   return {
@@ -49,33 +74,49 @@ function toSetBody(input: SetInput, sortOrder: number) {
   };
 }
 
-export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, onNameLongPress, isDragging }: ExerciseBlockProps) {
-  const [mode, setMode] = useState<SetMode>('strength');
+// One exercise of the active workout: name + cog, a quiet meta line, the
+// logged sets as a ledger and the next-set card. Everything secondary
+// (superset, type, inputs, tempo, tags, body parts, remove) is in the cog sheet.
+// docs/ui-designs/wot-active-workout-redesign
+export function ExerciseBlock({
+  sessionId,
+  exercise,
+  recent,
+  supersetPartners,
+  supersetOptions,
+  active,
+  onActivate,
+  onNameLongPress,
+  isDragging,
+}: ExerciseBlockProps) {
   const createSet = useCreateExerciseSet(sessionId, exercise.id);
   const createRestTime = useCreateRestTime(sessionId);
   const updateSet = useUpdateExerciseSet(sessionId, exercise.id);
   const deleteSet = useDeleteExerciseSet(sessionId, exercise.id);
   const updateExercise = useUpdateExercise(sessionId);
-  const deleteExercise = useDeleteExercise(sessionId);
   const renameExercises = useRenameExercises();
-  const [confirmRemove, setConfirmRemove] = useState(false);
+  const writeConfig = useWriteExerciseConfig(exercise.name);
   const [configVisible, setConfigVisible] = useState(false);
   const [intensityToggled, setIntensityToggled] = useState(false);
   const [intensityOverride, setIntensityOverride] = useState<'rir' | 'rpe' | null>(null);
 
   // Per-exercise config (cog menu) -> global per-mode settings -> built-in
-  // defaults. A custom config renders exactly its field list (flat,
-  // unrestricted); only the inherited path keeps the legacy intensity
-  // reveal/flip quick toggles.
+  // defaults. A custom config renders exactly its field list; the inherited
+  // path keeps the "+ RIR" reveal and rir⇄rpe flip as local state.
   const { data: configMap } = useExerciseConfigMap();
   const { data: userSettings } = useSettings();
   const config = configMap?.get(exercise.name) ?? null;
-  const customFields = config?.fields ?? null;
-  const hasCustomFields = customFields !== null;
+  const mode: ExerciseMode = config?.mode ?? 'strength';
+  // Config 'durationMin' is the duration column typed in minutes.
+  const customFields: SetFieldKey[] | null =
+    config?.fields?.map((f) => (f === 'durationMin' ? 'duration' : f)) ?? null;
+  const durationUnit: DurationUnit = config?.fields
+    ? config.fields.includes('durationMin') ? 'min' : 'sec'
+    : mode === 'cardio' ? 'min' : 'sec';
 
   // The intensity input stays visible once it has been used on this exercise
   // (this session or via the recents of an earlier one), or once the user
-  // asked for it. RIR is the default; the label press flips between RIR/RPE.
+  // asked for it. RIR is the default; the flip switches between RIR/RPE.
   const hasRir = exercise.sets.some((s) => s.rir != null) || recent?.lastSet.rir != null;
   const hasRpe = exercise.sets.some((s) => s.rpe != null) || recent?.lastSet.rpe != null;
   const showIntensity = intensityToggled || hasRir || hasRpe;
@@ -89,22 +130,32 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
         ? [...(userSettings?.cardioFields ?? defaultUserSettings.cardioFields)]
         : ['duration', 'weight']); // flexibility: holds, optionally weighted
   const fields: SetFieldKey[] =
-    !hasCustomFields && mode === 'strength' && showIntensity && !baseFields.includes(intensity)
+    !customFields && mode === 'strength' && showIntensity && !baseFields.includes(intensity)
       ? [...baseFields, intensity]
       : baseFields;
-  const setRowToggles = hasCustomFields
-    ? {}
-    : mode === 'strength'
-      ? {
-          onShowIntensity: showIntensity ? undefined : () => setIntensityToggled(true),
-          onFlipIntensity: showIntensity
-            ? () => setIntensityOverride(intensity === 'rir' ? 'rpe' : 'rir')
-            : undefined,
-        }
-      : {};
+
+  const canAddIntensity =
+    mode === 'strength' && !fields.some(isIntensity) && fields.length < MAX_INPUTS;
+  const addIntensity = config?.fields
+    ? () => writeConfig({ fields: [...config.fields!, 'rir'] })
+    : () => setIntensityToggled(true);
+  const flipIntensity = config?.fields
+    ? () =>
+        writeConfig({
+          fields: config.fields!.map((f) => (f === 'rir' ? 'rpe' : f === 'rpe' ? 'rir' : f)),
+        })
+    : () => setIntensityOverride(intensity === 'rir' ? 'rpe' : 'rir');
+
+  // Rest clock: started after a logged set (unless switched off for this
+  // exercise) and shown under this exercise's next set while it runs.
+  const rest = useRestTimerStore();
+  const restHere =
+    rest.sessionId === sessionId &&
+    rest.startedAtMs !== null &&
+    exercise.sets.some((s) => s.id === rest.previousSetId);
 
   const logSet = async (input: SetInput) => {
-    const rest = useRestTimerStore.getState();
+    onActivate();
     const restFromMs = rest.sessionId === sessionId ? rest.startedAtMs : null;
     const setBeforeId = rest.sessionId === sessionId ? rest.previousSetId : null;
     let created: TrainingSessionExerciseSet;
@@ -117,7 +168,6 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
     } catch {
       return; // react-query exposes the error; keep the rest clock running
     }
-    useRestTimerStore.getState().start(sessionId, created.id);
     if (setBeforeId && restFromMs !== null) {
       createRestTime.mutate({
         setBeforeId,
@@ -126,6 +176,36 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
         tillAt: new Date().toISOString(),
       });
     }
+    const store = useRestTimerStore.getState();
+    if (config?.restTimer === false) store.stop();
+    else store.start(sessionId, created.id);
+  };
+
+  // Long-press delete hides the set at once and offers Undo; the delete is
+  // sent when the window closes (or the block unmounts).
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; n: number } | null>(null);
+  // Refs keep the timers stable: the mutation object changes every render.
+  const pendingRef = useRef(pendingDelete);
+  pendingRef.current = pendingDelete;
+  const deleteRef = useRef(deleteSet.mutate);
+  deleteRef.current = deleteSet.mutate;
+  useEffect(() => {
+    if (!pendingDelete) return;
+    const id = setTimeout(() => {
+      deleteRef.current(pendingDelete.id);
+      setPendingDelete(null);
+    }, UNDO_MS);
+    return () => clearTimeout(id);
+  }, [pendingDelete]);
+  useEffect(
+    () => () => {
+      if (pendingRef.current) deleteRef.current(pendingRef.current.id);
+    },
+    [],
+  );
+  const requestDelete = (setId: string, n: number) => {
+    if (pendingDelete) deleteSet.mutate(pendingDelete.id); // one undo at a time
+    setPendingDelete({ id: setId, n });
   };
 
   // Inline rename: tap the title to edit, commit on blur/submit. When the
@@ -168,26 +248,30 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
     setRenameFrom(null);
   };
 
-  const strengthReference =
+  const lastReference =
     recent?.lastSet.weight != null || recent?.lastSet.reps != null
       ? `${recent.lastSet.weight ?? '—'} × ${recent.lastSet.reps ?? '—'}`
       : null;
+  const visibleSets = exercise.sets.filter((s) => s.id !== pendingDelete?.id);
+  const lastSet = visibleSets.at(-1);
 
-  const lastSet = exercise.sets.at(-1) ?? null;
-  const previousValues: SetInput | null = lastSet
-    ? {
-        weight: lastSet.weight ?? null,
-        reps: lastSet.reps ?? null,
-        rir: lastSet.rir ?? null,
-        rpe: lastSet.rpe ?? null,
-        distance: lastSet.distance ?? null,
-        duration: lastSet.duration ?? null,
-      }
-    : null;
+  const supersetLabel =
+    exercise.supersetGroup != null
+      ? `Superset ${exercise.supersetGroup}${supersetPartners.length ? ` with ${supersetPartners.join(', ')}` : ''}`
+      : null;
+  const meta = [
+    config?.tempo,
+    exercise.bodyParts?.length ? bodyPartsLabelText(exercise.bodyParts) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <View className="mb-8" style={isDragging ? { opacity: 0.85 } : undefined}>
-      <View className="mb-1 flex-row items-baseline justify-between">
+    <View
+      className="border-b border-border pb-6 pt-7"
+      style={isDragging ? { opacity: 0.85 } : undefined}
+    >
+      <View className="flex-row items-start gap-1">
         {editingName ? (
           <TextInput
             value={nameDraft}
@@ -196,12 +280,11 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
             onSubmitEditing={() => void commitName()}
             autoFocus
             autoCapitalize="words"
-            className="flex-1 border-b border-primary font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground"
+            className="min-w-0 flex-1 border-b border-primary pb-0.5 font-heading text-[26px] leading-[30px] tracking-[-0.8px] text-foreground"
           />
         ) : (
           <Pressable
-            className="flex-1"
-            hitSlop={4}
+            className="min-w-0 flex-1"
             onPress={() => {
               setNameDraft(exercise.name);
               setEditingName(true);
@@ -209,85 +292,44 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
             onLongPress={onNameLongPress}
             delayLongPress={1000}
           >
-            <Text className="font-heading text-[26px] leading-[28px] tracking-[-0.8px] text-foreground">
+            <Text className="font-heading text-[26px] leading-[30px] tracking-[-0.8px] text-foreground">
               {exercise.name}
             </Text>
           </Pressable>
         )}
-        <View className="flex-row items-baseline gap-3">
-          <Pressable
-            hitSlop={8}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              updateExercise.mutate({
-                exerciseId: exercise.id,
-                body: { supersetGroup: nextSupersetGroup },
-              });
-            }}
-            className={
-              exercise.supersetGroup != null
-                ? 'self-center rounded-full bg-primary px-2 py-0.5'
-                : 'self-center rounded-full bg-surface-container-low px-2 py-0.5'
-            }
-          >
-            <Text
-              className={
-                exercise.supersetGroup != null
-                  ? 'font-body text-[9px] uppercase tracking-[2px] text-primary-foreground'
-                  : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
-              }
-            >
-              {exercise.supersetGroup != null ? `SS${exercise.supersetGroup}` : 'SS'}
-            </Text>
-          </Pressable>
-          <Pressable hitSlop={8} onPress={() => setConfigVisible(true)} className="self-center">
-            <IconSymbol name="gearshape.fill" size={15} color={Colors.onSurfaceVariant} />
-          </Pressable>
-          {config?.tempo ? (
-            <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-              {config.tempo}
-            </Text>
-          ) : null}
-          {exercise.bodyParts && exercise.bodyParts.length > 0 ? (
-            <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">
-              {bodyPartsLabelText(exercise.bodyParts)}
-            </Text>
-          ) : null}
-          <Pressable
-            hitSlop={8}
-            onPress={() => {
-              if (confirmRemove) {
-                deleteExercise.mutate(exercise.id);
-              } else {
-                setConfirmRemove(true);
-                setTimeout(() => setConfirmRemove(false), 3000);
-              }
-            }}
-          >
-            <Text
-              className={
-                confirmRemove
-                  ? 'font-body text-[9px] uppercase tracking-[2px] text-destructive'
-                  : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
-              }
-            >
-              {confirmRemove ? 'Tap again to remove' : 'Remove'}
-            </Text>
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={() => setConfigVisible(true)}
+          accessibilityLabel="Exercise settings"
+          className="-mr-3.5 -mt-[7px] h-11 w-11 items-center justify-center"
+        >
+          <IconSymbol name="gearshape.fill" size={16} color={Colors.faint} />
+        </Pressable>
       </View>
 
-      {error ? (
-        <Text className="mb-2 font-body text-[12px] text-destructive">{error}</Text>
+      {supersetLabel || meta ? (
+        <View className="mt-1.5 flex-row flex-wrap items-center gap-x-2.5 gap-y-1.5 pr-7">
+          {supersetLabel ? (
+            <Text className="font-body-medium text-[9px] uppercase leading-4 tracking-[2px] text-primary">
+              {supersetLabel}
+            </Text>
+          ) : null}
+          {meta ? (
+            <Text className="font-body text-[9px] uppercase leading-4 tracking-[2px] text-muted-foreground">
+              {meta}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
 
+      {error ? <Text className="mt-2 font-body text-[12px] text-destructive">{error}</Text> : null}
+
       {renameFrom && renameCandidates.length > 0 ? (
-        <View className="mb-2 rounded-xl bg-surface-container-low px-3 py-2">
-          <Text className="mb-2 font-body text-[11px] leading-4 text-foreground">
-            Also rename {renameCandidates.map((name) => `“${name}”`).join(', ')} to “{renameTo}”
-            in past workouts?
+        <View className="mt-3.5 gap-2.5 rounded-xl bg-surface-container-low px-3.5 py-3">
+          <Text className="font-body text-[13px] leading-[18px] text-on-surface-variant">
+            Also rename {renameCandidates.map((name) => `“${name}”`).join(', ')} to “{renameTo}” in
+            past workouts?
           </Text>
-          <View className="flex-row gap-4">
+          <View className="flex-row gap-5">
             <Pressable
               onPress={() => void confirmRenameAll()}
               disabled={renameExercises.isPending}
@@ -306,67 +348,59 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
         </View>
       ) : null}
 
-      <View className="mb-2 flex-row gap-2">
-        {(['strength', 'cardio', 'flexibility'] as const).map((m) => (
-          <Pressable
-            key={m}
-            onPress={() => setMode(m)}
-            className={
-              mode === m
-                ? 'rounded-full bg-primary px-3 py-1'
-                : 'rounded-full bg-surface-container-low px-3 py-1'
-            }
-          >
-            <Text
-              className={
-                mode === m
-                  ? 'font-body text-[9px] uppercase tracking-[2px] text-primary-foreground'
-                  : 'font-body text-[9px] uppercase tracking-[2px] text-muted-foreground'
-              }
-            >
-              {m}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      {/* Type matters before the first set (it sets the inputs); later it
+          lives in the cog sheet. */}
+      {exercise.sets.length === 0 ? (
+        <View className="mt-3.5 flex-row flex-wrap gap-2">
+          {MODES.map((m) => (
+            <PillChip
+              key={m}
+              label={m}
+              selected={mode === m}
+              onPress={() => writeConfig({ mode: m, fields: null })}
+            />
+          ))}
+        </View>
+      ) : null}
 
-      <View className="border-t border-border">
-        {exercise.sets.map((set, i) => (
-          <SetRow
+      <View className="mt-3.5">
+        {visibleSets.map((set, i) => (
+          <LoggedSetRow
             key={set.id}
             setNumber={i + 1}
-            mode={mode}
-            values={{
-              weight: set.weight ?? null,
-              reps: set.reps ?? null,
-              rir: set.rir ?? null,
-              rpe: set.rpe ?? null,
-              distance: set.distance ?? null,
-              duration: set.duration ?? null,
-            }}
-            lastReference={null}
             fields={fields}
-            {...setRowToggles}
-            busy={updateSet.isPending || deleteSet.isPending}
-            onCreate={() => {}}
+            durationUnit={durationUnit}
+            values={setValues(set)}
             onUpdate={(input) => updateSet.mutate({ setId: set.id, body: toSetBody(input, i) })}
-            onDelete={() => deleteSet.mutate(set.id)}
+            onDelete={() => requestDelete(set.id, i + 1)}
           />
         ))}
 
-        <SetRow
-          key={`new-${exercise.sets.length}`}
-          setNumber={exercise.sets.length + 1}
-          mode={mode}
-          values={null}
-          lastReference={mode === 'strength' ? strengthReference : null}
-          previousValues={previousValues}
+        {pendingDelete ? (
+          <View className="flex-row items-center gap-4 px-3 py-2">
+            <Text className="font-body text-[12px] text-muted-foreground">
+              Set {pendingDelete.n} removed.
+            </Text>
+            <Pressable onPress={() => setPendingDelete(null)} hitSlop={8} className="py-1">
+              <Text className="font-body text-[10px] uppercase tracking-[2px] text-primary">Undo</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <NextSetCard
+          key={`next-${exercise.sets.length}`}
+          setNumber={visibleSets.length + 1}
           fields={fields}
-          {...setRowToggles}
+          durationUnit={durationUnit}
+          lastReference={lastReference}
+          previousValues={lastSet ? setValues(lastSet) : null}
+          active={active}
           busy={createSet.isPending}
-          onCreate={logSet}
-          onUpdate={() => {}}
-          onDelete={() => {}}
+          onActivate={onActivate}
+          onAddIntensity={canAddIntensity ? addIntensity : undefined}
+          onFlipIntensity={flipIntensity}
+          onCreate={(input) => void logSet(input)}
+          rest={restHere ? <RestLine startedAtMs={rest.startedAtMs!} onStop={rest.stop} /> : null}
         />
       </View>
 
@@ -376,9 +410,34 @@ export function ExerciseBlock({ sessionId, exercise, recent, nextSupersetGroup, 
         sessionId={sessionId}
         exerciseId={exercise.id}
         exerciseName={exercise.name}
-        resolvedFields={fields}
+        resolvedFields={fields.map((f) => (f === 'duration' && durationUnit === 'min' ? 'durationMin' : f))}
+        mode={mode}
         currentBodyParts={exercise.bodyParts ?? []}
+        supersetGroup={exercise.supersetGroup ?? null}
+        supersetOptions={supersetOptions}
       />
+    </View>
+  );
+}
+
+// Rest clock under the inputs of the exercise just logged — where the eyes
+// already are. Ticks on its own so only this line re-renders.
+function RestLine({ startedAtMs, onStop }: { startedAtMs: number; onStop: () => void }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <View className="mt-2 flex-row items-center gap-2.5 border-t border-border pt-1.5">
+      <Text className="font-body text-[9px] uppercase tracking-[2px] text-muted-foreground">Rest</Text>
+      <Text className="font-heading text-[18px] text-foreground" style={{ fontVariant: ['tabular-nums'] }}>
+        {formatClock(Math.max(0, Math.floor((now - startedAtMs) / 1000)))}
+      </Text>
+      <View className="flex-1" />
+      <Pressable onPress={onStop} accessibilityLabel="Stop rest timer" className="h-8 justify-center px-1">
+        <Text className="font-body text-[9px] uppercase tracking-[2px] text-on-surface-variant">Stop ■</Text>
+      </Pressable>
     </View>
   );
 }

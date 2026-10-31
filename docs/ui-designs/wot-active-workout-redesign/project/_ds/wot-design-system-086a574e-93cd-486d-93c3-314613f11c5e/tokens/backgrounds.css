@@ -1,0 +1,4 @@
+/* Ruled notebook grid — components/ruled-background.tsx (web path, exact) */
+:root{
+--bg-ruled:linear-gradient(to bottom,rgba(250,249,248,0.9),rgba(250,249,248,0) 30%),linear-gradient(to top,rgba(250,249,248,0.9),rgba(250,249,248,0) 6%),repeating-linear-gradient(to right,rgba(228,226,224,0.7) 0px,rgba(228,226,224,0.7) 1px,transparent 1px,transparent 25px),repeating-linear-gradient(to bottom,rgba(228,226,224,0.7) 0px,rgba(228,226,224,0.7) 1px,transparent 1px,transparent 25px);
+}

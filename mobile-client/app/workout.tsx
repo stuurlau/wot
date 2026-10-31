@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { NestableDraggableFlatList, NestableScrollContainer } from 'react-native-draggable-flatlist';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Screen } from '@/components/screen';
 
@@ -10,10 +7,10 @@ import { DataState } from '@/components/data-state';
 import { AppHeader } from '@/components/app-header';
 import { PainSheet } from '@/components/home/pain-sheet';
 import { ExerciseBlock } from '@/components/workout/exercise-block';
+import { ExerciseList } from '@/components/workout/exercise-list';
 import { ExercisePickerSheet } from '@/components/workout/exercise-picker-sheet';
 import { FinishSheet } from '@/components/workout/finish-sheet';
 import { useRecentExercises, useReorderExercises, useTrainingSession, useUpdateTrainingSession } from '@/hooks/api';
-import { nextSupersetGroup } from '@/lib/superset';
 import { useActiveSessionStore } from '@/stores/active-session-store';
 import { useRestTimerStore } from '@/stores/rest-timer-store';
 
@@ -30,10 +27,8 @@ function formatElapsed(ms: number): string {
 export default function WorkoutScreen() {
   const sessionId = useActiveSessionStore((s) => s.sessionId);
   const startedAtMs = useActiveSessionStore((s) => s.startedAtMs);
-  const restStartedAtMs = useRestTimerStore((s) =>
-    s.sessionId !== null && s.sessionId === sessionId ? s.startedAtMs : null,
-  );
-  const stopRest = useRestTimerStore((s) => s.stop);
+  // The set the rest clock runs after — its exercise is the active one.
+  const restSetId = useRestTimerStore((s) => (s.sessionId === sessionId ? s.previousSetId : null));
   const { data: session } = useTrainingSession(sessionId ?? '');
   const { data: recents = [] } = useRecentExercises(20);
   const updateSession = useUpdateTrainingSession(sessionId ?? '');
@@ -44,6 +39,9 @@ export default function WorkoutScreen() {
   const [pickerVisible, setPickerVisible] = useState(false);
   const [finishVisible, setFinishVisible] = useState(false);
   const [painVisible, setPainVisible] = useState(false);
+  // The exercise being worked on (last focused / logged); its next set gets
+  // the card surface. Defaults to where the rest clock runs, else the newest.
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -68,6 +66,16 @@ export default function WorkoutScreen() {
     }
   }, [session]);
 
+  const exercises = session?.exercises ?? [];
+  const activeExerciseId =
+    activeId ??
+    exercises.find((e) => e.sets.some((set) => set.id === restSetId))?.id ??
+    exercises.at(-1)?.id ??
+    null;
+  // Superset chips: 1–3, plus any higher group already in use.
+  const maxGroup = Math.max(3, ...exercises.map((e) => e.supersetGroup ?? 0));
+  const supersetOptions = Array.from({ length: maxGroup }, (_, i) => i + 1);
+
   const recentByName = useMemo(
     () => new Map(recents.map((r) => [r.name, r])),
     [recents],
@@ -91,41 +99,25 @@ export default function WorkoutScreen() {
   return (
     <Screen>
       <AppHeader />
-      <View className="px-6 pb-2 pt-1">
-        <View className="flex-row items-center justify-between">
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Text className="font-body text-[11px] uppercase tracking-[2px] text-muted-foreground">
+      <View className="px-6 pt-1">
+        <View className="flex-row items-center">
+          <Pressable onPress={() => router.back()} hitSlop={12} className="flex-1 py-3">
+            <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
               ↓ Minimize
             </Text>
           </Pressable>
           <Text
-            className="font-heading text-[22px] tracking-[-0.6px] text-foreground"
+            className="font-heading text-[32px] leading-[36px] tracking-[-1px] text-foreground"
             style={{ fontVariant: ['tabular-nums'] }}
           >
             {formatElapsed(now - (startedAtMs ?? now))}
           </Text>
-          <Pressable onPress={() => setFinishVisible(true)} hitSlop={12}>
-            <Text className="font-body text-[11px] uppercase tracking-[2px] text-primary">
+          <Pressable onPress={() => setFinishVisible(true)} hitSlop={12} className="flex-1 items-end py-3">
+            <Text className="font-body-medium text-[10px] uppercase tracking-[2px] text-primary">
               Finish
             </Text>
           </Pressable>
         </View>
-
-        {restStartedAtMs !== null ? (
-          <View className="mt-1 flex-row items-center justify-end gap-3">
-            <Text
-              className="font-body text-[11px] uppercase tracking-[2px] text-muted-foreground"
-              style={{ fontVariant: ['tabular-nums'] }}
-            >
-              Rest {formatElapsed(now - restStartedAtMs)}
-            </Text>
-            <Pressable onPress={stopRest} hitSlop={8}>
-              <Text className="font-body text-[11px] uppercase tracking-[2px] text-primary">
-                Stop
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
 
         <TextInput
           value={title}
@@ -133,64 +125,51 @@ export default function WorkoutScreen() {
           onEndEditing={commitTitle}
           placeholder="Workout title"
           placeholderTextColor="rgba(0,0,0,0.3)"
-          className="mt-2 border-b border-border pb-1 font-heading text-[30px] tracking-[-1px] text-foreground"
+          className="mt-5 border-b border-border pb-2 font-heading text-[30px] tracking-[-1px] text-foreground"
         />
       </View>
 
       {session ? (
-        // KeyboardAvoidingView + the nestable pair replaces KeyboardAwareScrollView
-        // here: draggable lists need the outer scroller to be the library's
-        // container (see docs/20260926_keyboard_handling.md). Trade-off: focused
-        // inputs are lifted above the keyboard but no longer auto-scrolled into
-        // view — the user scrolls manually while dragging is not in progress.
-        <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-          <NestableScrollContainer
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {session.exercises.length === 0 ? (
-              <Pressable onPress={() => setPickerVisible(true)} className="mb-4 self-start py-1">
-                <Text className="font-body text-[13px] leading-5 text-muted-foreground">
-                  Add your first exercise →
+        <ExerciseList
+          exercises={session.exercises}
+          onReorder={(ids) => reorderExercises.mutate(ids)}
+          renderItem={(item, drag, isActive) => (
+            <ExerciseBlock
+              sessionId={sessionId}
+              exercise={item}
+              recent={recentByName.get(item.name) ?? null}
+              supersetPartners={session.exercises
+                .filter((e) => e.id !== item.id && e.supersetGroup != null && e.supersetGroup === item.supersetGroup)
+                .map((e) => e.name)}
+              supersetOptions={supersetOptions}
+              active={item.id === activeExerciseId}
+              onActivate={() => setActiveId(item.id)}
+              onNameLongPress={drag}
+              isDragging={isActive}
+            />
+          )}
+          empty={
+            <Pressable onPress={() => setPickerVisible(true)} className="mb-4 self-start py-1">
+              <Text className="font-body text-[13px] leading-5 text-muted-foreground">
+                Add your first exercise →
+              </Text>
+            </Pressable>
+          }
+          footer={
+            <View className="flex-row items-center justify-between gap-4 pb-14 pt-5">
+              <Pressable onPress={() => setPickerVisible(true)} className="py-3">
+                <Text className="font-body text-[11px] uppercase tracking-[3px] text-primary">
+                  + Add exercise
                 </Text>
               </Pressable>
-            ) : (
-              <NestableDraggableFlatList
-                data={session.exercises}
-                keyExtractor={(exercise) => exercise.id}
-                onDragBegin={() => void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-                onDragEnd={({ data, from, to }) => {
-                  if (from !== to) {
-                    reorderExercises.mutate(data.map((exercise) => exercise.id));
-                  }
-                }}
-                renderItem={({ item, drag, isActive }) => (
-                  <ExerciseBlock
-                    sessionId={sessionId}
-                    exercise={item}
-                    recent={recentByName.get(item.name) ?? null}
-                    nextSupersetGroup={nextSupersetGroup(session.exercises, item.id)}
-                    onNameLongPress={drag}
-                    isDragging={isActive}
-                  />
-                )}
-              />
-            )}
-
-            <Pressable onPress={() => setPickerVisible(true)} className="py-4">
-              <Text className="font-body text-[11px] uppercase tracking-[3px] text-primary">
-                + Add exercise
-              </Text>
-            </Pressable>
-
-            <Pressable onPress={() => setPainVisible(true)} className="py-2">
-              <Text className="font-body text-[10px] uppercase tracking-[3px] text-muted-foreground">
-                + Pain
-              </Text>
-            </Pressable>
-          </NestableScrollContainer>
-        </KeyboardAvoidingView>
+              <Pressable onPress={() => setPainVisible(true)} className="py-3">
+                <Text className="font-body text-[11px] uppercase tracking-[3px] text-muted-foreground">
+                  + Pain
+                </Text>
+              </Pressable>
+            </View>
+          }
+        />
       ) : (
         <View className="flex-1 px-6 pt-6">
           <DataState message="Loading workout…" />

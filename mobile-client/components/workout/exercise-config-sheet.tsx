@@ -1,16 +1,22 @@
-import { useEffect, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Platform, Pressable, Text, TextInput, View } from 'react-native';
 
+import { PillChip } from '@/components/ui/pill-chip';
 import { Sheet } from '@/components/ui/sheet';
 import {
+  useDeleteExercise,
   useExerciseConfigMap,
   useExerciseTags,
   useSetExerciseConfig,
   useSetExerciseTags,
   useUpdateExercise,
 } from '@/hooks/api';
-import { bodyPartLabel, bodyPartRoots, type ExerciseConfig, type ExerciseSetField } from '@wot/types';
+import { DEFAULT_TAGS } from '@/lib/insights';
+import type { ExerciseConfig, ExerciseMode, ExerciseSetField } from '@wot/types';
 import { BodyPartPicker } from './body-part-picker';
+
+const MODES: ExerciseMode[] = ['strength', 'cardio', 'flexibility'];
+const MAX_INPUTS = 4;
 
 const FIELD_OPTIONS: { key: ExerciseSetField; label: string }[] = [
   { key: 'weight', label: 'kg' },
@@ -19,7 +25,34 @@ const FIELD_OPTIONS: { key: ExerciseSetField; label: string }[] = [
   { key: 'rpe', label: 'rpe' },
   { key: 'distance', label: 'km' },
   { key: 'duration', label: 'sec' },
+  { key: 'durationMin', label: 'min' },
 ];
+
+// sec and min write the same duration column — picking one drops the other.
+const EXCLUSIVE: Partial<Record<ExerciseSetField, ExerciseSetField>> = {
+  duration: 'durationMin',
+  durationMin: 'duration',
+};
+
+const EMPTY_CONFIG: ExerciseConfig = {
+  fields: null,
+  tempo: null,
+  bodyParts: null,
+  mode: null,
+  restTimer: null,
+};
+
+/** Patch one exercise name's config (PUT replaces the whole config). */
+export function useWriteExerciseConfig(exerciseName: string, onError?: () => void) {
+  const { data: configMap } = useExerciseConfigMap();
+  const setConfig = useSetExerciseConfig();
+  const config = configMap?.get(exerciseName) ?? null;
+  return (patch: Partial<ExerciseConfig>) =>
+    setConfig.mutate(
+      { exerciseName, config: { ...EMPTY_CONFIG, ...config, ...patch } },
+      { onError },
+    );
+}
 
 type ExerciseConfigSheetProps = {
   visible: boolean;
@@ -29,14 +62,19 @@ type ExerciseConfigSheetProps = {
   exerciseName: string;
   /** The set-input fields the exercise currently resolves to (for display). */
   resolvedFields: ExerciseSetField[];
+  mode: ExerciseMode;
   /** Body parts of this session's exercise instance. */
   currentBodyParts: string[];
+  supersetGroup: number | null;
+  /** Groups offered as chips (besides None). */
+  supersetOptions: number[];
 };
 
 /**
- * Per-exercise cog menu. Everything auto-saves (app-wide convention): chips
- * write the name-keyed config / tags immediately. Body parts additionally
- * patch the current session instance so the header updates in place.
+ * Per-exercise cog menu: everything secondary about an exercise lives here so
+ * the block itself stays calm. Auto-saves (app-wide convention): chips write
+ * the name-keyed config / tags immediately; superset and body parts also
+ * patch this session's instance.
  */
 export function ExerciseConfigSheet({
   visible,
@@ -45,13 +83,16 @@ export function ExerciseConfigSheet({
   exerciseId,
   exerciseName,
   resolvedFields,
+  mode,
   currentBodyParts,
+  supersetGroup,
+  supersetOptions,
 }: ExerciseConfigSheetProps) {
   const { data: configMap } = useExerciseConfigMap();
   const { data: tagsRows = [] } = useExerciseTags();
-  const setConfig = useSetExerciseConfig();
   const setTags = useSetExerciseTags();
   const updateExercise = useUpdateExercise(sessionId);
+  const deleteExercise = useDeleteExerciseOnce(sessionId, exerciseId, onClose);
 
   const config = configMap?.get(exerciseName) ?? null;
   const tags = tagsRows.find((row) => row.exerciseName === exerciseName)?.tags ?? [];
@@ -67,21 +108,16 @@ export function ExerciseConfigSheet({
     }
   }, [visible]);
   const tempo = tempoDraft ?? config?.tempo ?? '';
+  const onSaveError = () => setError("Couldn't save. Check your connection and try again.");
+  const writeConfig = useWriteExerciseConfig(exerciseName, onSaveError);
 
-  const writeConfig = (patch: Partial<ExerciseConfig>) => {
-    const current: ExerciseConfig = config ?? { fields: null, tempo: null, bodyParts: null };
-    setConfig.mutate(
-      { exerciseName, config: { ...current, ...patch } },
-      { onError: () => setError("Couldn't save. Check your connection and try again.") },
-    );
-  };
-
+  const fields = config?.fields ?? resolvedFields;
   const toggleField = (key: ExerciseSetField) => {
-    const current = config?.fields ?? resolvedFields;
-    const next = current.includes(key) ? current.filter((f) => f !== key) : [...current, key];
-    const ordered = FIELD_OPTIONS.filter((o) => next.includes(o.key)).map((o) => o.key);
-    if (ordered.length === 0) return; // keep at least one input
-    writeConfig({ fields: ordered });
+    const next = fields.includes(key)
+      ? fields.filter((f) => f !== key)
+      : [...fields.filter((f) => f !== EXCLUSIVE[key]), key];
+    if (next.length === 0 || next.length > MAX_INPUTS) return;
+    writeConfig({ fields: FIELD_OPTIONS.map((o) => o.key).filter((k) => next.includes(k)) });
   };
 
   const commitTempo = () => {
@@ -90,145 +126,196 @@ export function ExerciseConfigSheet({
     writeConfig({ tempo: trimmed === '' ? null : trimmed });
   };
 
-  const writeTags = (next: string[]) => {
-    setTags.mutate(
-      { exerciseName, tags: next },
-      { onError: () => setError("Couldn't save tags. Try again.") },
-    );
-  };
-
+  const writeTags = (next: string[]) =>
+    setTags.mutate({ exerciseName, tags: next }, { onError: onSaveError });
+  const toggleTag = (tag: string) =>
+    writeTags(tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]);
   const addTag = () => {
     const tag = tagDraft.trim().toLowerCase();
-    if (tag === '' || tags.includes(tag)) return;
     setTagDraft('');
-    writeTags([...tags, tag]);
+    if (tag !== '' && !tags.includes(tag)) writeTags([...tags, tag]);
   };
 
   // Chips reflect the session instance (what the header shows); an empty
   // instance falls back to the stored default so nothing looks lost.
-  const activeParts =
-    currentBodyParts.length > 0 ? currentBodyParts : (config?.bodyParts ?? []);
+  const activeParts = currentBodyParts.length > 0 ? currentBodyParts : (config?.bodyParts ?? []);
   const togglePart = (part: string) => {
     const next = activeParts.includes(part)
       ? activeParts.filter((p) => p !== part)
       : [...activeParts, part];
     writeConfig({ bodyParts: next.length > 0 ? next : null });
-    updateExercise.mutate(
-      { exerciseId, body: { bodyParts: next } },
-      { onError: () => setError("Couldn't update body parts. Try again.") },
-    );
+    updateExercise.mutate({ exerciseId, body: { bodyParts: next } }, { onError: onSaveError });
   };
 
-  const countedIn = bodyPartRoots(activeParts).map((r) => bodyPartLabel(r) ?? r);
-  const fieldsAreCustom = config?.fields != null;
+  const setSuperset = (group: number | null) =>
+    updateExercise.mutate({ exerciseId, body: { supersetGroup: group } }, { onError: onSaveError });
+
+  const restOn = config?.restTimer !== false;
 
   return (
     <Sheet visible={visible} onClose={onClose}>
-      <Text className="mb-1 font-heading text-[24px] tracking-[-0.6px] text-foreground">
+      <Text className="mb-5 font-heading text-[24px] tracking-[-0.6px] text-foreground">
         {exerciseName}
       </Text>
-      <Text className="mb-5 font-body text-[13px] leading-5 text-muted-foreground">
-        Set inputs, tempo, tags and body parts — remembered for next time you add it.
-      </Text>
 
-      <View className="mb-4 flex-row items-baseline justify-between">
-        <Text className="font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
-          Set inputs
-        </Text>
-        {fieldsAreCustom ? (
-          <Pressable onPress={() => writeConfig({ fields: null })} hitSlop={8}>
-            <Text className="font-body text-[10px] uppercase tracking-[2px] text-primary">
-              Reset to automatic
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-      <View className="mb-5 flex-row flex-wrap gap-2">
-        {FIELD_OPTIONS.map((option) => {
-          const active = (config?.fields ?? resolvedFields).includes(option.key);
-          return (
-            <Pressable
-              key={option.key}
-              onPress={() => toggleField(option.key)}
-              className={
-                active
-                  ? 'rounded-full bg-primary px-3 py-1.5'
-                  : 'rounded-full bg-surface-container-low px-3 py-1.5'
-              }
+      <View className="gap-[22px]">
+        <Section label="Superset">
+          <ChipRow>
+            <PillChip label="None" selected={supersetGroup == null} onPress={() => setSuperset(null)} />
+            {supersetOptions.map((g) => (
+              <PillChip
+                key={g}
+                label={`Superset ${g}`}
+                selected={supersetGroup === g}
+                onPress={() => setSuperset(g)}
+              />
+            ))}
+          </ChipRow>
+        </Section>
+
+        <Section label="Type">
+          <ChipRow>
+            {MODES.map((m) => (
+              <PillChip
+                key={m}
+                label={m}
+                selected={mode === m}
+                // A new type resets the set inputs to that type's defaults.
+                onPress={() => writeConfig({ mode: m, fields: null })}
+              />
+            ))}
+          </ChipRow>
+        </Section>
+
+        <Section
+          label={`Set inputs · up to ${MAX_INPUTS}`}
+          action={
+            config?.fields ? (
+              <Pressable onPress={() => writeConfig({ fields: null })} hitSlop={8}>
+                <Text className="font-body text-[10px] uppercase tracking-[2px] text-primary">Reset</Text>
+              </Pressable>
+            ) : null
+          }
+        >
+          <ChipRow>
+            {FIELD_OPTIONS.map((o) => (
+              <PillChip
+                key={o.key}
+                label={o.label}
+                selected={fields.includes(o.key)}
+                onPress={() => toggleField(o.key)}
+              />
+            ))}
+          </ChipRow>
+        </Section>
+
+        <InlineRow label="Rest timer after a set">
+          <View className="flex-row gap-2">
+            <PillChip label="On" selected={restOn} onPress={() => writeConfig({ restTimer: null })} />
+            <PillChip label="Off" selected={!restOn} onPress={() => writeConfig({ restTimer: false })} />
+          </View>
+        </InlineRow>
+
+        <InlineRow label="Tempo">
+          <TextInput
+            value={tempo}
+            onChangeText={setTempoDraft}
+            onBlur={commitTempo}
+            onSubmitEditing={commitTempo}
+            placeholder="3-2-1"
+            placeholderTextColor="rgba(0,0,0,0.3)"
+            autoCapitalize="none"
+            className="w-[110px] border-b pb-1 text-right font-heading text-[22px] text-foreground"
+            style={{ borderBottomColor: 'rgba(0,0,0,0.15)', fontVariant: ['tabular-nums'] }}
+          />
+        </InlineRow>
+
+        <Section label="Tags">
+          <ChipRow>
+            {[...DEFAULT_TAGS, ...tags.filter((t) => !DEFAULT_TAGS.includes(t))].map((t) => (
+              <PillChip key={t} label={t} selected={tags.includes(t)} onPress={() => toggleTag(t)} />
+            ))}
+            <TextInput
+              value={tagDraft}
+              onChangeText={setTagDraft}
+              onSubmitEditing={addTag}
+              placeholder="+ tag"
+              placeholderTextColor="rgba(0,0,0,0.3)"
+              autoCapitalize="none"
+              returnKeyType="done"
+              className="w-[72px] border-b py-0.5 font-body text-[12px] text-foreground"
+              style={{ borderBottomColor: 'rgba(0,0,0,0.15)' }}
+            />
+          </ChipRow>
+        </Section>
+
+        <Section label="Body parts">
+          <BodyPartPicker selected={activeParts} onToggle={togglePart} />
+        </Section>
+
+        {error ? <Text className="font-body text-[12px] text-destructive">{error}</Text> : null}
+
+        <View className="flex-row items-center justify-between gap-4 border-t border-border pt-4">
+          <Text className="flex-1 font-body text-[12px] leading-4 text-faint">
+            {/* Drag reorder is native-only (see exercise-list.web.tsx). */}
+            {Platform.OS === 'web' ? '' : 'Hold the name to drag and reorder.'}
+          </Text>
+          <Pressable onPress={deleteExercise.press} hitSlop={8} className="py-2">
+            <Text
+              className={`font-body text-[10px] uppercase tracking-[2px] ${
+                deleteExercise.confirming ? 'text-destructive' : 'text-muted-foreground'
+              }`}
             >
-              <Text
-                className={
-                  active
-                    ? 'font-body text-[11px] uppercase tracking-[2px] text-primary-foreground'
-                    : 'font-body text-[11px] uppercase tracking-[2px] text-muted-foreground'
-                }
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {!fieldsAreCustom ? (
-        <Text className="-mt-3 mb-5 font-body text-[10px] text-muted-foreground">
-          Following your settings — tap a field to customize for this exercise.
-        </Text>
-      ) : null}
-
-      <Text className="mb-2 font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
-        Tempo
-      </Text>
-      <TextInput
-        value={tempo}
-        onChangeText={setTempoDraft}
-        onBlur={commitTempo}
-        onSubmitEditing={commitTempo}
-        placeholder="e.g. 3-2-1 (optional)"
-        placeholderTextColor="rgba(0,0,0,0.3)"
-        autoCapitalize="none"
-        className="mb-5 border-b border-border pb-1 font-body text-[16px] text-foreground"
-      />
-
-      <Text className="mb-2 font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
-        Tags
-      </Text>
-      <View className="mb-2 flex-row flex-wrap items-center gap-2">
-        {tags.map((tag) => (
-          <Pressable
-            key={tag}
-            onPress={() => writeTags(tags.filter((t) => t !== tag))}
-            className="rounded-full bg-primary px-3 py-1.5"
-          >
-            <Text className="font-body text-[11px] uppercase tracking-[2px] text-primary-foreground">
-              {tag} ✕
+              {deleteExercise.confirming ? 'Tap again to remove' : 'Remove exercise'}
             </Text>
           </Pressable>
-        ))}
-        <TextInput
-          value={tagDraft}
-          onChangeText={setTagDraft}
-          onSubmitEditing={addTag}
-          placeholder="+ tag"
-          placeholderTextColor="rgba(0,0,0,0.3)"
-          autoCapitalize="none"
-          returnKeyType="done"
-          className="min-w-[80px] border-b border-border pb-1 font-body text-[14px] text-foreground"
-        />
+        </View>
       </View>
-
-      <Text className="mb-2 mt-3 font-body text-[10px] uppercase tracking-[2px] text-muted-foreground">
-        Body parts
-      </Text>
-      <BodyPartPicker selected={activeParts} onToggle={togglePart} />
-      {countedIn.length > 0 ? (
-        <Text className="mb-2 font-body text-[11px] text-muted-foreground">
-          Counts in: <Text className="text-foreground">{countedIn.join(' · ')}</Text>
-        </Text>
-      ) : null}
-
-      {error ? (
-        <Text className="mt-2 font-body text-[12px] text-destructive">{error}</Text>
-      ) : null}
     </Sheet>
   );
+}
+
+// Two-tap remove (no dialog): first tap arms for 3 s, second removes.
+function useDeleteExerciseOnce(sessionId: string, exerciseId: string, onDone: () => void) {
+  const deleteExercise = useDeleteExercise(sessionId);
+  const [confirming, setConfirming] = useState(false);
+  useEffect(() => {
+    if (!confirming) return;
+    const id = setTimeout(() => setConfirming(false), 3000);
+    return () => clearTimeout(id);
+  }, [confirming]);
+  const press = () => {
+    if (!confirming) return setConfirming(true);
+    setConfirming(false);
+    onDone();
+    deleteExercise.mutate(exerciseId);
+  };
+  return { confirming, press };
+}
+
+const SECTION_LABEL = 'font-body text-[10px] uppercase tracking-[2px] text-muted-foreground';
+
+function Section({ label, action, children }: { label: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <View>
+      <View className="mb-2 flex-row items-baseline justify-between">
+        <Text className={SECTION_LABEL}>{label}</Text>
+        {action}
+      </View>
+      {children}
+    </View>
+  );
+}
+
+function InlineRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <View className="flex-row items-end justify-between gap-4">
+      <Text className={`${SECTION_LABEL} flex-1`}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+function ChipRow({ children }: { children: ReactNode }) {
+  return <View className="flex-row flex-wrap items-center gap-2">{children}</View>;
 }

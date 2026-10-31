@@ -1,0 +1,27 @@
+:root{
+--font-heading:'Space Grotesk',ui-monospace,system-ui,sans-serif;
+--font-body:'Inter',system-ui,sans-serif;
+--weight-heading:300;
+--weight-heading-bold:700;
+/* type scale (px, from screen code) */
+--type-display-xl:52px;  /* login "WELCOME TO WOT!" bold upper, lh 52, ls -2 */
+--type-display:40px;     /* screen titles, lh 38, ls -1.6 */
+--type-title-input:30px; /* workout title input, ls -1 */
+--type-h1:26px;          /* exercise name / session row title, lh 28, ls -0.8 */
+--type-h2:24px;          /* section + sheet headings, ls -0.6 */
+--type-stat:22px;        /* set values, timer */
+--type-h3:20px;          /* card titles, lh 22, ls -0.4 */
+--type-body-lg:17px;     /* auth inputs */
+--type-input:16px;
+--type-body:13px;        /* body paragraphs, lh 20-24 */
+--type-small:12px;
+--type-caption:11px;
+--type-label:10px;
+--type-eyebrow:9px;      /* uppercase, tracking 3px */
+--type-micro:8px;
+--tracking-display:-1.6px;
+--tracking-h1:-0.8px;
+--tracking-h2:-0.6px;
+--tracking-label:2px;
+--tracking-eyebrow:3px;
+}

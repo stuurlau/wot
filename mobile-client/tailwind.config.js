@@ -30,6 +30,8 @@ module.exports = {
         'surface-container-lowest': '#ffffff',
         'surface-container-low': '#f4f3f2',
         'surface-container-highest': '#e3e2e1',
+        faint: '#a3a09c',
+        'on-surface-variant': '#6b6966',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',

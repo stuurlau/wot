@@ -16,7 +16,12 @@ export const exerciseSetFieldSchema = z.enum([
   'rpe',
   'distance',
   'duration',
+  // Same duration column (stored in seconds), entered in minutes.
+  'durationMin',
 ]);
+
+// Exercise type: picks the default set inputs when `fields` is null.
+export const exerciseModeSchema = z.enum(['strength', 'cardio', 'flexibility']);
 
 export const exerciseConfigSchema = z.object({
   // null = inherit from the global user_settings for the exercise's mode.
@@ -26,14 +31,22 @@ export const exerciseConfigSchema = z.object({
     .refine((fields) => new Set(fields).size === fields.length, {
       message: 'Fields must be unique.',
     })
+    .refine((fields) => !(fields.includes('duration') && fields.includes('durationMin')), {
+      message: 'Duration is either seconds or minutes.',
+    })
     .nullable(),
   // Tempo is configured at exercise level and stamped onto new sets.
   tempo: tempoSchema.nullable(),
   // Prefill for body parts when the exercise is added to a session.
   bodyParts: bodyPartsSchema.nullable(),
+  // null = strength. Defaulted so older app builds (which omit it) still validate.
+  mode: exerciseModeSchema.nullable().default(null),
+  // Start the rest clock after logging a set; null = on.
+  restTimer: z.boolean().nullable().default(null),
 });
 
 export type ExerciseSetField = z.infer<typeof exerciseSetFieldSchema>;
+export type ExerciseMode = z.infer<typeof exerciseModeSchema>;
 export type ExerciseConfig = z.infer<typeof exerciseConfigSchema>;
 
 // One user's config row as returned by GET /exercises/config.
