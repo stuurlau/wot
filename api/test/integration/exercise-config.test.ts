@@ -61,7 +61,13 @@ describe("exercise config", () => {
       url: "/api/v1/exercises/config",
       payload: {
         exerciseName: "Config Bench",
-        config: { fields: ["weight", "reps", "duration"], tempo: "3-2-1", bodyParts: ["chest"] },
+        config: {
+          fields: ["weight", "reps", "duration"],
+          tempo: "3-2-1",
+          bodyParts: ["chest"],
+          mode: "flexibility",
+          restTimer: false,
+        },
       },
       headers: auth(testUser.token),
     });
@@ -71,6 +77,8 @@ describe("exercise config", () => {
       fields: ["weight", "reps", "duration"],
       tempo: "3-2-1",
       bodyParts: ["chest"],
+      mode: "flexibility",
+      restTimer: false,
     });
 
     // Upsert: replacing the same name must not violate the unique index.
@@ -93,7 +101,15 @@ describe("exercise config", () => {
     assert.equal(listRes.statusCode, 200, listRes.body);
     const data = listRes.json<{ data: ConfigEntry[] }>().data;
     assert.deepEqual(data, [
-      { exerciseName: "Config Bench", fields: ["reps", "durationMin"], tempo: null, bodyParts: null },
+      // mode/restTimer omitted (older app builds) default to null.
+      {
+        exerciseName: "Config Bench",
+        fields: ["reps", "durationMin"],
+        tempo: null,
+        bodyParts: null,
+        mode: null,
+        restTimer: null,
+      },
     ]);
 
     // Configs are per user.
@@ -129,6 +145,8 @@ describe("exercise config", () => {
       { exerciseName: "X", config: { fields: [], tempo: null, bodyParts: null } },
       { exerciseName: "X", config: { fields: ["weight", "weight"], tempo: null, bodyParts: null } },
       { exerciseName: "X", config: { fields: ["volume"], tempo: null, bodyParts: null } },
+      { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: null, mode: "yoga" } },
+      { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: null, restTimer: "off" } },
       { exerciseName: "X", config: { fields: ["duration", "durationMin"], tempo: null, bodyParts: null } },
       { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: ["push"] } },
       { exerciseName: "X", config: { fields: null, tempo: null, bodyParts: ["chest", "chest"] } },
@@ -210,7 +228,7 @@ describe("exercise config", () => {
     const configs = configAfter.json<{ data: ConfigEntry[] }>().data;
     assert.deepEqual(
       configs.find((c) => c.exerciseName === "Cfg Bench Press"),
-      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyParts: null },
+      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyParts: null, mode: null, restTimer: null },
     );
     assert.equal(configs.find((c) => c.exerciseName === "Cfg Benchpress"), undefined);
 
@@ -258,7 +276,7 @@ describe("exercise config", () => {
     // Target config untouched, source config dropped.
     assert.deepEqual(
       finalConfigs.find((c) => c.exerciseName === "Cfg Bench Press"),
-      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyParts: null },
+      { exerciseName: "Cfg Bench Press", fields: ["weight", "reps"], tempo: "2-0-2", bodyParts: null, mode: null, restTimer: null },
     );
     assert.equal(finalConfigs.find((c) => c.exerciseName === "Cfg Benchpress2"), undefined);
 

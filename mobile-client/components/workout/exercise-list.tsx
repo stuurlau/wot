@@ -16,7 +16,8 @@ export type ExerciseListProps = {
   footer: ReactNode;
 };
 
-export const exerciseListContentStyle = { paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 };
+// Blocks carry their own vertical rhythm; the footer pads the bottom.
+export const exerciseListContentStyle = { paddingHorizontal: 24 };
 
 // The workout screen's scroller + drag-reorder list (long-press a name).
 // KeyboardAvoidingView + the nestable pair replaces KeyboardAwareScrollView

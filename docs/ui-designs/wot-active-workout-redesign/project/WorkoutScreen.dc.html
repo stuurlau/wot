@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/wot-design-system-086a574e-93cd-486d-93c3-314613f11c5e/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/wot-design-system-086a574e-93cd-486d-93c3-314613f11c5e/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/wot-design-system-086a574e-93cd-486d-93c3-314613f11c5e/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/wot-design-system-086a574e-93cd-486d-93c3-314613f11c5e/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/wot-design-system-086a574e-93cd-486d-93c3-314613f11c5e/tokens/backgrounds.css">
+  <link rel="stylesheet" href="_ds/wot-design-system-086a574e-93cd-486d-93c3-314613f11c5e/styles.css">
+  <script src="_ds/wot-design-system-086a574e-93cd-486d-93c3-314613f11c5e/_ds_bundle.js"></script>
+  <style>body{margin:0}input::placeholder{color:var(--wot-placeholder)}button{-webkit-tap-highlight-color:transparent}</style>
+</helmet>
+<div style="position:relative; width:100%; max-width:400px; height:100%; margin:0 auto; overflow:hidden; background-color:var(--wot-surface); color:var(--wot-on-surface); font-family:var(--font-body);">
+<div style="height:100%; overflow-y:auto; overflow-x:hidden; background-image:linear-gradient(to bottom, var(--wot-surface), transparent 260px), repeating-linear-gradient(to right, var(--wot-grid-line) 0px, var(--wot-grid-line) 1px, transparent 1px, transparent 25px), repeating-linear-gradient(to bottom, var(--wot-grid-line) 0px, var(--wot-grid-line) 1px, transparent 1px, transparent 25px);">
+
+  <div style="filter:var(--wot-logo-filter, none)">
+    <x-import component-from-global-scope="WOTDesignSystem_086a57.AppHeader" logo-src="assets/wot-logo.svg" hint-size="100%,68px"></x-import>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:4px 24px 0;">
+    <button style="justify-self:start; background:none; border:0; padding:12px 0; cursor:pointer; font-family:var(--font-body); font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">↓ Minimize</button>
+    <div style="font-family:var(--font-heading); font-weight:300; font-size:32px; line-height:36px; letter-spacing:-1px; font-variant-numeric:tabular-nums; color:var(--wot-on-surface);">{{ clock }}</div>
+    <button style="justify-self:end; background:none; border:0; padding:12px 0; cursor:pointer; font-family:var(--font-body); font-weight:500; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-primary);">Finish</button>
+  </div>
+
+  <div style="height:16px;"></div>
+
+  <div style="padding:4px 24px 0;">
+    <input value="{{ title }}" onChange="{{ onTitle }}" aria-label="Session title" style="width:100%; box-sizing:border-box; border:0; border-bottom:1px solid var(--wot-border-solid); background:transparent; outline:none; padding:0 0 8px; font-family:var(--font-heading); font-weight:300; font-size:30px; letter-spacing:-1px; color:var(--wot-on-surface);">
+  </div>
+
+  <div style="padding:0 24px;">
+    <sc-for list="{{ exercises }}" as="ex" hint-placeholder-count="3">
+      <div style="padding:28px 0 24px; border-bottom:1px solid var(--wot-border-solid);">
+
+        <div style="display:flex; align-items:flex-start; gap:4px;">
+          <sc-if value="{{ ex.notRenaming }}" hint-placeholder-val="{{ true }}">
+            <div onClick="{{ ex.onNameTap }}" style="flex:1; min-width:0; cursor:text; font-family:var(--font-heading); font-weight:300; font-size:26px; line-height:30px; letter-spacing:-0.8px; color:var(--wot-on-surface); overflow-wrap:anywhere; text-wrap:pretty;">{{ ex.name }}</div>
+          </sc-if>
+          <sc-if value="{{ ex.renaming }}">
+            <input value="{{ ex.renameValue }}" onChange="{{ ex.onRenameInput }}" onBlur="{{ ex.commitRename }}" onKeyDown="{{ ex.onRenameKey }}" autoFocus="{{ true }}" style="flex:1; min-width:0; border:0; border-bottom:1px solid var(--wot-primary); background:transparent; outline:none; padding:0 0 2px; font-family:var(--font-heading); font-weight:300; font-size:26px; line-height:30px; letter-spacing:-0.8px; color:var(--wot-on-surface);">
+          </sc-if>
+          <button onClick="{{ ex.openSheet }}" aria-label="Exercise settings" style="flex:none; width:44px; height:44px; margin:-7px -14px 0 0; display:flex; align-items:center; justify-content:center; background:none; border:0; cursor:pointer;">
+            <x-import component-from-global-scope="WOTDesignSystem_086a57.Icon" name="gearshape.fill" size="{{ 16 }}" color="var(--wot-faint)" hint-size="16px,16px"></x-import>
+          </button>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:6px; padding-right:28px;">
+          <sc-if value="{{ ex.hasSS }}">
+            <span style="font-size:9px; line-height:16px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-primary); font-weight:500; overflow-wrap:anywhere;">{{ ex.ssLabel }}</span>
+          </sc-if>
+          <span style="font-size:9px; line-height:16px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg); overflow-wrap:anywhere;">{{ ex.meta }}</span>
+        </div>
+
+        <sc-if value="{{ ex.renameOffer }}">
+          <div style="margin-top:14px; padding:12px 14px; border-radius:12px; background:var(--wot-surface-container-low); display:flex; flex-direction:column; gap:10px;">
+            <span style="font-size:13px; line-height:18px; color:var(--wot-on-surface-variant); text-wrap:pretty;">{{ ex.renameText }}</span>
+            <div style="display:flex; gap:20px;">
+              <button onClick="{{ ex.renameAll }}" style="background:none; border:0; padding:4px 0; cursor:pointer; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-primary);">Rename all</button>
+              <button onClick="{{ ex.dismissRename }}" style="background:none; border:0; padding:4px 0; cursor:pointer; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Dismiss</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ ex.showModes }}">
+          <div style="margin-top:14px;">
+            <x-import component-from-global-scope="WOTDesignSystem_086a57.ChipGroup" size="sm" options="{{ modes }}" value="{{ ex.mode }}" on-change="{{ ex.onMode }}" hint-size="100%,24px"></x-import>
+          </div>
+        </sc-if>
+
+        <div style="margin-top:14px;">
+          <sc-for list="{{ ex.rows }}" as="r" hint-placeholder-count="2">
+            <sc-if value="{{ r.viewing }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ r.onTap }}" onPointerDown="{{ r.onDown }}" onPointerUp="{{ r.onUp }}" onPointerLeave="{{ r.onUp }}" style="display:grid; grid-template-columns:28px minmax(0,1fr); align-items:baseline; padding:8px 12px; border-bottom:1px solid var(--wot-border); cursor:pointer; user-select:none;">
+                <span style="font-size:12px; color:var(--wot-faint); font-variant-numeric:tabular-nums;">{{ r.n }}</span>
+                <span style="display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px;">
+                  <span style="font-family:var(--font-heading); font-weight:300; font-size:20px; line-height:24px; color:var(--wot-on-surface); font-variant-numeric:tabular-nums;">{{ r.main }}</span>
+                  <span style="font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg); font-variant-numeric:tabular-nums;">{{ r.sub }}</span>
+                </span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ r.editing }}">
+              <div style="display:flex; align-items:center; gap:8px; padding:6px 0 6px 12px; border-bottom:1px solid var(--wot-border);">
+                <span style="width:20px; flex:none; font-size:12px; color:var(--wot-faint);">{{ r.n }}</span>
+                <sc-for list="{{ r.fields }}" as="f">
+                  <input value="{{ f.value }}" placeholder="{{ f.unit }}" onChange="{{ f.onInput }}" onKeyDown="{{ r.onKey }}" style="flex:1 1 0; min-width:0; height:34px; box-sizing:border-box; border:0; border-bottom:1px solid var(--wot-primary); background:transparent; outline:none; padding:0; text-align:center; font-family:var(--font-heading); font-weight:300; font-size:18px; color:var(--wot-on-surface); font-variant-numeric:tabular-nums;">
+                </sc-for>
+                <button onClick="{{ r.onSave }}" aria-label="Save set" style="flex:none; width:36px; height:36px; border-radius:9999px; border:1px solid var(--wot-primary); background:none; cursor:pointer; font-size:14px; color:var(--wot-primary);">✓</button>
+              </div>
+            </sc-if>
+          </sc-for>
+
+          <sc-if value="{{ ex.undo }}">
+            <div style="display:flex; align-items:center; gap:16px; padding:8px 12px; font-size:12px; color:var(--wot-muted-fg);">
+              <span>{{ ex.undoText }}</span>
+              <button onClick="{{ ex.onUndo }}" style="background:none; border:0; padding:4px 0; cursor:pointer; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-primary);">Undo</button>
+            </div>
+          </sc-if>
+
+          <div onClick="{{ ex.activate }}" style="margin-top:8px; padding:8px 10px 10px 12px; border-radius:16px; background:{{ ex.cardBg }};">
+            <div style="display:flex; align-items:center; gap:12px; min-height:28px; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">
+              <span style="color:var(--wot-on-surface); font-weight:500;">Set {{ ex.nextN }}</span>
+              <sc-if value="{{ ex.lastRef }}"><span style="font-variant-numeric:tabular-nums;">Last {{ ex.lastRef }}</span></sc-if>
+              <span style="flex:1;"></span>
+              <sc-if value="{{ ex.showAddRir }}">
+                <button onClick="{{ ex.addRir }}" style="background:none; border:0; padding:6px 0; cursor:pointer; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">+ RIR</button>
+              </sc-if>
+              <sc-if value="{{ ex.copyable }}">
+                <button onClick="{{ ex.copy }}" style="background:none; border:0; padding:6px 0; cursor:pointer; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Copy</button>
+              </sc-if>
+            </div>
+            <div style="display:flex; align-items:flex-start; gap:8px;">
+              <sc-for list="{{ ex.fields }}" as="f" hint-placeholder-count="2">
+                <div style="flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:stretch;">
+                  <input value="{{ f.value }}" placeholder="{{ f.unit }}" onChange="{{ f.onInput }}" onFocus="{{ f.onFocus }}" onKeyDown="{{ ex.onKey }}" aria-label="{{ f.unit }}" style="width:100%; min-width:0; height:40px; box-sizing:border-box; border:0; border-bottom:1px solid {{ f.line }}; background:transparent; outline:none; padding:0; text-align:center; font-family:var(--font-heading); font-weight:300; font-size:21px; color:var(--wot-on-surface); font-variant-numeric:tabular-nums;">
+                  <sc-if value="{{ f.isIntensity }}">
+                    <button onClick="{{ f.onFlip }}" style="height:18px; background:none; border:0; padding:0; cursor:pointer; font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--wot-primary); white-space:nowrap;">{{ f.flipLabel }}</button>
+                  </sc-if>
+                  <sc-if value="{{ f.plain }}">
+                    <span style="height:18px; line-height:18px; text-align:center; font-size:8px; letter-spacing:1.5px; text-transform:uppercase; color:var(--wot-faint);">{{ f.subLabel }}</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ ex.timerIdle }}">
+                <button onClick="{{ ex.toggleHold }}" aria-label="Start hold timer" style="flex:none; width:40px; height:40px; border:0; border-radius:9999px; background:var(--wot-surface-container-low); cursor:pointer; font-size:11px; color:var(--wot-on-surface-variant);">▶</button>
+              </sc-if>
+              <sc-if value="{{ ex.timerRunning }}">
+                <button onClick="{{ ex.toggleHold }}" aria-label="Stop hold timer" style="flex:none; height:40px; padding:0 12px; display:flex; align-items:center; gap:8px; border:1px solid var(--wot-primary); border-radius:9999px; background:none; cursor:pointer; color:var(--wot-primary);">
+                  <span style="font-family:var(--font-heading); font-weight:300; font-size:18px; font-variant-numeric:tabular-nums;">{{ ex.holdText }}</span>
+                  <span style="font-size:9px;">■</span>
+                </button>
+              </sc-if>
+              <button onClick="{{ ex.log }}" aria-label="Log set" style="flex:none; width:44px; height:44px; margin-top:-2px; border:0; border-radius:9999px; background:var(--wot-primary); cursor:pointer; font-weight:700; font-size:17px; color:var(--wot-on-primary);" style-active="opacity:0.8">✓</button>
+            </div>
+            <sc-if value="{{ ex.restOn }}">
+              <div style="display:flex; align-items:center; gap:10px; margin-top:8px; padding-top:6px; border-top:1px solid var(--wot-border);">
+                <span style="font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Rest</span>
+                <span style="font-family:var(--font-heading); font-weight:300; font-size:18px; font-variant-numeric:tabular-nums; color:var(--wot-on-surface);">{{ restText }}</span>
+                <span style="flex:1;"></span>
+                <button onClick="{{ stopRest }}" aria-label="Stop rest timer" style="display:flex; align-items:center; gap:6px; height:32px; border:0; background:none; cursor:pointer; padding:0 4px; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-on-surface-variant);">Stop ■</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; padding:20px 24px 56px;">
+    <button onClick="{{ openAdd }}" style="background:none; border:0; padding:12px 0; cursor:pointer; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--wot-primary);">+ Add exercise</button>
+    <button style="background:none; border:0; padding:12px 0; cursor:pointer; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--wot-muted-fg);">+ Pain</button>
+  </div>
+</div>
+
+<x-import component-from-global-scope="WOTDesignSystem_086a57.Sheet" open="{{ configOpen }}" on-close="{{ closeSheet }}" title="{{ sx.name }}" hint-size="0px,0px">
+  <div style="display:flex; flex-direction:column; gap:22px;">
+    <div>
+      <div style="margin-bottom:8px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Superset</div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <sc-for list="{{ sx.ssChips }}" as="c"><x-import component-from-global-scope="WOTDesignSystem_086a57.Chip" size="sm" label="{{ c.label }}" selected="{{ c.on }}" on-click="{{ c.onClick }}" hint-size="56px,24px"></x-import></sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="margin-bottom:8px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Type</div>
+      <x-import component-from-global-scope="WOTDesignSystem_086a57.ChipGroup" size="sm" options="{{ modes }}" value="{{ sx.mode }}" on-change="{{ sx.onMode }}" hint-size="100%,24px"></x-import>
+    </div>
+    <div>
+      <div style="margin-bottom:8px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Set inputs · up to 4</div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <sc-for list="{{ sx.inputChips }}" as="c"><x-import component-from-global-scope="WOTDesignSystem_086a57.Chip" size="sm" label="{{ c.label }}" selected="{{ c.on }}" on-click="{{ c.onClick }}" hint-size="48px,24px"></x-import></sc-for>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+      <span style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Rest timer after a set</span>
+      <div style="display:flex; gap:8px;">
+        <sc-for list="{{ sx.restChips }}" as="c"><x-import component-from-global-scope="WOTDesignSystem_086a57.Chip" size="sm" label="{{ c.label }}" selected="{{ c.on }}" on-click="{{ c.onClick }}" hint-size="44px,24px"></x-import></sc-for>
+      </div>
+    </div>
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px;">
+      <span style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Tempo</span>
+      <input value="{{ sx.tempo }}" onChange="{{ sx.onTempo }}" placeholder="3-2-1" style="width:110px; border:0; border-bottom:1px solid var(--wot-border-input); background:transparent; outline:none; padding:0 0 4px; text-align:right; font-family:var(--font-heading); font-weight:300; font-size:22px; color:var(--wot-on-surface); font-variant-numeric:tabular-nums;">
+    </div>
+    <div>
+      <div style="margin-bottom:8px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Tags</div>
+      <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+        <sc-for list="{{ sx.tagChips }}" as="c"><x-import component-from-global-scope="WOTDesignSystem_086a57.Chip" size="sm" label="{{ c.label }}" selected="{{ c.on }}" on-click="{{ c.onClick }}" hint-size="56px,24px"></x-import></sc-for>
+        <input value="{{ tagDraft }}" onChange="{{ onTagDraft }}" onKeyDown="{{ sx.onTagKey }}" placeholder="+ tag" style="width:72px; border:0; border-bottom:1px solid var(--wot-border-input); background:transparent; outline:none; padding:2px 0; font-size:12px; color:var(--wot-on-surface);">
+      </div>
+    </div>
+    <div>
+      <div style="margin-bottom:10px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Body parts</div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <sc-for list="{{ sx.bodyRows }}" as="row">
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-faint);">{{ row.label }}</span>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <sc-for list="{{ row.chips }}" as="c"><x-import component-from-global-scope="WOTDesignSystem_086a57.Chip" size="sm" label="{{ c.label }}" selected="{{ c.on }}" on-click="{{ c.onClick }}" hint-size="64px,24px"></x-import></sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; padding-top:16px; border-top:1px solid var(--wot-border-solid);">
+      <span style="font-size:12px; line-height:16px; color:var(--wot-faint);">Hold the name to drag and reorder.</span>
+      <button onClick="{{ sx.onRemove }}" style="flex:none; background:none; border:0; padding:8px 0; cursor:pointer; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:{{ sx.removeColor }};">{{ sx.removeLabel }}</button>
+    </div>
+  </div>
+</x-import>
+
+<x-import component-from-global-scope="WOTDesignSystem_086a57.Sheet" open="{{ addOpen }}" on-close="{{ closeSheet }}" title="Add exercise" hint-size="0px,0px">
+  <input value="{{ query }}" onChange="{{ onQuery }}" onKeyDown="{{ onQueryKey }}" placeholder="Exercise name" autoFocus="{{ true }}" style="width:100%; box-sizing:border-box; border:0; border-bottom:1px solid var(--wot-border-input); background:transparent; outline:none; padding:0 0 8px; font-family:var(--font-body); font-size:17px; color:var(--wot-on-surface);">
+  <sc-if value="{{ showCustom }}">
+    <button onClick="{{ addCustom }}" style="display:block; width:100%; text-align:left; background:none; border:0; border-bottom:1px solid var(--wot-border); padding:14px 0; cursor:pointer; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-primary); overflow-wrap:anywhere;">{{ customLabel }}</button>
+  </sc-if>
+  <div style="margin:20px 0 4px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">Recent</div>
+  <sc-for list="{{ recents }}" as="rc">
+    <button onClick="{{ rc.onClick }}" style="display:flex; width:100%; justify-content:space-between; align-items:baseline; gap:12px; text-align:left; background:none; border:0; border-bottom:1px solid var(--wot-border); padding:12px 0; cursor:pointer;">
+      <span style="font-family:var(--font-heading); font-weight:300; font-size:20px; letter-spacing:-0.4px; color:var(--wot-on-surface);">{{ rc.name }}</span>
+      <span style="flex:none; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--wot-muted-fg);">{{ rc.mode }}</span>
+    </button>
+  </sc-for>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:1700},&quot;openSheet&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const TREE = {
+  'Upper body': { 'Chest': {}, 'Back': { 'Lats': {}, 'Traps': {}, 'Rhomboids': {}, 'Lower back': {} }, 'Shoulders': {}, 'Arms': {} },
+  'Lower body': { 'Quads': {}, 'Hamstrings': {}, 'Glutes': {}, 'Calves': {}, 'Hip flexors': {}, 'Adductors': {} },
+  'Core': { 'Abs': {}, 'Obliques': {} },
+  'Full body': {}
+};
+const ALL_INPUTS = ['kg', 'reps', 'rir', 'rpe', 'km', 'sec', 'min'];
+const DEFAULTS = { strength: ['kg', 'reps'], cardio: ['km', 'min'], flexibility: ['sec'] };
+const TAGS = ['push', 'pull', 'prehab', 'mobility'];
+const RECENTS = [['Face pull', 'strength'], ['Copenhagen plank', 'flexibility'], ['Nordic curl', 'strength'], ['Bike intervals', 'cardio'], ['Calf raise', 'strength'], ['Pallof press', 'strength']];
+const isInt = (k) => k === 'rir' || k === 'rpe';
+const pad = (n) => String(n).padStart(2, '0');
+const mmss = (s) => Math.floor(s / 60) + ':' + pad(s % 60);
+function findNode(t, name) { for (const k in t) { if (k === name) return t[k]; const r = findNode(t[k], name); if (r) return r; } return null; }
+function descendants(t) { let o = []; for (const k in t) o = o.concat([k], descendants(t[k])); return o; }
+
+class Component extends DCLogic {
+  state = (() => {
+    const now = Date.now();
+    return {
+      now, sessionStart: now - 2532000, title: 'Thursday Strength', activeId: 'a', focus: { ex: 'a', key: 'reps' },
+      restStart: now - 83000, restEx: 'a', hold: { ex: 'c', start: now - 42000 }, sheet: this.props.openSheet ?? null,
+      renaming: null, offer: null, confirmRemove: false, editing: null, editDraft: {}, undo: null, query: '', tagDraft: '',
+      exercises: [
+        { id: 'a', name: 'Back squat', mode: 'strength', ss: 1, tempo: '3-1-1', parts: ['Lower body', 'Quads', 'Glutes'], tags: ['push'], inputs: ['kg', 'reps', 'rir'], past: 11,
+          sets: [{ kg: 80, reps: 5, rir: 3 }, { kg: 80, reps: 5, rir: 2 }, { kg: 82.5, reps: 5, rir: 2 }], last: '82.5 × 5', draft: { kg: '82.5' } },
+        { id: 'b', name: 'Single-leg Romanian deadlift', mode: 'strength', ss: 1, tempo: '3-2-1', parts: ['Lower body', 'Hamstrings', 'Glutes', 'Core'], tags: ['prehab'], inputs: ['kg', 'reps'], past: 6,
+          sets: [{ kg: 16, reps: 8 }, { kg: 16, reps: 8 }], last: '16 × 8', draft: {} },
+        { id: 'c', name: 'Couch stretch', mode: 'flexibility', ss: null, tempo: '', parts: ['Lower body', 'Hip flexors', 'Quads'], tags: ['mobility'], inputs: ['sec', 'kg'], past: 4,
+          sets: [{ sec: 60 }], last: '60 sec', draft: {} },
+        { id: 'd', name: 'Easy run', mode: 'cardio', ss: null, tempo: '', parts: ['Full body'], tags: [], inputs: ['km', 'min'], past: 9,
+          sets: [], last: '5.2 km × 30 min', draft: {} }
+      ]
+    };
+  })();
+
+  componentDidMount() { this.t = setInterval(() => this.setState({ now: Date.now() }), 1000); }
+  componentWillUnmount() { clearInterval(this.t); clearTimeout(this.lp); clearTimeout(this.rt); clearTimeout(this.ut); }
+
+  upd(id, fn) { this.setState((s) => ({ exercises: s.exercises.map((e) => (e.id === id ? fn(e) : e)) })); }
+  setDraft(id, k, v) { this.upd(id, (e) => ({ ...e, draft: { ...e.draft, [k]: v } })); }
+
+  fmtSet(e, s) {
+    const hasKg = s.kg != null && s.kg !== '';
+    const main = e.inputs.filter((k) => !isInt(k) && s[k] != null && s[k] !== '')
+      .map((k) => (k === 'reps' ? (hasKg ? s.reps : s.reps + ' reps') : s[k] + ' ' + k)).join(' × ');
+    const sub = e.inputs.filter((k) => isInt(k) && s[k] != null && s[k] !== '').map((k) => k + ' ' + s[k]).join(' · ');
+    return { main: main || '—', sub };
+  }
+
+  logSet(e) {
+    const vals = {};
+    e.inputs.forEach((k) => { const v = e.draft[k]; if (v != null && v !== '') vals[k] = isNaN(Number(v)) ? v : Number(v); });
+    if (!Object.keys(vals).length) return;
+    this.upd(e.id, (x) => ({ ...x, sets: x.sets.concat([vals]), draft: {} }));
+    this.setState((s) => ({ restStart: Date.now(), restEx: e.id, activeId: e.id, hold: s.hold && s.hold.ex === e.id ? null : s.hold }));
+  }
+
+  toggleHold(e) {
+    const h = this.state.hold;
+    if (h && h.ex === e.id) {
+      const el = Math.round((Date.now() - h.start) / 1000);
+      const key = e.inputs.includes('sec') ? 'sec' : 'min';
+      this.setDraft(e.id, key, String(key === 'sec' ? el : (el / 60).toFixed(1)));
+      this.setState({ hold: null });
+    } else this.setState({ hold: { ex: e.id, start: Date.now() }, activeId: e.id });
+  }
+
+  flip(e, k) {
+    const n = k === 'rir' ? 'rpe' : 'rir';
+    this.upd(e.id, (x) => { const d = { ...x.draft, [n]: x.draft[k] }; delete d[k]; return { ...x, inputs: x.inputs.map((i) => (i === k ? n : i)), draft: d }; });
+  }
+
+  togglePart(id, name) {
+    this.upd(id, (e) => {
+      if (e.parts.includes(name)) { const drop = [name].concat(descendants(findNode(TREE, name) || {})); return { ...e, parts: e.parts.filter((p) => !drop.includes(p)) }; }
+      return { ...e, parts: e.parts.concat([name]) };
+    });
+  }
+
+  addExercise(name, mode) {
+    const id = 'x' + Date.now();
+    const m = mode || 'strength';
+    this.setState((s) => ({ exercises: s.exercises.concat([{ id, name, mode: m, ss: null, tempo: '', parts: [], tags: [], inputs: DEFAULTS[m].slice(), past: 0, sets: [], last: null, draft: {} }]), activeId: id, sheet: null, query: '' }));
+  }
+
+  exView(e) {
+    const s = this.state;
+    const active = s.activeId === e.id;
+    const running = s.hold && s.hold.ex === e.id;
+    const hasTimer = e.inputs.includes('sec') || e.inputs.includes('min');
+    const isRen = s.renaming && s.renaming.id === e.id;
+    const offer = s.offer && s.offer.id === e.id ? s.offer : null;
+    const rows = e.sets.map((set, i) => {
+      const editing = s.editing && s.editing.ex === e.id && s.editing.idx === i;
+      const save = () => { this.upd(e.id, (x) => ({ ...x, sets: x.sets.map((v, j) => (j === i ? { ...this.state.editDraft } : v)) })); this.setState({ editing: null }); };
+      return {
+        n: i + 1, ...this.fmtSet(e, set), viewing: !editing, editing,
+        onTap: () => { if (this.lpFired) { this.lpFired = false; return; } this.setState({ editing: { ex: e.id, idx: i }, editDraft: { ...set } }); },
+        onDown: () => { this.lpFired = false; clearTimeout(this.lp); this.lp = setTimeout(() => {
+          this.lpFired = true;
+          this.upd(e.id, (x) => ({ ...x, sets: x.sets.filter((_, j) => j !== i) }));
+          this.setState({ undo: { ex: e.id, idx: i, set } }); clearTimeout(this.ut); this.ut = setTimeout(() => this.setState({ undo: null }), 5000);
+        }, 650); },
+        onUp: () => clearTimeout(this.lp),
+        fields: e.inputs.map((k) => ({ unit: k, value: s.editDraft[k] ?? '', onInput: (ev) => { const v = ev.target.value; this.setState((st) => ({ editDraft: { ...st.editDraft, [k]: v } })); } })),
+        onSave: save, onKey: (ev) => { if (ev.key === 'Enter') save(); }
+      };
+    });
+    const und = s.undo && s.undo.ex === e.id ? s.undo : null;
+    return {
+      name: e.name, mode: e.mode,
+      notRenaming: !isRen, renaming: isRen, renameValue: isRen ? s.renaming.value : '',
+      onNameTap: () => this.setState({ renaming: { id: e.id, value: e.name }, offer: null }),
+      onRenameInput: (ev) => this.setState({ renaming: { id: e.id, value: ev.target.value } }),
+      commitRename: () => { const r = this.state.renaming; if (!r) return; const v = r.value.trim();
+        if (v && v !== e.name) { this.upd(e.id, (x) => ({ ...x, name: v })); this.setState({ renaming: null, offer: e.past ? { id: e.id, from: e.name, count: e.past } : null }); }
+        else this.setState({ renaming: null }); },
+      onRenameKey: (ev) => { if (ev.key === 'Enter') ev.target.blur(); if (ev.key === 'Escape') this.setState({ renaming: null }); },
+      renameOffer: !!offer, renameText: offer ? 'Also rename “' + offer.from + '” in ' + offer.count + ' past workouts?' : '',
+      renameAll: () => this.setState({ offer: null }), dismissRename: () => this.setState({ offer: null }),
+      openSheet: () => this.setState({ sheet: e.id, confirmRemove: false, tagDraft: '' }),
+      hasSS: e.ss != null,
+      ssLabel: e.ss == null ? '' : 'Superset ' + e.ss + (() => { const o = s.exercises.filter((x) => x.id !== e.id && x.ss === e.ss).map((x) => x.name); return o.length ? ' with ' + o.join(', ') : ''; })(),
+      restOn: s.restStart != null && s.restEx === e.id && e.rest !== false,
+      meta: [e.tempo].concat(e.parts).filter(Boolean).join(' · '),
+      showModes: e.sets.length === 0,
+      onMode: (m) => this.upd(e.id, (x) => ({ ...x, mode: m, inputs: DEFAULTS[m].slice(), draft: {} })),
+      rows, undo: !!und, undoText: und ? 'Set ' + (und.idx + 1) + ' removed.' : '',
+      onUndo: () => { const u = this.state.undo; this.upd(e.id, (x) => { const a = x.sets.slice(); a.splice(u.idx, 0, u.set); return { ...x, sets: a }; }); this.setState({ undo: null }); },
+      activate: () => { if (!active) this.setState({ activeId: e.id }); },
+      cardBg: active ? 'var(--wot-surface-container-lowest)' : 'transparent',
+      nextN: e.sets.length + 1, lastRef: e.last || '',
+      showAddRir: e.mode === 'strength' && !e.inputs.some(isInt) && e.inputs.length < 4,
+      addRir: () => this.upd(e.id, (x) => ({ ...x, inputs: x.inputs.concat(['rir']) })),
+      copyable: e.sets.length > 0,
+      copy: () => { const l = e.sets[e.sets.length - 1]; const d = {}; for (const k in l) d[k] = String(l[k]); this.upd(e.id, (x) => ({ ...x, draft: d })); this.setState({ activeId: e.id }); },
+      fields: e.inputs.map((k) => {
+        const v = e.draft[k] ?? '';
+        const foc = s.focus && s.focus.ex === e.id && s.focus.key === k;
+        return { unit: k, value: v, isIntensity: isInt(k), plain: !isInt(k), subLabel: v !== '' ? k : '', flipLabel: k === 'rir' ? 'rir ⇄ rpe' : 'rpe ⇄ rir',
+          line: foc ? 'var(--wot-primary)' : 'var(--wot-border-input)',
+          onInput: (ev) => this.setDraft(e.id, k, ev.target.value),
+          onFocus: () => this.setState({ focus: { ex: e.id, key: k }, activeId: e.id }),
+          onFlip: () => this.flip(e, k) };
+      }),
+      onKey: (ev) => { if (ev.key === 'Enter') this.logSet(e); },
+      timerIdle: hasTimer && !running, timerRunning: !!running,
+      holdText: running ? mmss(Math.max(0, Math.round((s.now - s.hold.start) / 1000))) : '',
+      toggleHold: () => this.toggleHold(e),
+      log: () => this.logSet(e)
+    };
+  }
+
+  sheetView() {
+    const s = this.state;
+    const e = s.exercises.find((x) => x.id === s.sheet);
+    if (!e) return { name: '' };
+    const chip = (label, on, onClick) => ({ label, on, onClick });
+    const bodyRows = [{ label: 'Region', chips: Object.keys(TREE).map((k) => chip(k, e.parts.includes(k), () => this.togglePart(e.id, k))) }];
+    const visit = (t) => { for (const k in t) { if (e.parts.includes(k) && Object.keys(t[k]).length) {
+      bodyRows.push({ label: k + ' ›', chips: Object.keys(t[k]).map((c) => chip(c, e.parts.includes(c), () => this.togglePart(e.id, c))) }); visit(t[k]); } } };
+    visit(TREE);
+    const tags = TAGS.concat(e.tags.filter((t) => !TAGS.includes(t)));
+    return {
+      name: e.name, mode: e.mode, tempo: e.tempo,
+      restChips: [[true, 'On'], [false, 'Off']].map(([v, l]) => chip(l, (e.rest !== false) === v, () => this.upd(e.id, (x) => ({ ...x, rest: v })))),
+      ssChips: [[null, 'None'], [1, 'Superset 1'], [2, 'Superset 2'], [3, 'Superset 3']].map(([v, l]) => chip(l, e.ss === v, () => this.upd(e.id, (x) => ({ ...x, ss: v })))),
+      onMode: (m) => this.upd(e.id, (x) => ({ ...x, mode: m, inputs: DEFAULTS[m].slice(), draft: {} })),
+      inputChips: ALL_INPUTS.map((k) => chip(k, e.inputs.includes(k), () => this.upd(e.id, (x) => {
+        if (x.inputs.includes(k)) return x.inputs.length > 1 ? { ...x, inputs: x.inputs.filter((i) => i !== k) } : x;
+        return x.inputs.length < 4 ? { ...x, inputs: x.inputs.concat([k]) } : x;
+      }))),
+      onTempo: (ev) => { const v = ev.target.value; this.upd(e.id, (x) => ({ ...x, tempo: v })); },
+      tagChips: tags.map((t) => chip(t, e.tags.includes(t), () => this.upd(e.id, (x) => ({ ...x, tags: x.tags.includes(t) ? x.tags.filter((y) => y !== t) : x.tags.concat([t]) })))),
+      onTagKey: (ev) => { if (ev.key !== 'Enter') return; const v = this.state.tagDraft.trim().toLowerCase(); if (!v) return;
+        this.upd(e.id, (x) => ({ ...x, tags: x.tags.includes(v) ? x.tags : x.tags.concat([v]) })); this.setState({ tagDraft: '' }); },
+      bodyRows,
+      removeLabel: s.confirmRemove ? 'Tap again to remove' : 'Remove exercise',
+      removeColor: s.confirmRemove ? 'var(--wot-destructive)' : 'var(--wot-muted-fg)',
+      onRemove: () => {
+        if (this.state.confirmRemove) { this.setState((st) => ({ exercises: st.exercises.filter((x) => x.id !== e.id), sheet: null, confirmRemove: false })); return; }
+        this.setState({ confirmRemove: true }); clearTimeout(this.rt); this.rt = setTimeout(() => this.setState({ confirmRemove: false }), 3000);
+      }
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const el = Math.max(0, Math.round((s.now - s.sessionStart) / 1000));
+    const clock = el >= 3600 ? Math.floor(el / 3600) + ':' + pad(Math.floor((el % 3600) / 60)) + ':' + pad(el % 60) : pad(Math.floor(el / 60)) + ':' + pad(el % 60);
+    const q = s.query.trim().toLowerCase();
+    const recents = RECENTS.filter(([n]) => !q || n.toLowerCase().includes(q)).map(([name, mode]) => ({ name, mode, onClick: () => this.addExercise(name, mode) }));
+    const exact = RECENTS.some(([n]) => n.toLowerCase() === q);
+    return {
+      clock, title: s.title, onTitle: (ev) => this.setState({ title: ev.target.value }),
+      restOn: s.restStart != null, restText: s.restStart != null ? mmss(Math.max(0, Math.round((s.now - s.restStart) / 1000))) : '',
+      stopRest: () => this.setState({ restStart: null }),
+      modes: ['strength', 'cardio', 'flexibility'],
+      exercises: s.exercises.map((e) => this.exView(e)),
+      openAdd: () => this.setState({ sheet: 'add', query: '' }),
+      closeSheet: () => this.setState({ sheet: null, confirmRemove: false }),
+      configOpen: !!s.sheet && s.sheet !== 'add', addOpen: s.sheet === 'add',
+      sx: this.sheetView(), tagDraft: s.tagDraft, onTagDraft: (ev) => this.setState({ tagDraft: ev.target.value }),
+      query: s.query, onQuery: (ev) => this.setState({ query: ev.target.value }),
+      showCustom: !!q && !exact, customLabel: '+ Add “' + s.query.trim() + '”',
+      addCustom: () => this.addExercise(s.query.trim()),
+      onQueryKey: (ev) => { if (ev.key === 'Enter' && s.query.trim()) this.addExercise(s.query.trim()); },
+      recents
+    };
+  }
+}
+</script>
+</body>
+</html>

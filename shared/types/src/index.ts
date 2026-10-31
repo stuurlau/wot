@@ -37,10 +37,12 @@ export {
 export {
   exerciseConfigEntrySchema,
   exerciseConfigSchema,
+  exerciseModeSchema,
   exerciseSetFieldSchema,
   setExerciseConfigInputSchema,
   type ExerciseConfig,
   type ExerciseConfigEntry,
+  type ExerciseMode,
   type ExerciseSetField,
   type SetExerciseConfigInput,
 } from './exercise-config.js';

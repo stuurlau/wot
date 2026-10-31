@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { users } from "./auth.js";
 
@@ -22,6 +22,10 @@ export const exerciseConfig = pgTable(
     tempo: text("tempo"),
     // Prefill when the exercise is added to a session.
     bodyParts: text("body_parts").array(),
+    // strength | cardio | flexibility (shared exerciseModeSchema).
+    mode: text("mode"),
+    // Start the rest clock after a set; null = on.
+    restTimer: boolean("rest_timer"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

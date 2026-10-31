@@ -229,6 +229,8 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
           fields: exerciseConfig.fields,
           tempo: exerciseConfig.tempo,
           bodyParts: exerciseConfig.bodyParts,
+          mode: exerciseConfig.mode,
+          restTimer: exerciseConfig.restTimer,
         })
         .from(exerciseConfig)
         .where(eq(exerciseConfig.userId, authenticatedUserId(request)))
@@ -244,9 +246,9 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
     async (request) => {
       const input = parseRequest(setExerciseConfigBodySchema, request.body);
       const userId = authenticatedUserId(request);
-      const { fields, tempo, bodyParts } = input.config;
+      const { fields, tempo, bodyParts, mode, restTimer } = input.config;
 
-      if (fields === null && tempo === null && bodyParts === null) {
+      if (Object.values(input.config).every((v) => v === null)) {
         await db
           .delete(exerciseConfig)
           .where(
@@ -257,10 +259,10 @@ export async function registerExerciseRoutes(app: FastifyInstance) {
 
       await db
         .insert(exerciseConfig)
-        .values({ userId, exerciseName: input.exerciseName, fields, tempo, bodyParts })
+        .values({ userId, exerciseName: input.exerciseName, fields, tempo, bodyParts, mode, restTimer })
         .onConflictDoUpdate({
           target: [exerciseConfig.userId, exerciseConfig.exerciseName],
-          set: { fields, tempo, bodyParts },
+          set: { fields, tempo, bodyParts, mode, restTimer },
         });
 
       return { exerciseName: input.exerciseName, ...input.config };
